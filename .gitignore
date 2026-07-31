@@ -1,0 +1,6 @@
+# Config local del editor (servidor de desarrollo, etc.) — no hace falta publicarla.
+.claude/
+
+# Backup de los sprites viejos del esqueleto (ver sesión de reemplazo de sprites) —
+# solo por si hacía falta comparar, no es parte del juego.
+assets/skeleton_walk_old_backup/
