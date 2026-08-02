@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GDD - La Cripta de Nekkman | Google Docs Compatible</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', 'Segoe UI', sans-serif;
+            background: #f0f0f0;
+            padding: 20px;
+            line-height: 1.6;
+            color: #404040;
+        }
+
+        .google-docs {
+            max-width: 850px;
+            margin: 0 auto;
+            background: white;
+            padding: 60px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        }
+
+        /* Títulos */
+        h1 {
+            font-size: 32px;
+            font-weight: bold;
+            color: #e94560;
+            margin-bottom: 6px;
+            margin-top: 24px;
+            page-break-after: avoid;
+            text-align: center;
+        }
+
+        h1.title {
+            font-size: 32px;
+            text-align: center;
+            color: #e94560;
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 6px;
+            font-weight: normal;
+        }
+
+        .tp-tag {
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: #16c784;
+            margin-bottom: 24px;
+        }
+
+        h2 {
+            font-size: 18px;
+            font-weight: bold;
+            color: #16c784;
+            margin-top: 20px;
+            margin-bottom: 12px;
+            page-break-after: avoid;
+            border-bottom: none;
+        }
+
+        h3 {
+            font-size: 14px;
+            font-weight: bold;
+            color: #e94560;
+            margin-top: 16px;
+            margin-bottom: 8px;
+            page-break-after: avoid;
+        }
+
+        p {
+            margin-bottom: 12px;
+            text-align: justify;
+            font-size: 11pt;
+            line-height: 1.5;
+        }
+
+        /* Tablas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            page-break-inside: avoid;
+        }
+
+        table.info-table {
+            margin: 12px 0;
+        }
+
+        table.info-table th {
+            background-color: #e94560;
+            color: white;
+            font-weight: bold;
+            padding: 8px 12px;
+            text-align: left;
+            font-size: 11pt;
+            width: 30%;
+        }
+
+        table.info-table td {
+            padding: 8px 12px;
+            font-size: 11pt;
+            border: 1px solid #ddd;
+        }
+
+        table.info-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        table.nivel-table th {
+            background-color: #16c784;
+            color: white;
+            font-weight: bold;
+            padding: 8px 12px;
+            text-align: left;
+            font-size: 11pt;
+            width: 25%;
+        }
+
+        table.nivel-table td {
+            padding: 8px 12px;
+            font-size: 11pt;
+            border: 1px solid #ddd;
+        }
+
+        table.nivel-table tr:nth-child(even) {
+            background-color: #f0f9f7;
+        }
+
+        table.visual-table th {
+            background-color: #e94560;
+            color: white;
+            font-weight: bold;
+            padding: 8px 12px;
+            text-align: left;
+            font-size: 11pt;
+            width: 30%;
+        }
+
+        table.visual-table td {
+            padding: 8px 12px;
+            font-size: 11pt;
+            border: 1px solid #ddd;
+        }
+
+        table.visual-table tr:nth-child(even) {
+            background-color: #fff4f6;
+        }
+
+        /* Info Box */
+        .info-box {
+            background-color: #f5f5f5;
+            border-left: 4px solid #16c784;
+            padding: 12px 16px;
+            margin: 12px 0;
+            page-break-inside: avoid;
+        }
+
+        .info-box strong {
+            color: #16c784;
+        }
+
+        /* Timeline/Checklist */
+        .timeline {
+            background-color: #f5f5f5;
+            border-left: 4px solid #16c784;
+            padding: 12px 16px;
+            margin: 12px 0;
+        }
+
+        .timeline-item {
+            margin: 8px 0;
+            font-size: 11pt;
+        }
+
+        .timeline-item strong {
+            color: #16c784;
+        }
+
+        /* Separadores */
+        .spacer {
+            height: 12px;
+        }
+
+        /* Impresión */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .google-docs {
+                box-shadow: none;
+                padding: 40px;
+            }
+        }
+
+        @page {
+            margin: 1in;
+        }
+    </style>
+</head>
+<body>
+    <div class="google-docs">
+        <!-- PORTADA -->
+        <h1 class="title">LA CRIPTA DE NEKKMAN</h1>
+        <p class="subtitle">Documento de Preproducción</p>
+        <p class="subtitle">Basado en Preproduction Blueprints de Alex Galuzin</p>
+        <p class="tp-tag">TP MÓDULO 2 — Level Design</p>
+
+        <div class="spacer"></div>
+
+        <!-- INFORMACIÓN BÁSICA -->
+        <table class="info-table">
+            <tr>
+                <th>Autor</th>
+                <td>Franco Tarelli</td>
+            </tr>
+            <tr>
+                <th>Duración Total</th>
+                <td>11 minutos (≤ 20 máx)</td>
+            </tr>
+            <tr>
+                <th>Género</th>
+                <td>Aventura</td>
+            </tr>
+            <tr>
+                <th>Engine</th>
+                <td>HTML5 / Godot</td>
+            </tr>
+        </table>
+
+        <!-- CONCEPTO CENTRAL -->
+        <h2>CONCEPTO CENTRAL</h2>
+        <p>Un paladin debe acabar con un nigromante que intenta convertirse en liche, sorteando enemigos, puzzles y trampas.</p>
+
+        <div class="info-box">
+            <p><strong>Inspiración:</strong> The Legend of Zelda, D&D</p>
+            <p><strong>Diferenciadores:</strong> Arte dibujado a mano, mecánicas de D&D en tiempo real</p>
+            <p><strong>Narrativa:</strong> Mezcla implícita/explícita de storytelling</p>
+        </div>
+
+        <!-- NARRATIVA -->
+        <h2>NARRATIVA (What/How/Why)</h2>
+
+        <h3>WHAT - Historia del Ambiente</h3>
+        <p>Un Nigromante llamado Nekkman hizo un trato con el Dios Talos. Este le entregará poderes a cambio de convertir su cuerpo en un Liche.</p>
+
+        <h3>HOW - Cómo Llegó el Jugador</h3>
+        <p>El jugador es un Paladin enviado de la capital. Se rumoreaba que Nekkman estaba sacrificando gente en los alrededores del templo abandonado.</p>
+
+        <h3>WHY - Objetivo del Jugador</h3>
+        <p>Yamel (el personaje) debe detener a Nekkman y evitar que concentre el poder de las almas sacrificadas.</p>
+
+        <div class="spacer"></div>
+
+        <!-- LOS 3 NIVELES -->
+        <h2>LOS 3 NIVELES</h2>
+
+        <h3>NIVEL 1: La entrada a la mazmorra</h3>
+        <table class="nivel-table">
+            <tr>
+                <th>Duración</th>
+                <td>3 minutos</td>
+            </tr>
+            <tr>
+                <th>Dificultad</th>
+                <td>2/10</td>
+            </tr>
+            <tr>
+                <th>Propósito</th>
+                <td>Introducción a mecánicas básicas. El jugador encuentra una puerta con 3 luces conectadas a "tubos" que llevan a otras puertas.</td>
+            </tr>
+            <tr>
+                <th>Enemigos/Obstáculos</th>
+                <td>Esqueletos básicos, trampas de pinchos, trampas de acción, puzzle de fuente</td>
+            </tr>
+        </table>
+        <p><strong style="color: #16c784;">Pedagogía:</strong> Curva MUY lenta. Introduce 1 mecánica a la vez. Seguridad psicológica.</p>
+
+        <div class="spacer"></div>
+
+        <h3>NIVEL 2: La puerta izquierda</h3>
+        <table class="nivel-table">
+            <tr>
+                <th>Duración</th>
+                <td>4 minutos</td>
+            </tr>
+            <tr>
+                <th>Dificultad</th>
+                <td>4/10</td>
+            </tr>
+            <tr>
+                <th>Propósito</th>
+                <td>Escalada progresiva. El jugador se abre paso hasta la segunda fuente.</td>
+            </tr>
+            <tr>
+                <th>Enemigos/Obstáculos</th>
+                <td>Esqueletos simples, esqueletos magos, esqueletos tanques, trampas eléctricas, puzzle nuevo</td>
+            </tr>
+        </table>
+        <p><strong style="color: #16c784;">Pedagogía:</strong> Curva escalonada. Cada desafío +1-2 dificultad. Variación constante.</p>
+
+        <div class="spacer"></div>
+
+        <h3>NIVEL 3: La puerta de la derecha</h3>
+        <table class="nivel-table">
+            <tr>
+                <th>Duración</th>
+                <td>4 minutos</td>
+            </tr>
+            <tr>
+                <th>Dificultad</th>
+                <td>7/10</td>
+            </tr>
+            <tr>
+                <th>Propósito</th>
+                <td>Climax final. Integra TODO lo aprendido.</td>
+            </tr>
+            <tr>
+                <th>Enemigos/Obstáculos</th>
+                <td>Esqueletos simples, magos, tanques, caballeros (boss), trampas eléctricas, puzzle final</td>
+            </tr>
+        </table>
+        <p><strong style="color: #16c784;">Pedagogía:</strong> Pico de dificultad máximo. Boss con fases. Caída emocional post-victoria.</p>
+
+        <div class="spacer"></div>
+
+        <!-- DIRECCIÓN VISUAL -->
+        <h2>DIRECCIÓN VISUAL</h2>
+        <table class="visual-table">
+            <tr>
+                <th>Estilo</th>
+                <td>Estilizado dibujado a mano (hand-drawn)</td>
+            </tr>
+            <tr>
+                <th>Paleta de Colores</th>
+                <td>Azules, dorados, grises, negros, marrones</td>
+            </tr>
+            <tr>
+                <th>Iluminación</th>
+                <td>Cool (fría, noche, magia azul)</td>
+            </tr>
+            <tr>
+                <th>Contraste</th>
+                <td>Low-Key (oscuro, alto contraste, atmósfera dramática)</td>
+            </tr>
+            <tr>
+                <th>Punto Focal Principal</th>
+                <td>La puerta central con 3 luces</td>
+            </tr>
+            <tr>
+                <th>Puntos Secundarios</th>
+                <td>Fuentes y tubos que transportan luz</td>
+            </tr>
+        </table>
+
+        <div class="spacer"></div>
+
+        <!-- PRÓXIMOS PASOS -->
+        <h2>PRÓXIMOS PASOS</h2>
+        <div class="timeline">
+            <div class="timeline-item"><strong style="color: #16c784;">Completado:</strong> Documento de Preproducción (Entregable 1)</div>
+            <div class="timeline-item"><strong style="color: #f39c12;">Pendiente:</strong> Moodboard en Miro (referencias visuales)</div>
+            <div class="timeline-item"><strong style="color: #f39c12;">Pendiente:</strong> Construir 3 Niveles Ejecutables (Entregable 2)</div>
+            <div class="timeline-item"><strong style="color: #f39c12;">Pendiente:</strong> Playtesting con 3+ jugadores</div>
+            <div class="timeline-item"><strong style="color: #f39c12;">Pendiente:</strong> Recolectar métricas (muertes + ratings)</div>
+            <div class="timeline-item"><strong style="color: #e94560; font-weight: bold;">Entrega Final:</strong> 14 de agosto 2026</div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <!-- FOOTER -->
+        <p style="text-align: center; color: #999; font-size: 10pt; margin-top: 40px; border-top: 1px solid #ddd; padding-top: 12px;">
+            Documento generado automáticamente desde Formulario GDD Optimizado<br>
+            Estructura: Blueprint Galuzin (11 pasos) + Clase 9 (Balanceo) + Clase 5 (Factibilidad)<br>
+            <strong>Estado: LISTO PARA CONSTRUCCIÓN DE NIVELES</strong>
+        </p>
+    </div>
+
+    <script>
+        // Permitir copiar todo el contenido fácilmente
+        document.addEventListener('DOMContentLoaded', function() {
+            const googleDocs = document.querySelector('.google-docs');
+
+            // Agregar instrucción de copia
+            const instruction = document.createElement('div');
+            instruction.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #e94560;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 12px;
+                font-weight: bold;
+                z-index: 1000;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            `;
+            instruction.textContent = 'Seleccionar todo para copiar a Google Docs';
+            instruction.onclick = function() {
+                const range = document.createRange();
+                range.selectNodeContents(googleDocs);
+                window.getSelection().removeAllRanges();
+                window.getSelection().addRange(range);
+                document.execCommand('copy');
+                instruction.textContent = '¡Copiado! Abre Google Docs y pega';
+                setTimeout(() => {
+                    instruction.textContent = 'Seleccionar todo para copiar a Google Docs';
+                }, 3000);
+            };
+            document.body.appendChild(instruction);
+        });
+    </script>
+</body>
+</html>
