@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "savedAt": "2026-08-03T12:32:40.441Z",
+  "savedAt": "2026-08-03T15:37:52.640Z",
   "editorSettings": {
     "ctrl-player-cooldown": "40",
     "ctrl-player-damage": "15",
@@ -11985,7 +11985,7 @@
           "y": 2384,
           "w": 32,
           "h": 96,
-          "maxHealth": 29
+          "maxHealth": 15
         },
         {
           "id": "wall_hp_2",
@@ -11993,7 +11993,7 @@
           "y": 2384,
           "w": 32,
           "h": 96,
-          "maxHealth": 29
+          "maxHealth": 15
         },
         {
           "id": "wall_hp_3",
@@ -12001,7 +12001,7 @@
           "y": 1104,
           "w": 32,
           "h": 96,
-          "maxHealth": 29
+          "maxHealth": 15
         },
         {
           "id": "wall_hp_editor_1785727780961_5953",
@@ -12009,7 +12009,7 @@
           "y": 672,
           "w": 32,
           "h": 64,
-          "maxHealth": 29,
+          "maxHealth": 15,
           "variantKey": "breakable_jarron_5"
         },
         {
@@ -12018,7 +12018,7 @@
           "y": 320,
           "w": 64,
           "h": 64,
-          "maxHealth": 58,
+          "maxHealth": 30,
           "variantKey": "breakable_cajagrande_1"
         },
         {
@@ -12027,7 +12027,7 @@
           "y": 352,
           "w": 32,
           "h": 64,
-          "maxHealth": 29,
+          "maxHealth": 15,
           "variantKey": "breakable_barril_2"
         },
         {
@@ -12036,7 +12036,7 @@
           "y": 2336,
           "w": 32,
           "h": 64,
-          "maxHealth": 50,
+          "maxHealth": 15,
           "variantKey": "breakable_barril_1"
         },
         {
@@ -12045,7 +12045,7 @@
           "y": 2336,
           "w": 32,
           "h": 64,
-          "maxHealth": 50,
+          "maxHealth": 15,
           "variantKey": "breakable_barril_2"
         },
         {
@@ -12054,7 +12054,7 @@
           "y": 2384,
           "w": 64,
           "h": 96,
-          "maxHealth": 100,
+          "maxHealth": 30,
           "variantKey": "breakable_cajagrande_3"
         },
         {
@@ -12063,7 +12063,7 @@
           "y": 2416,
           "w": 64,
           "h": 96,
-          "maxHealth": 100,
+          "maxHealth": 30,
           "variantKey": "breakable_cajagrande_4"
         }
       ],
@@ -12156,8 +12156,44 @@
           "y": 1192
         }
       ],
-      "sawTraps": [],
-      "spikeTraps": [],
+      "sawTraps": [
+        {
+          "id": "sawtrap_1785771461641_49986",
+          "x": 576,
+          "y": 2480,
+          "w": 192,
+          "h": 32,
+          "orientation": "horizontal"
+        },
+        {
+          "id": "sawtrap_1785771469495_63266",
+          "x": 464,
+          "y": 2432,
+          "w": 32,
+          "h": 128,
+          "orientation": "vertical"
+        }
+      ],
+      "spikeTraps": [
+        {
+          "id": "spiketrap_1785771470846_58158",
+          "x": 432,
+          "y": 2480,
+          "shape": "plate"
+        },
+        {
+          "id": "spiketrap_1785771471173_41462",
+          "x": 368,
+          "y": 2480,
+          "shape": "plate"
+        },
+        {
+          "id": "spiketrap_1785771472230_42013",
+          "x": 400,
+          "y": 2480,
+          "shape": "plate"
+        }
+      ],
       "torches": [],
       "wallSkins": [],
       "fireTraps": [],
