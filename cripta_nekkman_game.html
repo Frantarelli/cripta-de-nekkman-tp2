@@ -409,7 +409,7 @@
         /* Pestañas del Editor de Parámetros (Jugador/Enemigos/Entorno/Hechizos) — todo
            lo que no depende de una sala puntual (Archivo de guardado, Guardar/Copiar)
            queda ARRIBA de las pestañas, siempre visible sin importar cuál esté abierta. */
-        .editor-tab-bar {
+        .editor-tab-bar, .me-tab-bar {
             display: flex;
             flex-wrap: wrap;
             gap: 6px;
@@ -417,7 +417,7 @@
             padding-top: 16px;
             border-top: 1px solid #444;
         }
-        .editor-tab-btn {
+        .editor-tab-btn, .me-tab-btn, .me-room-btn {
             flex: 1 1 auto;
             background: #2a2a2a;
             color: #ccc;
@@ -428,18 +428,18 @@
             cursor: pointer;
             white-space: nowrap;
         }
-        .editor-tab-btn:hover {
+        .editor-tab-btn:hover, .me-tab-btn:hover, .me-room-btn:hover {
             background: #363636;
         }
-        .editor-tab-btn.active {
+        .editor-tab-btn.active, .me-tab-btn.active, .me-room-btn.active {
             background: #3a7bd5;
             color: white;
             border-color: #3a7bd5;
         }
-        .editor-tab-panel {
+        .editor-tab-panel, .me-tab-panel {
             display: none;
         }
-        .editor-tab-panel.active {
+        .editor-tab-panel.active, .me-tab-panel.active {
             display: block;
         }
         .editor-tab-panel .editor-section:first-of-type {
@@ -489,6 +489,40 @@
         #map-editor-panel.open {
             left: 0;
         }
+        /* Colapsar solo esconde el panel (desliza a la izquierda) — mapEditorActive
+           sigue en true, la herramienta elegida y el resto del estado no se tocan. */
+        #map-editor-panel.open.me-panel-collapsed {
+            left: -320px;
+        }
+        #me-collapse-toggle {
+            position: fixed;
+            top: 50%;
+            left: 300px;
+            transform: translateY(-50%);
+            z-index: 56;
+            width: 22px;
+            height: 48px;
+            border-radius: 0 6px 6px 0;
+            background: rgba(18, 18, 18, 0.97);
+            color: white;
+            border: 1px solid #555;
+            border-left: none;
+            cursor: pointer;
+            font-size: 14px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: left 0.25s ease;
+        }
+        #map-editor-panel.open #me-collapse-toggle {
+            display: flex;
+        }
+        #map-editor-panel.open.me-panel-collapsed #me-collapse-toggle {
+            left: 0;
+        }
+        #me-collapse-toggle:hover {
+            background: #2a2a2a;
+        }
         #map-editor-panel h2 {
             margin-top: 0;
             font-size: 18px;
@@ -527,6 +561,46 @@
             background: #3498db;
             color: white;
             border-color: #3498db;
+        }
+        /* Miniaturas (rompibles/botín/trampas): un botón por sprite EXACTO, con la
+           imagen real — para elegir a ojo cuál poner, no solo "una caja cualquiera". */
+        .me-thumb-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 6px 0 12px;
+        }
+        .me-tool-btn-thumb {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            width: 60px;
+            padding: 5px 2px;
+            background: #262626;
+            border: 1px solid #555;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .me-tool-btn-thumb:hover {
+            background: #3a3a3a;
+        }
+        .me-tool-btn-thumb.selected {
+            background: #2ecc71;
+            border-color: #2ecc71;
+        }
+        .me-tool-btn-thumb img {
+            max-width: 40px;
+            max-height: 40px;
+            image-rendering: pixelated;
+        }
+        .me-tool-btn-thumb span {
+            font-size: 10px;
+            color: #ccc;
+        }
+        .me-tool-btn-thumb.selected span {
+            color: #0a1f0f;
+            font-weight: bold;
         }
         /* ---- Barra de hechizos (abajo, centrada) ---- */
         #spell-bar {
@@ -645,18 +719,30 @@
             <h2>Editor de Parámetros</h2>
             <p class="editor-hint">Los cambios se aplican al instante, incluso con la partida en curso, y se guardan solos (localStorage) en este navegador.</p>
 
+            <!-- Guardado automático en disco: cada edición escribe SOLA a
+                 cripta_nekkman_config.json vía game_server.py (POST /save-config), sin
+                 tocar ningún botón ni vincular nada — solo funciona corriendo el
+                 servidor local (game_server.py), no en un archivo abierto directo ni en
+                 GitHub Pages, ahí se cae solo al flujo de descarga manual de abajo. -->
+            <section class="editor-section" style="margin-top:14px;padding-top:14px;">
+                <h3>💾 Guardado automático en disco</h3>
+                <p class="editor-subhint" id="server-save-indicator">Esperando el primer guardado…</p>
+            </section>
+
             <!-- Archivo de guardado en disco: un JSON real que sobrevive cambiar de
                  navegador/máquina, no solo localStorage. Este mismo archivo guarda TANTO
                  los parámetros de acá como el mapa editado. -->
             <section class="editor-section" style="margin-top:14px;padding-top:14px;">
-                <h3>📁 Archivo de guardado</h3>
+                <h3>📁 Respaldo manual (opcional)</h3>
                 <p class="editor-subhint">
-                    <b>Para que tu profesor (u otro navegador/incógnito) vea el mapa que
-                    editaste:</b> localStorage vive solo en ESTE navegador, no viaja con
-                    la carpeta. Después de guardar tus cambios, tocá el botón de abajo:
-                    descarga <code>cripta_nekkman_config.json</code>. Movelo desde
-                    Descargas hasta ESTA MISMA carpeta (al lado del .html), pisando el que
-                    ya esté ahí si existe — recién ahí queda adentro de la entrega.
+                    Con el guardado automático de arriba funcionando, esto ya no hace
+                    falta para uso normal — quedó como respaldo extra, o para cuando abrís
+                    el juego SIN el servidor local (ej. GitHub Pages, o el .html suelto):
+                    <b>para que tu profesor (u otro navegador/incógnito) vea el mapa que
+                    editaste</b>, tocá el botón de abajo: descarga
+                    <code>cripta_nekkman_config.json</code>. Movelo desde Descargas hasta
+                    ESTA MISMA carpeta (al lado del .html), pisando el que ya esté ahí si
+                    existe.
                 </p>
                 <button id="btn-download-config" class="editor-copy-btn" style="background:#2ecc71;color:#0a1f0f;font-weight:bold;">📥 Descargar cripta_nekkman_config.json</button>
                 <p class="editor-subhint" id="bundled-config-status"></p>
@@ -713,6 +799,23 @@
                         <span class="control-value" id="val-player-health">100</span> HP
                     </label>
                     <input type="range" id="ctrl-player-health" min="20" max="300" value="100">
+                </div>
+
+                <h4>💡 Luz propia</h4>
+                <p class="editor-subhint">
+                    Halo chico que el jugador lleva encima siempre, sin depender de
+                    antorchas ni de la niebla.
+                </p>
+                <div class="control-row">
+                    <label for="ctrl-player-glow-radius">
+                        Intensidad (radio)
+                        <span class="control-value" id="val-player-glow-radius">50</span> px
+                    </label>
+                    <input type="range" id="ctrl-player-glow-radius" min="0" max="150" step="5" value="50">
+                </div>
+                <div class="control-row">
+                    <label for="ctrl-player-glow-color">Color</label>
+                    <input type="color" id="ctrl-player-glow-color" value="#fff4d6">
                 </div>
             </section>
             </div>
@@ -858,6 +961,14 @@
                     <input type="range" id="ctrl-trap-size" min="30" max="120" value="70">
                 </div>
 
+                <div class="control-row">
+                    <label for="ctrl-trap-freeze-duration">
+                        Duración del freeze (hechizo de Inmovilizar sobre una trampa)
+                        <span class="control-value" id="val-trap-freeze-duration">3</span> s
+                    </label>
+                    <input type="range" id="ctrl-trap-freeze-duration" min="1" max="15" step="0.5" value="3">
+                </div>
+
                 <h4>🪚 Trampa de Sierra</h4>
                 <p class="editor-subhint">
                     Cada tanto emite una sierra que recorre todo el riel de punta a
@@ -905,19 +1016,34 @@
                     </label>
                     <input type="range" id="ctrl-spiketrap-delay" min="0.1" max="3" step="0.1" value="0.5">
                 </div>
+
+                <h4>🔥 Trampa de Fuego</h4>
+                <p class="editor-subhint">
+                    Dispara sola en un ciclo fijo — no depende de que nadie esté parado
+                    encima. Solo hace daño durante el pico de la llamarada.
+                </p>
+                <div class="control-row">
+                    <label for="ctrl-firetrap-damage">
+                        Daño por ráfaga
+                        <span class="control-value" id="val-firetrap-damage">15</span> HP
+                    </label>
+                    <input type="range" id="ctrl-firetrap-damage" min="0" max="60" value="15">
+                </div>
             </section>
 
             <section class="editor-section">
                 <h3>🧱 Paredes</h3>
                 <p class="editor-subhint">
-                    Vida de las paredes verde oliva (rompibles a golpes o con cualquier
-                    hechizo de daño). Un único control para todas — subir el valor también
-                    cura de una a las que ya estén dañadas pero sigan en pie.
+                    Vida BASE de los objetos rompibles (barriles/cajas/cajas grandes/jarrones
+                    — rompibles a golpes o con cualquier hechizo de daño). Los que ocupan 2
+                    celdas de ancho aguantan el DOBLE de este valor; un único control para
+                    todos — subir el valor también cura de una a los que ya estén dañados
+                    pero sigan en pie.
                 </p>
 
                 <div class="control-row">
                     <label for="ctrl-hpwall-health">
-                        Vida máxima
+                        Vida máxima base
                         <span class="control-value" id="val-hpwall-health">50</span> HP
                     </label>
                     <input type="range" id="ctrl-hpwall-health" min="10" max="300" value="50">
@@ -938,6 +1064,49 @@
                         <span class="control-value" id="val-vision-radius">350</span> px
                     </label>
                     <input type="range" id="ctrl-vision-radius" min="100" max="900" step="10" value="350">
+                </div>
+            </section>
+
+            <section class="editor-section">
+                <h3>🔥 Luces</h3>
+                <p class="editor-subhint">
+                    Las antorchas (herramienta 🔥 del Editor de Mapa) SOLO iluminan — no
+                    revelan ni afectan la niebla de guerra de ninguna forma. Lo único que
+                    revela niebla es el campo de visión del jugador. Todas las antorchas de
+                    la sala comparten esta misma intensidad y color.
+                </p>
+                <div class="control-row">
+                    <label for="ctrl-torch-radius">
+                        Intensidad de las antorchas (radio)
+                        <span class="control-value" id="val-torch-radius">100</span> px
+                    </label>
+                    <input type="range" id="ctrl-torch-radius" min="30" max="300" step="10" value="100">
+                </div>
+                <div class="control-row">
+                    <label for="ctrl-torch-color">Color de las antorchas</label>
+                    <input type="color" id="ctrl-torch-color" value="#ff9c1a">
+                </div>
+                <div class="control-row">
+                    <label for="ctrl-torch-generated-glow" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="checkbox" id="ctrl-torch-generated-glow" style="width:auto;">
+                        Sumar halo de color generado (si está apagado, se ve solo la luz ya pintada en el sprite de la antorcha)
+                    </label>
+                </div>
+                <p class="editor-subhint">
+                    La luz propia del jugador se configura en la pestaña 🧍 Jugador.
+                </p>
+                <p class="editor-subhint">
+                    Sombra ambiente: todo lo que NO tenga una antorcha o al jugador cerca
+                    se ve un poco más oscuro/opaco — así la luz de las antorchas se nota
+                    más en contraste. No toca la niebla de guerra (lo explorado/campo de
+                    visión sigue funcionando exactamente igual que antes).
+                </p>
+                <div class="control-row">
+                    <label for="ctrl-ambient-shadow">
+                        Oscuridad ambiente (fuera de la luz)
+                        <span class="control-value" id="val-ambient-shadow">35</span>%
+                    </label>
+                    <input type="range" id="ctrl-ambient-shadow" min="0" max="80" step="5" value="35">
                 </div>
             </section>
             </div>
@@ -1049,6 +1218,7 @@
     <button id="map-editor-toggle-btn">🗺️ Editor de Mapa</button>
 
     <div id="map-editor-panel">
+        <button id="me-collapse-toggle" title="Ocultar/mostrar el panel — seguís en modo edición, solo se esconde el panel para ver el mapa completo">◀</button>
         <h2>🗺️ Editor de Mapa</h2>
         <p class="editor-hint">
             Elegí una herramienta y hacé click sobre el mapa para poner/sacar/mover.
@@ -1057,73 +1227,108 @@
 
         <p class="editor-subhint" id="me-current-tool-hint">Sin herramienta seleccionada.</p>
 
-        <h4 style="margin-top:16px;color:#aad4ff;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Estructura</h4>
-        <div class="me-tool-grid">
-            <button class="me-tool-btn" data-tool="wall">🧱 Bloque sólido</button>
-            <button class="me-tool-btn" data-tool="hpwall">🟩 Pared con vida</button>
-            <button class="me-tool-btn" data-tool="firewall">🟧 Pared de fuego</button>
-            <button class="me-tool-btn" data-tool="icewall">🟦 Pared de hielo</button>
-            <button class="me-tool-btn" data-tool="magicwall">🟪 Pared mágica</button>
+        <p class="editor-subhint">
+            Editando: (elegí una sala para editarla directamente, sin tener que
+            desbloquearla jugando)
+        </p>
+        <div class="me-tab-bar" id="me-room-switch">
+            <button class="me-room-btn" data-room="sala1">🏰 Sala 1</button>
+            <button class="me-room-btn" data-room="nivel2">2️⃣ Nivel 2</button>
+            <button class="me-room-btn" data-room="nivel3">3️⃣ Nivel 3</button>
         </div>
 
-        <h4 style="margin-top:10px;color:#aad4ff;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Objetos</h4>
-        <div class="me-tool-grid">
-            <button class="me-tool-btn" data-tool="trap">🔷 Trampa</button>
-            <button class="me-tool-btn" data-tool="sawtrap">🪚 Trampa de Sierra</button>
-            <button class="me-tool-btn" data-tool="spiketrap">⚠️ Trampa de Pinches</button>
-            <button class="me-tool-btn" data-tool="loot">💰 Botín</button>
-            <button class="me-tool-btn" data-tool="spellbook_magic">📖🔮 Manual (Bola Mágica)</button>
-            <button class="me-tool-btn" data-tool="spellbook_immobilize">📖❄️ Manual (Inmovilizar)</button>
-            <button class="me-tool-btn" data-tool="spellbook_fireball">📖🔥 Manual (Bola de Fuego)</button>
-        </div>
-        <p class="editor-subhint">
-            🪚 Trampa de Sierra: mantené apretado y arrastrá para dibujar el riel — el
-            primer movimiento (a un costado, o hacia arriba/abajo) fija el eje para todo
-            el arrastre, así sale perfectamente horizontal o vertical, del largo que
-            quieras.
-        </p>
-        <p class="editor-subhint">
-            ⚠️ Trampa de Pinches: se coloca de a un bloque, como cualquier pared (con
-            arrastre también pintás varias de una). No bloquea el paso — quedate parado
-            encima el tiempo configurado para que se active.
-        </p>
-        <p class="editor-subhint">
-            Cada manual solo puede existir en UN punto de UN nivel a la vez — si ya lo
-            usaste en otro mapa, hay que sacarlo de ahí primero para poder ponerlo acá.
-        </p>
-
-        <h4 style="margin-top:10px;color:#aad4ff;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Decoración</h4>
-        <p class="editor-subhint">
-            Detalles visuales del "Basic Dungeon Pack", sin vida ni ningún otro efecto.
-            Todos son puramente decorativos — el jugador y los enemigos caminan
-            encima sin ningún efecto de juego.
-        </p>
-        <div class="me-tool-grid">
-            <button class="me-tool-btn" data-tool="deco_barrel">🛢️ Barril</button>
-            <button class="me-tool-btn" data-tool="deco_crate">📦 Caja</button>
-            <button class="me-tool-btn" data-tool="deco_chest">🗃️ Cofre</button>
-            <button class="me-tool-btn" data-tool="deco_key">🔑 Llave</button>
-            <button class="me-tool-btn" data-tool="deco_door">🚪 Puerta (decor.)</button>
-            <button class="me-tool-btn" data-tool="deco_plank">🪵 Tabla/puente</button>
+        <div class="me-tab-bar">
+            <button class="me-tab-btn" data-metab="estructura">🧱 Estructura</button>
+            <button class="me-tab-btn" data-metab="trampas">⚠️ Trampas</button>
+            <button class="me-tab-btn" data-metab="objetos">📦 Objetos</button>
+            <button class="me-tab-btn" data-metab="enemigos">👹 Enemigos</button>
+            <button class="me-tab-btn" data-metab="acciones">✋ Acciones</button>
         </div>
 
-        <h4 style="margin-top:10px;color:#aad4ff;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Enemigos</h4>
-        <div class="me-tool-grid">
-            <button class="me-tool-btn" data-tool="normal">💀 Normal</button>
-            <button class="me-tool-btn" data-tool="tanque">🛡️ Tanque</button>
-            <button class="me-tool-btn" data-tool="mago">🔮 Mago</button>
+        <div class="me-tab-panel" data-metab-panel="estructura">
+            <div class="me-tool-grid">
+                <button class="me-tool-btn" data-tool="wall">🧱 Bloque sólido</button>
+                <button class="me-tool-btn" data-tool="firewall">🟧 Pared de fuego</button>
+                <button class="me-tool-btn" data-tool="icewall">🟦 Pared de hielo</button>
+                <button class="me-tool-btn" data-tool="magicwall">🟪 Pared mágica</button>
+            </div>
         </div>
 
-        <h4 style="margin-top:10px;color:#aad4ff;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Acciones</h4>
-        <div class="me-tool-grid">
-            <button class="me-tool-btn move" data-tool="move">✋ Mover</button>
-            <button class="me-tool-btn danger" data-tool="erase">🗑️ Borrar</button>
+        <div class="me-tab-panel" data-metab-panel="trampas">
+            <div class="me-thumb-grid" id="me-trap-grid"></div>
+            <p class="editor-subhint">
+                🪚 Sierra Horizontal/Vertical: mantené apretado y arrastrá para dibujar el
+                riel, del largo que quieras — cada una dibuja siempre en su propio eje, no
+                hace falta "apuntar" con el primer movimiento.
+            </p>
+            <p class="editor-subhint">
+                ⚠️ Trampa de Pinches: se coloca de un click. No bloquea el paso —
+                quedate parado encima el tiempo configurado para que se active (delay/
+                cooldown en ⚙️ Editor de Parámetros → Entorno).
+            </p>
         </div>
 
-        <p class="editor-subhint">
-            La fuente y las 3 puertas no se pueden borrar ni mover (son necesarias
-            para ganar) — el resto sí, sin restricciones.
-        </p>
+        <div class="me-tab-panel" data-metab-panel="objetos">
+            <div class="me-tool-grid">
+                <button class="me-tool-btn" data-tool="spellbook_magic">📖🔮 Manual (Bola Mágica)</button>
+                <button class="me-tool-btn" data-tool="spellbook_immobilize">📖❄️ Manual (Inmovilizar)</button>
+                <button class="me-tool-btn" data-tool="spellbook_fireball">📖🔥 Manual (Bola de Fuego)</button>
+            </div>
+            <p class="editor-subhint">
+                Cada manual solo puede existir en UN punto de UN nivel a la vez — si ya lo
+                usaste en otro mapa, hay que sacarlo de ahí primero para poder ponerlo acá.
+            </p>
+
+            <h4 style="margin-top:10px;color:#aad4ff;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">🔥 Antorchas</h4>
+            <p class="editor-subhint">
+                Ilumina (halo + sombra ambiente + chisporroteo en loop bien bajo) pero NO
+                revela niebla de guerra — eso lo hace únicamente el campo de visión del
+                jugador. Color e intensidad (compartidos por las 2) en ⚙️ Editor de
+                Parámetros → Entorno.
+            </p>
+            <div class="me-thumb-grid" id="me-torch-grid"></div>
+
+            <h4 style="margin-top:10px;color:#aad4ff;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">💰 Botín</h4>
+            <p class="editor-subhint">Elegís el sprite exacto — la miniatura ya muestra el tamaño real (celdas).</p>
+            <div class="me-thumb-grid" id="me-loot-grid"></div>
+
+            <h4 style="margin-top:14px;color:#aad4ff;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Objetos rompibles</h4>
+            <p class="editor-subhint">
+                Se rompen a golpes o con cualquier hechizo de daño (más resistencia cuanto
+                más ancho — ver ⚙️ Editor de Parámetros → Entorno). Al romperse: sonido +
+                explosión + botín que matchea su tamaño.
+            </p>
+            <h5 style="margin:8px 0 4px;color:#ccc;font-size:12px;">🛢️ Barril</h5>
+            <div class="me-thumb-grid" id="me-breakable-barril-grid"></div>
+            <h5 style="margin:10px 0 4px;color:#ccc;font-size:12px;">📦 Caja</h5>
+            <div class="me-thumb-grid" id="me-breakable-caja-grid"></div>
+            <h5 style="margin:10px 0 4px;color:#ccc;font-size:12px;">🗃️ Caja grande</h5>
+            <div class="me-thumb-grid" id="me-breakable-cajagrande-grid"></div>
+            <h5 style="margin:10px 0 4px;color:#ccc;font-size:12px;">🏺 Jarrón</h5>
+            <div class="me-thumb-grid" id="me-breakable-jarron-grid"></div>
+        </div>
+
+        <div class="me-tab-panel" data-metab-panel="enemigos">
+            <div class="me-tool-grid">
+                <button class="me-tool-btn" data-tool="normal">💀 Normal</button>
+                <button class="me-tool-btn" data-tool="tanque">🛡️ Tanque</button>
+                <button class="me-tool-btn" data-tool="mago">🔮 Mago</button>
+            </div>
+        </div>
+
+        <div class="me-tab-panel" data-metab-panel="acciones">
+            <div class="me-tool-grid">
+                <button class="me-tool-btn move" data-tool="move">✋ Mover</button>
+                <button class="me-tool-btn danger" data-tool="erase">🗑️ Borrar</button>
+            </div>
+            <p class="editor-subhint">
+                Sala 1: la fuente y las 3 puertas no se pueden borrar ni mover (son
+                necesarias para ganar). Nivel 2 y Nivel 3: su única puerta (entrada Y
+                salida) y su única fuente SÍ se pueden mover con esta herramienta —
+                nunca se pueden borrar ni duplicar, siempre hay exactamente una de cada
+                una. El resto de las herramientas no tiene restricciones.
+            </p>
+        </div>
 
         <button id="btn-save-map" class="editor-copy-btn" style="background:#2ecc71;color:#0a1f0f;font-weight:bold;">💾 Guardar Mapa</button>
         <p class="editor-subhint" id="me-save-status">
@@ -1295,6 +1500,19 @@
         // devtools podría forzarlos igual — pero alcanza para que un compañero o el
         // profesor que entra al link público no vea ni un botón de edición.
         const EDITOR_MODE_ENABLED = new URLSearchParams(location.search).get('editor') === '1';
+        // Desbloqueo alternativo, sin URL: al abrir el menú de pausa (tecla ESC) una
+        // vez, esta bandera pasa a true y los botones de editor quedan visibles el
+        // resto de la sesión (ver openPauseMenu/applyEditorModeGate). Así no hace
+        // falta acordarse ni escribir ?editor=1 en la URL para poder editar.
+        let editorModeRuntimeUnlocked = false;
+        function isEditorModeActive() {
+            return EDITOR_MODE_ENABLED || editorModeRuntimeUnlocked;
+        }
+        // Corta el guardado automático a disco (POST /save-config, ver
+        // scheduleServerSave) sin tocar el resto — para probar el juego sin arriesgar
+        // pisar el cripta_nekkman_config.json real con datos de una sesión de prueba.
+        // El guardado en localStorage de ESTE navegador sigue andando igual.
+        const SERVER_AUTOSAVE_DISABLED = new URLSearchParams(location.search).get('noautosave') === '1';
 
         // Declarados ACÁ (antes del IIFE de arranque de más abajo) a propósito: el IIFE
         // llama a tryAutoReconnectConfigFile() ya mismo, que via fsaOpenDB() necesita
@@ -1409,6 +1627,7 @@
 
             bindSlider('ctrl-trap-damage', 'val-trap-damage', v => { BLUE_TRAP_DAMAGE = v; });
             bindSlider('ctrl-trap-size', 'val-trap-size', v => { BLUE_TRAP_SIZE = v; applyBlueTrapSize(); });
+            bindSlider('ctrl-trap-freeze-duration', 'val-trap-freeze-duration', v => { BLUE_TRAP_FREEZE_DURATION = v * 1000; });
 
             bindSlider('ctrl-sawtrap-damage', 'val-sawtrap-damage', v => { SAW_TRAP_DAMAGE = v; });
             // El slider muestra segundos (más legible); SAW_TRAP_INTERVAL se guarda en ms.
@@ -1418,6 +1637,7 @@
             bindSlider('ctrl-spiketrap-damage', 'val-spiketrap-damage', v => { SPIKE_TRAP_DAMAGE = v; });
             // El slider muestra segundos (más legible); SPIKE_TRAP_DELAY se guarda en ms.
             bindSlider('ctrl-spiketrap-delay', 'val-spiketrap-delay', v => { SPIKE_TRAP_DELAY = v * 1000; });
+            bindSlider('ctrl-firetrap-damage', 'val-firetrap-damage', v => { FIRE_TRAP_DAMAGE = v; });
 
             bindSlider('ctrl-hpwall-health', 'val-hpwall-health', v => applyHpWallMaxHealth(v));
             bindTextInput('ctrl-door-text-magic', v => { SPECIAL_WALL_HINT_TEXT_MAGIC = v; });
@@ -1426,6 +1646,29 @@
             bindTextInput('ctrl-door-text-green', v => { DOOR_LOCKED_TEXT = v; });
 
             bindSlider('ctrl-vision-radius', 'val-vision-radius', v => { PLAYER_VISION_RADIUS = v; });
+            bindSlider('ctrl-torch-radius', 'val-torch-radius', v => {
+                TORCH_LIGHT_RADIUS = v;
+                if (scene) torchVisuals.forEach(t => t.glow.setDisplaySize(v * 2, v * 2));
+            });
+            bindTextInput('ctrl-torch-color', v => {
+                TORCH_LIGHT_COLOR = v;
+                if (scene) torchVisuals.forEach(t => t.glow.setTint(hexColorToInt(v)));
+            });
+            bindCheckbox('ctrl-torch-generated-glow', v => {
+                TORCH_USE_GENERATED_GLOW = v;
+                if (scene) torchVisuals.forEach(t => t.glow.setVisible(v));
+            });
+            bindSlider('ctrl-player-glow-radius', 'val-player-glow-radius', v => {
+                PLAYER_GLOW_RADIUS = v;
+                if (playerGlowImage) playerGlowImage.setDisplaySize(v * 2, v * 2);
+            });
+            bindTextInput('ctrl-player-glow-color', v => {
+                PLAYER_GLOW_COLOR = v;
+                if (playerGlowImage) playerGlowImage.setTint(hexColorToInt(v));
+            });
+            // El slider muestra 0-80 (%, más legible); AMBIENT_SHADOW_OPACITY es la
+            // fracción 0-0.8 que usa el canvas directamente.
+            bindSlider('ctrl-ambient-shadow', 'val-ambient-shadow', v => { AMBIENT_SHADOW_OPACITY = v / 100; });
 
             // Los sliders muestran segundos (más legible), pero SPELLS guarda todo en ms
             bindSlider('ctrl-spell-magic-amount', 'val-spell-magic-amount', v => { SPELLS.magic.damage = v; });
@@ -1454,6 +1697,68 @@
             });
 
             selectTab('jugador');
+        }
+
+        // Pestañas del Editor de Mapa (Estructura/Paredes/Trampas/Objetos/Enemigos/
+        // Acciones) — mismo patrón que setupEditorTabs() pero con su propia clase
+        // (.me-tab-btn/.me-tab-panel, data-metab/data-metab-panel) para que clickear una
+        // pestaña acá nunca pise las pestañas del Editor de Parámetros (ambos paneles
+        // conviven en la misma página, y "enemigos" existe como clave en los dos).
+        function setupMapEditorTabs() {
+            const tabButtons = document.querySelectorAll('.me-tab-btn');
+            const tabPanels = document.querySelectorAll('.me-tab-panel');
+
+            function selectTab(tabKey) {
+                tabButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.metab === tabKey));
+                tabPanels.forEach(panel => panel.classList.toggle('active', panel.dataset.metabPanel === tabKey));
+            }
+
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', () => selectTab(btn.dataset.metab));
+            });
+
+            selectTab('estructura');
+        }
+
+        // Selector de sala del Editor de Mapa: permite saltar directo a editar
+        // Nivel 2/3 sin tener que resolver las 3 fuentes y cruzar la puerta como
+        // haría un jugador normal. Reusa el mismo restart() que ya usan las
+        // puertas (ver onDoorTrigger) — currentRoom es una variable de módulo que
+        // sobrevive el restart, así que el resto del código (create(), pathfinding,
+        // loadMapEditorState) ni se entera de que este restart no vino de una puerta.
+        function mapEditorSwitchRoom(roomKey) {
+            if (!isEditorModeActive() || !mapEditorActive) return;
+            if (roomKey === currentRoom) return;
+            mapEditorTool = null;
+            mapEditorDragging = null;
+            mapEditorSelectStart = null;
+            sawTrapDragStart = null;
+            sawTrapDragAxis = null;
+            updateMapEditorToolUI();
+            scene.scene.restart({ room: roomKey });
+        }
+
+        function updateMapEditorRoomSwitchUI() {
+            document.querySelectorAll('#me-room-switch .me-room-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.room === currentRoom);
+            });
+        }
+
+        // Esconde/muestra el panel del Editor de Mapa SIN salir del modo edición —
+        // mapEditorActive, la herramienta elegida y todo lo demás quedan intactos, así
+        // se puede ver el mapa completo (sin el panel tapando ~300px a la izquierda) y
+        // seguir clickeando/arrastrando para editar.
+        function toggleMapEditorPanelCollapse() {
+            const panel = document.getElementById('map-editor-panel');
+            const collapsed = panel.classList.toggle('me-panel-collapsed');
+            document.getElementById('me-collapse-toggle').textContent = collapsed ? '▶' : '◀';
+        }
+
+        function setupMapEditorRoomSwitch() {
+            document.querySelectorAll('#me-room-switch .me-room-btn').forEach(btn => {
+                btn.addEventListener('click', () => mapEditorSwitchRoom(btn.dataset.room));
+            });
+            updateMapEditorRoomSwitchUI();
         }
 
         // Phaser 3.55 no tiene un updateFrameRate() público en Animation: hay que
@@ -1517,7 +1822,7 @@
 
         function saveEditorSettings() {
             const values = {};
-            document.querySelectorAll('#editor-panel input[type="range"], #editor-panel input[type="text"], #editor-panel input[type="checkbox"]').forEach(input => {
+            document.querySelectorAll('#editor-panel input[type="range"], #editor-panel input[type="text"], #editor-panel input[type="checkbox"], #editor-panel input[type="color"]').forEach(input => {
                 values[input.id] = input.type === 'checkbox' ? input.checked : input.value;
             });
             try {
@@ -1526,6 +1831,7 @@
                 // localStorage puede fallar (modo privado, cuota llena, etc.) — no es
                 // crítico para poder seguir jugando, así que no se interrumpe nada.
             }
+            scheduleServerSave();
         }
 
         // Se llama una sola vez al arrancar la página (después de setupEditorPanel,
@@ -1559,7 +1865,7 @@
         // de este navegador — localStorage no sale de acá, pero este JSON sí.
         function copyEditorSettingsToClipboard() {
             const values = {};
-            document.querySelectorAll('#editor-panel input[type="range"], #editor-panel input[type="text"], #editor-panel input[type="checkbox"]').forEach(input => {
+            document.querySelectorAll('#editor-panel input[type="range"], #editor-panel input[type="text"], #editor-panel input[type="checkbox"], #editor-panel input[type="color"]').forEach(input => {
                 values[input.id] = input.type === 'checkbox' ? input.checked : input.value;
             });
             const json = JSON.stringify(values, null, 2);
@@ -1674,6 +1980,47 @@
             try { editorSettings = JSON.parse(localStorage.getItem('cripta_nekkman_editor_settings_v1') || '{}'); } catch (e) { /* vacío si está corrupto */ }
             try { mapEdits = JSON.parse(localStorage.getItem('cripta_nekkman_map_edits_v1') || '{}'); } catch (e) { /* vacío si está corrupto */ }
             return { version: 1, savedAt: new Date().toISOString(), editorSettings, mapEdits };
+        }
+
+        // ---- Guardado automático en disco (game_server.py, POST /save-config) ----
+        // Antes, la ÚNICA copia durable de una edición vivía en localStorage de un
+        // navegador puntual — si se perdía ese perfil (otra máquina, caché borrada,
+        // nunca se descargó/vinculó el JSON a mano), la edición se perdía de verdad.
+        // Ahora CADA llamada a saveMapEditorState()/saveEditorSettings() (o sea, cada
+        // click/arrastre/slider, no solo un botón de "Guardar") programa además una
+        // escritura real a cripta_nekkman_config.json, sin pedir permiso ni depender
+        // del navegador. Debounced (400ms) para no mandar un POST por cada tick de un
+        // slider arrastrado. Si el endpoint no existe (abriste el .html suelto, o es
+        // el deploy estático de GitHub Pages) el fetch falla y no rompe nada más — el
+        // guardado en localStorage (y el flujo manual de descarga) siguen andando igual.
+        let serverSaveDebounceTimer = null;
+        function scheduleServerSave() {
+            if (SERVER_AUTOSAVE_DISABLED) return;
+            clearTimeout(serverSaveDebounceTimer);
+            serverSaveDebounceTimer = setTimeout(writeConfigToServerNow, 400);
+        }
+        async function writeConfigToServerNow() {
+            try {
+                const resp = await fetch('/save-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(getCombinedConfigData())
+                });
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                markLocalSaveTime();
+                updateServerSaveIndicator(true, null);
+            } catch (e) {
+                updateServerSaveIndicator(false, e.message);
+            }
+        }
+        function updateServerSaveIndicator(ok, errorMsg) {
+            const el = document.getElementById('server-save-indicator');
+            if (!el) return;
+            const now = new Date().toLocaleTimeString();
+            el.textContent = ok
+                ? `✅ Guardado en disco a las ${now} (cripta_nekkman_config.json).`
+                : `⚠️ No se pudo escribir en disco (${errorMsg}). Seguís guardado en este navegador; para llevarlo a otra máquina usá el respaldo manual de abajo.`;
+            el.style.color = ok ? '#2ecc71' : '#e0a030';
         }
 
         // ---- Configuración "de la carpeta" (la que se entrega) ----
@@ -1891,6 +2238,10 @@
 
         function setupConfigFilePersistence() {
             updateConfigFileStatusUI(); // estado inicial (por si tryAutoReconnectConfigFile todavía no terminó)
+            if (SERVER_AUTOSAVE_DISABLED) {
+                const el = document.getElementById('server-save-indicator');
+                if (el) { el.textContent = '⏸️ Desactivado (?noautosave=1 en la URL) — no va a tocar el archivo en disco.'; el.style.color = '#888'; }
+            }
 
             // Resultado de tryLoadBundledConfig(), que ya corrió antes de que este panel
             // existiera (ver el IIFE de arranque) — ver bundledConfigResult.
@@ -1924,18 +2275,20 @@
             });
         }
 
-        // Oculta los botones de edición si no se entró con ?editor=1 en la URL — ver
-        // EDITOR_MODE_ENABLED. Además de ocultar el botón, toggleEditorDrawer/
-        // toggleMapEditor también se cortan al toque (por si alguien dispara el click
-        // por consola sin el botón visible).
+        // Oculta los botones de edición si no se entró con ?editor=1 en la URL Y todavía
+        // no se desbloqueó el modo editor por ESC (ver isEditorModeActive). Además de
+        // ocultar el botón, toggleEditorDrawer/toggleMapEditor también se cortan al
+        // toque (por si alguien dispara el click por consola sin el botón visible).
+        // Reversible a propósito: se vuelve a llamar desde openPauseMenu() cuando ESC
+        // desbloquea el modo editor en caliente, para mostrar los botones sin recargar.
         function applyEditorModeGate() {
-            if (EDITOR_MODE_ENABLED) return;
-            document.getElementById('editor-toggle-btn').style.display = 'none';
-            document.getElementById('map-editor-toggle-btn').style.display = 'none';
+            const display = isEditorModeActive() ? '' : 'none';
+            document.getElementById('editor-toggle-btn').style.display = display;
+            document.getElementById('map-editor-toggle-btn').style.display = display;
         }
 
         function toggleEditorDrawer() {
-            if (!EDITOR_MODE_ENABLED) return;
+            if (!isEditorModeActive()) return;
             const panel = document.getElementById('editor-panel');
             const willOpen = !panel.classList.contains('open');
             panel.classList.toggle('open');
@@ -1986,11 +2339,13 @@
         // destruidas quedan destruidas, no "revive" paredes rotas).
         function applyHpWallMaxHealth(value) {
             HP_WALL_MAX_HEALTH = value;
+            // El HP real de cada una es el valor base * su ancho en celdas (una caja de
+            // 2 de ancho aguanta el doble que una de 1) — ver mapEditorPlace/BREAKABLE_VARIANTS.
             if (activeRoom && activeRoom.hpWalls) {
-                activeRoom.hpWalls.forEach(conf => { conf.maxHealth = value; });
+                activeRoom.hpWalls.forEach(conf => { conf.maxHealth = value * (conf.w / CELL_SIZE); });
             }
             if (hpWallsState) {
-                hpWallsState.forEach(w => { if (!w.destroyed) w.health = value; });
+                hpWallsState.forEach(w => { if (!w.destroyed) w.health = value * (w.conf.w / CELL_SIZE); });
             }
         }
 
@@ -2093,6 +2448,7 @@
                 ambienceVolume = Number(ambienceInput.value) / 100;
                 document.getElementById('val-volume-ambience').textContent = ambienceInput.value;
                 if (ambienceSound) ambienceSound.setVolume(ambienceVolume);
+                if (torchVisuals) torchVisuals.forEach(t => t.ambientSound.setVolume(TORCH_AMBIENT_BASE_VOLUME * ambienceVolume));
             });
 
             const brightnessInput = document.getElementById('ctrl-brightness');
@@ -2281,6 +2637,11 @@
             const spell = SPELLS[spellKey];
             const target = enemies.find(inst => !inst.defeated && rectContainsPoint(inst.obj, worldX, worldY));
             const wallTarget = !target ? findWallAt(worldX, worldY) : null;
+            // Trampa giratoria: solo Inmovilizar la puede frizar (no Bola Mágica) — se
+            // chequea último, después de enemigo/pared, mismo orden de prioridad.
+            const trapTarget = (!target && !wallTarget && spellKey === 'immobilize')
+                ? blueTrapRects.find(t => rectContainsPoint(t.rect, worldX, worldY))
+                : null;
 
             if (target) {
                 castSpellOnTarget(spellKey, target); // aplica daño/inmovilizar + fija el cooldown
@@ -2288,6 +2649,10 @@
             } else if (wallTarget) {
                 castSpellOnWall(spellKey, wallTarget); // fija el cooldown adentro (pegue o no)
                 spawnSpellImpact(spellKey, worldX, worldY, false);
+            } else if (trapTarget) {
+                trapTarget.rect.frozenUntil = scene.time.now + BLUE_TRAP_FREEZE_DURATION;
+                spawnSpellImpact(spellKey, trapTarget.rect.x, trapTarget.rect.y, true);
+                spellCooldownEndsAt[spellKey] = scene.time.now + spell.cooldown;
             } else {
                 spawnSpellImpact(spellKey, worldX, worldY, false);
                 spellCooldownEndsAt[spellKey] = scene.time.now + spell.cooldown; // errar igual gasta cooldown
@@ -2427,7 +2792,12 @@
 
         function setupInputHandlers() {
             window.addEventListener('keydown', (event) => {
-                const key = event.key.toLowerCase();
+                // Las flechas hacen exactamente lo mismo que WASD (mismo moveKeyStack,
+                // ver más abajo) — se traducen acá para no tener que duplicar el resto
+                // de la lógica de movimiento/cámara con un segundo set de teclas.
+                const rawKey = event.key.toLowerCase();
+                const key = ARROW_KEY_TO_WASD[rawKey] || rawKey;
+                if (ARROW_KEY_TO_WASD[rawKey]) event.preventDefault(); // no scrollear la página
 
                 if (key === 'escape') {
                     // Durante la cinemática de intro, ESC la saltea en vez de abrir el
@@ -2514,7 +2884,8 @@
             });
 
             window.addEventListener('keyup', (event) => {
-                const key = event.key.toLowerCase();
+                const rawKey = event.key.toLowerCase();
+                const key = ARROW_KEY_TO_WASD[rawKey] || rawKey;
                 const idx = moveKeyStack.indexOf(key);
                 if (idx !== -1) moveKeyStack.splice(idx, 1);
             });
@@ -2559,6 +2930,7 @@
         // ---- Parámetros ajustables desde la pestaña "Editor" ----
         let BLUE_TRAP_DAMAGE = 4; // daño de las trampas azules (jugador y enemigos por igual)
         let BLUE_TRAP_SIZE = 70; // tamaño (px) de las trampas azules
+        let BLUE_TRAP_FREEZE_DURATION = 3000; // ms que dura el freeze del hechizo de Inmovilizar sobre una trampa
         let SAW_TRAP_DAMAGE = 15; // daño de la sierra (jugador y enemigos por igual)
         let SAW_TRAP_INTERVAL = 3000; // ms entre una sierra y la siguiente, por riel
         const SAW_TRAP_SPEED = 220; // px/s a la que viaja la sierra a lo largo del riel
@@ -2577,8 +2949,166 @@
         // Cuánto se quedan afuera los picos después de golpear antes de volver a
         // esconderse — no pedido como parámetro (solo daño y demora lo fueron), fijo.
         const SPIKE_TRAP_COOLDOWN = 400;
-        let HP_WALL_MAX_HEALTH = 50; // vida máxima de TODAS las paredes con vida (verde oliva), ver applyHpWallMaxHealth
+        // Trampa de Fuego: a diferencia de TODAS las demás trampas, no depende de que
+        // alguien esté parado encima — dispara sola, en un ciclo fijo (firetrap_cycle),
+        // y solo hace daño durante el pico de la llamarada (ver updateFireTraps). Un
+        // solo daño por ráfaga, no uno por frame mientras dure el pico.
+        let FIRE_TRAP_DAMAGE = 15;
+        let HP_WALL_MAX_HEALTH = 50; // vida BASE de las paredes con vida — el HP real de cada una es esto * su ancho en celdas, ver createHpWallVisual
+        // Variantes de "objeto rompible" (antes: un solo rectángulo verde oliva 1x1) —
+        // cada categoría es una herramienta del Editor de Mapa, que al colocar elige
+        // una variante al azar (mismo criterio que las baldosas de piso). w/h en
+        // CELDAS (no px) — createHpWallVisual las multiplica por CELL_SIZE.
+        const BREAKABLE_VARIANTS = {
+            barril: [
+                { key: 'breakable_barril_1', w: 1, h: 2 },
+                { key: 'breakable_barril_2', w: 1, h: 2 }
+            ],
+            caja: [
+                { key: 'breakable_caja_1', w: 1, h: 2 },
+                { key: 'breakable_caja_2', w: 1, h: 2 },
+                { key: 'breakable_caja_3', w: 1, h: 2 },
+                { key: 'breakable_caja_4', w: 1, h: 2 },
+                { key: 'breakable_caja_5', w: 2, h: 2 },
+                { key: 'breakable_caja_6', w: 2, h: 2 },
+                { key: 'breakable_caja_7', w: 2, h: 2 },
+                { key: 'breakable_caja_8', w: 2, h: 2 }
+            ],
+            cajagrande: [
+                { key: 'breakable_cajagrande_1', w: 2, h: 2 },
+                { key: 'breakable_cajagrande_2', w: 2, h: 2 },
+                { key: 'breakable_cajagrande_3', w: 2, h: 3 },
+                { key: 'breakable_cajagrande_4', w: 2, h: 3 }
+            ],
+            jarron: [
+                { key: 'breakable_jarron_1', w: 1, h: 2 },
+                { key: 'breakable_jarron_2', w: 1, h: 2 },
+                { key: 'breakable_jarron_3', w: 1, h: 2 },
+                { key: 'breakable_jarron_4', w: 1, h: 2 },
+                { key: 'breakable_jarron_5', w: 1, h: 2 },
+                { key: 'breakable_jarron_6', w: 1, h: 2 },
+                { key: 'breakable_jarron_7', w: 2, h: 2 },
+                { key: 'breakable_jarron_8', w: 1, h: 2 },
+                { key: 'breakable_jarron_9', w: 1, h: 2 }
+            ]
+        };
+        // Botín por tamaño (w x h en celdas) — al romper un objeto, el loot que suelta
+        // "matchea" su tamaño exacto. No hay loot de 2x3 (las cajas grandes 03/04):
+        // caen al pool de 2x2, el más grande disponible.
+        const LOOT_POOLS = {
+            '1x1': [{ key: 'loot_1', w: 1, h: 1 }, { key: 'loot_2', w: 1, h: 1 }, { key: 'loot_3', w: 1, h: 1 }, { key: 'loot_4', w: 1, h: 1 }, { key: 'loot_5', w: 1, h: 1 }],
+            '1x2': [{ key: 'loot_6', w: 1, h: 2 }, { key: 'loot_7', w: 1, h: 2 }, { key: 'loot_8', w: 1, h: 2 }],
+            '2x2': [{ key: 'loot_9', w: 2, h: 2 }, { key: 'loot_10', w: 2, h: 2 }]
+        };
+        function pickLootFor(wCells, hCells) {
+            const pool = LOOT_POOLS[wCells + 'x' + hCells] || LOOT_POOLS['2x2'];
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+        // Lista plana de los 10 sprites de botín (para el panel de miniaturas — cada
+        // uno es su propio botón, no un pool al azar como al soltarse de un rompible).
+        const LOOT_ALL = Object.values(LOOT_POOLS).flat();
+        // tool key ("hpwall_<categoría>_<índice>", 1-based) -> variante exacta {key,w,h}
+        // — generado UNA vez desde BREAKABLE_VARIANTS, así el panel de miniaturas y
+        // mapEditorPlace comparten la misma fuente de verdad sin repetirla a mano.
+        const BREAKABLE_TOOL_LOOKUP = {};
+        Object.keys(BREAKABLE_VARIANTS).forEach(cat => {
+            BREAKABLE_VARIANTS[cat].forEach((variant, i) => {
+                BREAKABLE_TOOL_LOOKUP['hpwall_' + cat + '_' + (i + 1)] = variant;
+            });
+        });
+        // tool key ("loot_<índice>", 1-based) -> sprite exacto {key,w,h}.
+        const LOOT_TOOL_LOOKUP = {};
+        LOOT_ALL.forEach((loot, i) => { LOOT_TOOL_LOOKUP['loot_' + (i + 1)] = loot; });
+
+        // Las 4 trampas que quedan (giratoria/sierra horizontal/sierra vertical/pinches)
+        // — thumb: imagen para el botón del panel; textureKey: la textura YA cargada en
+        // preload, para el fantasma de colocación (ver renderMapEditorOverlay). anchor
+        // 'center' para giratoria/sierras (se dibujan centradas en su punto, sin ancla
+        // especial); 'bottom-left' para pinches (1x2, mismo criterio que los rompibles).
+        // sawAxis: eje FIJO de cada herramienta de sierra (ver pointerdown en create()) —
+        // separadas en 2 botones para no depender de "el primer movimiento del arrastre
+        // decide la dirección", que confundía (un solo tool ambiguo horizontal/vertical).
+        const TRAP_TOOL_INFO = {
+            trap: { label: 'Trampa Giratoria', thumb: 'assets/rotating_blades/1.png', textureKey: 'rotating_blades_1', w: 1, h: 1, anchor: 'center' },
+            sawtrap_h: { label: 'Sierra Horizontal', thumb: 'assets/saw2/blade_h/1.png', textureKey: 'saw2_blade_h_1', w: 1, h: 1, anchor: 'center', sawAxis: 'horizontal' },
+            sawtrap_v: { label: 'Sierra Vertical', thumb: 'assets/saw2/blade_v/1.png', textureKey: 'saw2_blade_v_1', w: 1, h: 1, anchor: 'center', sawAxis: 'vertical' },
+            spiketrap: { label: 'Trampa de Pinches (1x2)', thumb: 'assets/spiketrap_plate/flat.png', textureKey: 'spiketrap_plate_flat', w: 1, h: 2, anchor: 'bottom-left' }
+        };
+
+        // Antorcha chica/grande (reskin, ver createTorchVisual) — w/h en CELDAS, mismo
+        // criterio que TRAP_TOOL_INFO. anchor 'center': igual que siempre, el sprite (más
+        // alto que 1 celda) queda centrado en el punto clickeado, no apoyado abajo.
+        const TORCH_TOOL_INFO = {
+            torch_small: { label: 'Antorcha Chica', thumb: 'assets/torch2/small/1.png', textureKey: 'torch2_small_1', w: 2, h: 3, anchor: 'center', size: 'small' },
+            torch_large: { label: 'Antorcha Grande', thumb: 'assets/torch2/large/1.png', textureKey: 'torch2_large_1', w: 3, h: 3, anchor: 'center', size: 'large' }
+        };
+
+        // Tabla ÚNICA para el fantasma semitransparente de colocación (ver
+        // renderMapEditorOverlay): tool key -> { textureKey, w, h, anchor } — junta
+        // rompibles + botín (siempre 'bottom-left', ver mapEditorPlace) + las 3
+        // trampas + las 2 antorchas. Cualquier tool que NO esté acá sigue mostrando el
+        // resaltado de celda de siempre (un rectángulo de color liso), no un sprite.
+        const PLACEABLE_SPRITE_INFO = {};
+        Object.keys(BREAKABLE_TOOL_LOOKUP).forEach(tool => {
+            const v = BREAKABLE_TOOL_LOOKUP[tool];
+            PLACEABLE_SPRITE_INFO[tool] = { textureKey: v.key, w: v.w, h: v.h, anchor: 'bottom-left' };
+        });
+        Object.keys(LOOT_TOOL_LOOKUP).forEach(tool => {
+            const v = LOOT_TOOL_LOOKUP[tool];
+            PLACEABLE_SPRITE_INFO[tool] = { textureKey: v.key, w: v.w, h: v.h, anchor: 'bottom-left' };
+        });
+        Object.keys(TRAP_TOOL_INFO).forEach(tool => {
+            const v = TRAP_TOOL_INFO[tool];
+            PLACEABLE_SPRITE_INFO[tool] = { textureKey: v.textureKey, w: v.w, h: v.h, anchor: v.anchor };
+        });
+        Object.keys(TORCH_TOOL_INFO).forEach(tool => {
+            const v = TORCH_TOOL_INFO[tool];
+            PLACEABLE_SPRITE_INFO[tool] = { textureKey: v.textureKey, w: v.w, h: v.h, anchor: v.anchor };
+        });
         let PLAYER_VISION_RADIUS = 350; // radio (px) de la "luz" del jugador para la niebla de guerra, ver updateFogOfWar
+        // Antorcha: objeto del Editor de Mapa que SOLO ilumina (halo de luz coloreado,
+        // ver createTorchVisual, + su agujero en la sombra ambiente, ver
+        // updateAmbientShadow) — a propósito NO revela ni altera la niebla de guerra: lo
+        // único que revela niebla es el campo de visión del jugador (updateFogOfWar). Un
+        // solo radio/color compartido por todas las antorchas de la sala (configuración
+        // "por tipo", no por antorcha individual — mismo criterio que el resto de los
+        // parámetros de este panel: daño de trampas, vida de paredes, etc.).
+        let TORCH_LIGHT_RADIUS = 100; // también funciona como "intensidad" (radio del halo)
+        let TORCH_LIGHT_COLOR = '#ff9c1a';
+        // El sprite de la antorcha (craftpix) ya trae su propio brillo pintado — este
+        // switch prende/apaga el halo COLOREADO generado aparte (glow), para poder
+        // quedarse solo con la luz del dibujo si el generado se siente de más.
+        let TORCH_USE_GENERATED_GLOW = false;
+        // Chisporroteo ambiente en loop, MUY bajo (el usuario lo pidió así) — factor
+        // fijo, no configurable con slider propio: el volumen real de cada antorcha es
+        // este factor por el mismo ambienceVolume de Configuración (así respeta el
+        // volumen general y el mute, sin agregar un control nuevo). Ver createTorchVisual.
+        const TORCH_AMBIENT_BASE_VOLUME = 0.15;
+        // Paleta de "Paredes" del Editor de Mapa (ver createWallSkinVisual/mapEditorPlace)
+        // — un sprite fijo por celda, pintado ARRIBA de un Bloque sólido, sin efecto en
+        // la colisión. Nombres = archivo en assets/wall_palette/<key>.png.
+        const WALL_SKIN_KEYS = ['wall_dark_1', 'wall_dark_2', 'wall_bordered', 'platform_light', 'slab_smooth'];
+        // Halo chico y sutil que el propio jugador lleva encima siempre (no depende de
+        // antorchas ni de la niebla) — ver playerGlowImage/updateGame.
+        let PLAYER_GLOW_RADIUS = 50;
+        let PLAYER_GLOW_COLOR = '#fff4d6';
+
+        // Los <input type="color"> del HTML dan "#rrggbb"; Phaser (setTint) necesita el
+        // número 0xrrggbb — conversión chica, usada por ambos halos (jugador y antorcha).
+        function hexColorToInt(hex) {
+            return parseInt(hex.replace('#', ''), 16);
+        }
+
+        // Sombra ambiente: una capa PROPIA, separada de la niebla de guerra (esa sigue
+        // exactamente igual — explorado/memoria/campo de visión del jugador). Esta es
+        // solo "qué tan oscuro se ve algo que no tiene una luz real (antorcha o el halo
+        // del jugador) cerca" — se recalcula ENTERA cada frame (sin memoria permanente,
+        // a diferencia de la niebla) y se dibuja en una capa por encima del mundo pero
+        // por DEBAJO de la niebla, así la niebla sigue mandando en lo no explorado/fuera
+        // de vista, y esto solo se nota DENTRO de lo que la niebla ya deja ver. Ver
+        // updateAmbientShadow.
+        let AMBIENT_SHADOW_OPACITY = 0.35;
+        const AMBIENT_SHADOW_TEXTURE_KEY = '__ambient_shadow';
 
         // Cartel que aparece arriba del jugador (no de la pared, a diferencia del de las
         // puertas) al acercarse a una pared especial (fuego/hielo/mágica) que siga en
@@ -2654,6 +3184,10 @@
             fireball: 'sfx_fireball',
             ice: 'sfx_ice',
             playerDamage: 'sfx_player_damage',
+            spikeTrapActivate: 'sfx_spiketrap_activate',
+            sawHit: 'sfx_saw_hit',
+            breakableBreak: 'sfx_breakable_break',
+            lootPickup: 'sfx_loot_pickup',
             skeletonWalk: ['sfx_skeleton_walk_1', 'sfx_skeleton_walk_2', 'sfx_skeleton_walk_3', 'sfx_skeleton_walk_4',
                 'sfx_skeleton_walk_5', 'sfx_skeleton_walk_6', 'sfx_skeleton_walk_7', 'sfx_skeleton_walk_8',
                 'sfx_skeleton_walk_9', 'sfx_skeleton_walk_10', 'sfx_skeleton_walk_11'],
@@ -2922,6 +3456,10 @@
         // cruzar una trampa azul, pero si de verdad no hay otro camino para llegar
         // al jugador, todavía puede cruzarla (no es un bloqueo total como los pilares).
         const BLUE_TRAP_COST_PENALTY = 60;
+        // Igual que la trampa azul, pero SOLO se aplica cuando el que pathfindea no es
+        // un tanque (ver computeEnemyPath) — el tanque cruza las trampas de pinches
+        // derecho, sin rodearlas; magos y esqueletos normales sí las evitan.
+        const SPIKE_TRAP_COST_PENALTY = 60;
         const KNOCKBACK_SPEED = 260; // impulso del "saltito" hacia atrás al tocar una trampa azul
         const KNOCKBACK_DURATION = 14; // frames durante los que no se controla el movimiento (jugador o enemigo)
         const PLAYER_COLOR = 0x00ff00;
@@ -3018,8 +3556,10 @@
                     { x: 384, y: 1056 }, { x: 640, y: 1056 }, { x: 928, y: 1192 }
                 ],
                 sawTraps: [],
-                spikeTraps: [], // se agregan con la herramienta 🪚 del Editor de Mapa
+                spikeTraps: [],
+                torches: [], // se agregan con la herramienta 🪚 del Editor de Mapa
                 spikeTraps: [], // se agregan con la herramienta ⚠️ del Editor de Mapa
+                torches: [], // se agregan con la herramienta 🔥 del Editor de Mapa
                 enemySpawns: [
                     // 21 esqueletos normales (cubos rojos del frame) — posiciones x2
                     { type: 'normal', x: 1088, y: 854 }, { type: 'normal', x: 1406, y: 912 },
@@ -3106,8 +3646,14 @@
             },
             nivel2: {
                 label: 'Nivel 2',
-                worldWidth: 1800,
-                worldHeight: 400,
+                // Mismo tamaño que la Sala 1 (antes era un pasillo angosto de 1800x400):
+                // el pasillo original (los 2 pillars de abajo) queda intacto en su
+                // lugar, pero ahora con un piso grande alrededor para diseñar libre con
+                // el Editor de Mapa — floorZones/obstacleZones se siguen sintetizando
+                // solos a partir de worldWidth/worldHeight (ver el bloque debajo de
+                // "Salas SIN floorZones" en create()).
+                worldWidth: 2560,
+                worldHeight: 2560,
                 // Entra por la derecha (viene de la puerta izquierda de la Sala 1) y el
                 // pasillo se recorre de derecha a izquierda hasta la fuente.
                 playerStart: { x: 1740, y: 200 },
@@ -3118,20 +3664,26 @@
                 blueTraps: [], // sin trampas en los pasillos por ahora
                 sawTraps: [],
                 spikeTraps: [],
+                torches: [],
                 enemySpawns: [
                     { type: 'tanque', x: 1000, y: 200 },
                     { type: 'mago', x: 500, y: 200 }
                 ],
                 items: [],
-                fountain: { id: 'B', x: 60, y: 200 },
+                // x/y ajustados al múltiplo de CELL_SIZE más cercano (60,200 no caía en
+                // grilla) — para que arranque ya alineada, ahora que la fuente se puede
+                // arrastrar con el Editor de Mapa (ver handleMapEditorDrag/snapToGrid).
+                fountain: { id: 'B', x: 48, y: 208 },
                 doors: [
                     // Vuelta a la Sala 1: siempre destrabada (requires: []), no hay nada que
                     // cruzar, es directamente por dónde entraste. entryPoint: aparecés
                     // justo al lado de la puerta izquierda de la Sala 1 (por la que
                     // entraste a este nivel), no en el arranque del pasillo de esa sala.
+                    // x/y/triggerX/triggerY ajustados al múltiplo de CELL_SIZE más cercano
+                    // (1740,200 no caía en grilla) — mismo motivo que la fuente de arriba.
                     {
-                        id: 'return', x: 1740, y: 200, w: 30, h: 120,
-                        triggerX: 1780, triggerY: 200, triggerW: 40, triggerH: 120,
+                        id: 'return', x: 1744, y: 208, w: 30, h: 120,
+                        triggerX: 1784, triggerY: 208, triggerW: 40, triggerH: 120,
                         requires: [], targetRoom: 'sala1', bannerText: null,
                         // Coordenada vieja, de antes de duplicar el tamaño de la Sala 1
                         // (x:110,y:200) — quedaba adentro de una pared en el mapa nuevo.
@@ -3143,8 +3695,9 @@
             },
             nivel3: {
                 label: 'Nivel 3',
-                worldWidth: 1800,
-                worldHeight: 400,
+                // Ver comentario equivalente en nivel2: mismo tamaño que la Sala 1.
+                worldWidth: 2560,
+                worldHeight: 2560,
                 // Espejo del Nivel 2: entra por la izquierda (puerta derecha de la Sala 1)
                 // y el pasillo se recorre de izquierda a derecha hasta la fuente.
                 playerStart: { x: 60, y: 200 },
@@ -3155,18 +3708,22 @@
                 blueTraps: [], // sin trampas en los pasillos por ahora
                 sawTraps: [],
                 spikeTraps: [],
+                torches: [],
                 enemySpawns: [
                     { type: 'tanque', x: 800, y: 200 },
                     { type: 'mago', x: 1200, y: 200 },
                     { type: 'mago', x: 1500, y: 200 }
                 ],
                 items: [],
-                fountain: { id: 'C', x: 1740, y: 200 },
+                // Ver comentario equivalente en nivel2: x/y ajustados a la grilla.
+                fountain: { id: 'C', x: 1744, y: 208 },
                 doors: [
                     // entryPoint: aparecés junto a la puerta derecha de la Sala 1.
+                    // Ver comentario equivalente en nivel2: x/y/triggerX/triggerY
+                    // ajustados a la grilla.
                     {
-                        id: 'return', x: 60, y: 200, w: 30, h: 120,
-                        triggerX: 20, triggerY: 200, triggerW: 40, triggerH: 120,
+                        id: 'return', x: 48, y: 208, w: 30, h: 120,
+                        triggerX: 8, triggerY: 208, triggerW: 40, triggerH: 120,
                         requires: [], targetRoom: 'sala1', bannerText: null,
                         // Mismo caso que el entryPoint de Nivel 2: coordenada vieja de
                         // antes de duplicar la Sala 1. Recalculada: justo pasando la
@@ -3244,13 +3801,14 @@
         // (ver updateSpikeTraps). `visualState`: 'flat'|'small'|'full', el más "urgente"
         // de todas las víctimas manda (ver drawSpikeTrapVisual/pickSpikeVisualState).
         let spikeTrapState;
-        // Arrastre en curso para la herramienta 🪚 (ver create(): pointerdown/move/up).
-        // No usa mapEditorSelectStart/MAP_EDITOR_RECT_TOOLS porque ESE sistema aplica la
-        // herramienta a CADA celda de un rectángulo libre (ancho Y alto); acá se
-        // necesita UN solo riel, angosto, largo variable, con el eje fijado por el
-        // primer movimiento del arrastre — por eso su propio par start/axis.
+        let fireTrapState; // [{ conf, sprite, wasHot }] — ver createFireTrapVisual/updateFireTraps
+        // Arrastre en curso para las herramientas 🪚 Sierra Horizontal/Vertical (ver
+        // create(): pointerdown/move/up). No usa mapEditorSelectStart/
+        // MAP_EDITOR_RECT_TOOLS porque ESE sistema aplica la herramienta a CADA celda de
+        // un rectángulo libre (ancho Y alto); acá se necesita UN solo riel, angosto,
+        // largo variable, con el eje fijo desde el botón elegido — por eso su propio par
+        // start/axis (axis ya viene fijo desde pointerdown, ver TRAP_TOOL_INFO.sawAxis).
         let sawTrapDragStart = null, sawTrapDragAxis = null;
-        const MIN_AXIS_LOCK_DIST = 8; // px de movimiento antes de fijar horizontal/vertical
 
         // ---- Deshacer/Rehacer del Editor de Mapa (Ctrl+Z / Ctrl+Shift+Z) ----
         // Pilas de snapshots completos del estado editable de la sala (ver
@@ -3296,6 +3854,7 @@
         // la usan los enemigos para decidir si se muestran o no.
         let exploredCellsSet = {};
         let fogCanvasTex, fogUnexploredImage;
+        let ambientShadowCanvasTex, ambientShadowImage; // ver updateAmbientShadow
         const FOG_TEXTURE_KEY = '__fog_explored';
         const FOG_DIM_STYLE = 'rgba(0,0,0,0.5)';
         // Jugador y enemigos compartían depth 10 — con la misma profundidad, quien se
@@ -3317,6 +3876,10 @@
         let visibleCellsThisFrame = new Set();
         let playerHealth, maxHealth;
         let moveKeyStack;
+        // Flechas del teclado = mismos 4 movimientos que WASD (ver setupInputHandlers):
+        // se traducen a la letra equivalente ANTES de tocar moveKeyStack, así el resto
+        // de la lógica de movimiento/cámara no tiene que enterarse de que existen.
+        const ARROW_KEY_TO_WASD = { arrowup: 'w', arrowdown: 's', arrowleft: 'a', arrowright: 'd' };
         let playerDirection;
         let playerAttackCooldown, playerIsAttacking;
         let playerDamageFlash, screenFlashAlpha;
@@ -3333,6 +3896,7 @@
         let mapEditorActive = false;
         let mapEditorTool = null; // 'wall'|'hpwall'|'firewall'|'icewall'|'trap'|'loot'|'spellbook_magic'|'spellbook_immobilize'|'spellbook_fireball'|'normal'|'tanque'|'mago'|'move'|'erase'
         let mapEditorGraphics; // Graphics para la grilla + resaltado del cursor, se crea en create()
+        let mapEditorGhostSprite; // Sprite fantasma semitransparente (rompibles/botín/trampas), se crea perezoso en renderMapEditorOverlay y se resetea en cada create()
         // Timeout del mensaje de error temporal en #me-current-tool-hint (ver
         // flashMapEditorError) — se cancela si otro error pisa al anterior antes de
         // que termine de mostrarse.
@@ -3354,10 +3918,17 @@
         // sola vez al final de todo el rectángulo (ver applyMapEditorRectSelection), para
         // no repetir un rebuild caro decenas de veces en una sola selección grande.
         let mapEditorBatching = false;
-        const MAP_EDITOR_RECT_TOOLS = new Set(['wall', 'hpwall', 'firewall', 'icewall', 'magicwall', 'spiketrap', 'erase']);
+        const MAP_EDITOR_RECT_TOOLS = new Set([
+            'wall', 'hpwall', 'firewall', 'icewall', 'magicwall', 'spiketrap', 'erase',
+            ...WALL_SKIN_KEYS.map(k => 'wallskin_' + k)
+        ]);
         let blockedCells;
         let allWallRectsCache = []; // pilares+bloques+hpWalls+specialWalls vivos combinados — ver buildBlockedGrid/getNearbyWalls
         let blueTrapCells;
+        let spikeTrapCells; // ver buildSpikeTrapCostCells — mismo mecanismo, pero opcional según el tipo de enemigo
+        let torchVisuals; // [{ conf, sprite, glow }] — ver createTorchVisual
+        let wallSkinVisuals; // [{ conf, image }] — ver createWallSkinVisual
+        let playerGlowImage; // halo sutil que sigue al jugador, ver PLAYER_GLOW_RADIUS
         let scene;
 
         // ---- Optimización del HUD ----
@@ -3446,6 +4017,26 @@
             this.load.audio('sfx_correct', 'assets/sfx/sfx_correct.mp3');
             this.load.audio('sfx_incorrect', 'assets/sfx/sfx_incorrect.mp3');
             this.load.audio('sfx_player_damage', 'assets/sfx/sfx_player_damage.mp3');
+            this.load.audio('sfx_spiketrap_activate', 'assets/sfx/sfx_spiketrap_activate.mp3');
+            this.load.audio('sfx_breakable_break', 'assets/sfx/sfx_breakable_break.mp3');
+            this.load.audio('sfx_loot_pickup', 'assets/sfx/sfx_loot_pickup.mp3');
+
+            // Objetos rompibles (reemplazan la Pared con Vida lisa) — ver BREAKABLE_VARIANTS.
+            Object.keys(BREAKABLE_VARIANTS).forEach(cat => {
+                BREAKABLE_VARIANTS[cat].forEach((variant, i) => {
+                    this.load.image(variant.key, 'assets/breakables/' + cat + '/' + (i + 1) + '.png');
+                });
+            });
+            // Botín que sueltan al romperse — ver LOOT_POOLS.
+            for (let i = 1; i <= 10; i++) {
+                this.load.image('loot_' + i, 'assets/loot/' + i + '.png');
+            }
+            // Explosión al romperse: 6 cuadros de 64x64, sin transparencia real (fondo
+            // gris oscuro en vez de alpha) — se dibuja con blend mode ADD para que el
+            // fondo no pinte nada y solo se vean las chispas, ver spawnBreakableExplosion.
+            for (let i = 1; i <= 6; i++) {
+                this.load.image('explosion_' + i, 'assets/explosion/' + i + '.png');
+            }
             // Paquetes de variaciones: varios archivos cortos para un mismo evento — se
             // elige uno al azar cada vez que suena (ver playSfx), así no se escucha
             // siempre el mismo "clac" o el mismo gruñido. SOUNDS.skeletonWalk/
@@ -3472,13 +4063,49 @@
                 this.load.image('tile_floor_' + i, 'assets/tiles/floor_' + i + '.png');
             }
             this.load.image('tile_wall', 'assets/tiles/wall.png');
-            this.load.image('tile_coin', 'assets/tiles/coin.png');
-            this.load.image('tile_key', 'assets/tiles/key.png');
-            this.load.image('tile_chest', 'assets/tiles/chest.png');
-            this.load.image('tile_barrel', 'assets/tiles/barrel.png');
-            this.load.image('tile_crate', 'assets/tiles/crate.png');
-            this.load.image('tile_door_decor', 'assets/tiles/door_decor.png');
-            this.load.image('tile_plank', 'assets/tiles/plank.png');
+
+            // Antorcha (reskin): 2 tamaños — chica y grande —, cada una 6 frames de
+            // parpadeo con su propio brillo ya pintado en el sprite (igual que antes, solo
+            // que ahora hay 2 variantes en vez de una — ver createTorchVisual/conf.size).
+            for (let i = 1; i <= 6; i++) {
+                this.load.image('torch2_small_' + i, 'assets/torch2/small/' + i + '.png');
+                this.load.image('torch2_large_' + i, 'assets/torch2/large/' + i + '.png');
+            }
+            this.load.audio('sfx_torch_ambience', 'assets/sfx/sfx_torch_ambience.mp3');
+
+            // "plate": la única Trampa de Pinches que queda (1x2 celdas) — flat/small
+            // estáticos, "full" es una animación de 3 cuadros (la ráfaga saliendo) en
+            // vez de una sola imagen fija, ver drawSpikeTrapVisual.
+            ['flat', 'small'].forEach(state => {
+                this.load.image('spiketrap_plate_' + state, 'assets/spiketrap_plate/' + state + '.png');
+            });
+            for (let i = 1; i <= 3; i++) {
+                this.load.image('spiketrap_plate_full_' + i, 'assets/spiketrap_plate/full_' + i + '.png');
+            }
+
+            // Trampa de Sierra (reskin completo): riel modular (tapas + tramo central,
+            // uno por orientación) + cuchilla direccional — fina para riel vertical,
+            // circular para riel horizontal (ver spawnSaw/createSawTrapVisual) — más una
+            // máscara color piso en el bloque de ABAJO del riel horizontal para que la
+            // cuchilla circular (dibujada 2x2 celdas, ver spawnSaw) se vea solo desde la
+            // mitad para arriba, nunca el círculo completo asomando por abajo del riel.
+            for (let i = 1; i <= 6; i++) {
+                this.load.image('saw2_blade_v_' + i, 'assets/saw2/blade_v/' + i + '.png');
+            }
+            for (let i = 1; i <= 6; i++) {
+                this.load.image('saw2_blade_h_' + i, 'assets/saw2/blade_h/' + i + '.png');
+            }
+            ['rail_v_top', 'rail_v_mid', 'rail_v_bottom', 'rail_h_left', 'rail_h_mid', 'rail_h_right',
+                'mask_left', 'mask_mid', 'mask_right'].forEach(key => {
+                this.load.image('saw2_' + key, 'assets/saw2/rail/' + key + '.png');
+            });
+            this.load.audio('sfx_saw_hit', 'assets/sfx/sfx_saw_hit.wav');
+
+            // Cuchillas giratorias: reskin de la Trampa Azul (antes un cuadrado azul
+            // liso) — 4 frames de rotación, daño instantáneo al contacto sin cambios.
+            for (let i = 1; i <= 4; i++) {
+                this.load.image('rotating_blades_' + i, 'assets/rotating_blades/' + i + '.png');
+            }
         }
 
         // Phaser llama a init(data) antes de preload/create en CADA arranque de la
@@ -3513,10 +4140,11 @@
             selectedSpell = null;
             spellCooldownEndsAt = { magic: 0, immobilize: 0, fireball: 0 };
             gameOver = false;
-            // Si el panel Editor ya estaba abierto (por ej. reiniciaste el nivel con el
-            // panel desplegado), el juego tiene que arrancar pausado igual, en vez de
-            // reanudarse por sorpresa "detrás" del panel.
-            editorPauseActive = document.getElementById('editor-panel').classList.contains('open');
+            // Si el panel Editor (o el Editor de Mapa — ej. cambiaste de sala con el
+            // selector de arriba) ya estaba abierto, el juego tiene que arrancar pausado
+            // igual, en vez de reanudarse por sorpresa "detrás" del panel.
+            editorPauseActive = document.getElementById('editor-panel').classList.contains('open')
+                || document.getElementById('map-editor-panel').classList.contains('open');
             isPaused = editorPauseActive;
             activeModal = null;
             hideModal();
@@ -3639,6 +4267,80 @@
                     ],
                     frameRate: 16,
                     repeat: 0
+                });
+            }
+            if (!this.anims.exists('torch2_small_flicker')) {
+                this.anims.create({
+                    key: 'torch2_small_flicker',
+                    frames: [1, 2, 3, 4, 5, 6].map(i => ({ key: 'torch2_small_' + i })),
+                    frameRate: 6,
+                    repeat: -1
+                });
+            }
+            if (!this.anims.exists('torch2_large_flicker')) {
+                this.anims.create({
+                    key: 'torch2_large_flicker',
+                    frames: [1, 2, 3, 4, 5, 6].map(i => ({ key: 'torch2_large_' + i })),
+                    frameRate: 6,
+                    repeat: -1
+                });
+            }
+            if (!this.anims.exists('saw2_blade_v_spin')) {
+                this.anims.create({
+                    key: 'saw2_blade_v_spin',
+                    frames: [1, 2, 3, 4, 5, 6].map(i => ({ key: 'saw2_blade_v_' + i })),
+                    frameRate: 14,
+                    repeat: -1
+                });
+            }
+            if (!this.anims.exists('saw2_blade_h_spin')) {
+                this.anims.create({
+                    key: 'saw2_blade_h_spin',
+                    frames: [1, 2, 3, 4, 5, 6].map(i => ({ key: 'saw2_blade_h_' + i })),
+                    frameRate: 14,
+                    repeat: -1
+                });
+            }
+            if (!this.anims.exists('rotating_blades_spin')) {
+                this.anims.create({
+                    key: 'rotating_blades_spin',
+                    frames: [1, 2, 3, 4].map(i => ({ key: 'rotating_blades_' + i })),
+                    frameRate: 10,
+                    repeat: -1
+                });
+            }
+            // Ráfaga de la Trampa de Pinches base ("plate") al activarse — 3 cuadros,
+            // se dispara una vez por activación (ver drawSpikeTrapVisual), no en loop.
+            if (!this.anims.exists('spiketrap_plate_full_anim')) {
+                this.anims.create({
+                    key: 'spiketrap_plate_full_anim',
+                    frames: [1, 2, 3].map(i => ({ key: 'spiketrap_plate_full_' + i })),
+                    frameRate: 10,
+                    repeat: 0
+                });
+            }
+            // Ráfaga de explosión al romper un objeto rompible — una vez, no en loop
+            // (ver spawnBreakableExplosion, que destruye el sprite al terminar).
+            if (!this.anims.exists('breakable_explosion')) {
+                this.anims.create({
+                    key: 'breakable_explosion',
+                    frames: [1, 2, 3, 4, 5, 6].map(i => ({ key: 'explosion_' + i })),
+                    frameRate: 16,
+                    repeat: 0
+                });
+            }
+            // Ciclo de la Trampa de Fuego: sube por los 9 frames (ráfaga creciendo),
+            // sostiene el pico un toque más, y vuelve a bajar — mismo timing que el
+            // original de Tiled (reposo largo, subida rápida, pico sostenido, bajada
+            // rápida). updateFireTraps() mira currentFrame.index para saber si está en
+            // la "zona caliente" (el pico) y recién ahí hace daño.
+            if (!this.anims.exists('firetrap_cycle')) {
+                const upFrames = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => ({ key: 'firetrap_' + i, duration: i === 1 ? 600 : (i === 9 ? 450 : 150) }));
+                const downFrames = [8, 7, 6, 5, 4, 3, 2].map(i => ({ key: 'firetrap_' + i, duration: 150 }));
+                this.anims.create({
+                    key: 'firetrap_cycle',
+                    frames: upFrames.concat(downFrames),
+                    repeat: -1
                 });
             }
             if (!this.anims.exists('tanque_walk')) {
@@ -3775,6 +4477,7 @@
             }
 
             activeRoom = ROOMS[currentRoom];
+            updateMapEditorRoomSwitchUI();
             // Si hay una edición guardada del Editor de Mapa para esta sala, se aplica
             // ACÁ (pisa hpWalls/specialWalls/blueTraps/items/enemySpawns/editorBlocks de
             // activeRoom) antes de que el resto de create() los use para levantar los
@@ -3820,6 +4523,15 @@
                 activeRoom._pillarsComputed = true;
             }
 
+            activeRoom.torches = activeRoom.torches || [];
+            activeRoom.wallSkins = activeRoom.wallSkins || [];
+            // Nivel 2/3 nunca definieron estos dos en su ROOMS literal (solo la Sala 1
+            // trae paredes con vida/especiales de fábrica) — sin este default, crear una
+            // desde el Editor de Mapa ahí rompía con "Cannot read properties of
+            // undefined (reading 'push')" apenas se intentaba.
+            activeRoom.hpWalls = activeRoom.hpWalls || [];
+            activeRoom.specialWalls = activeRoom.specialWalls || [];
+
             // Crear el jugador (rana). Si venimos de cruzar una puerta con entryPoint
             // propio (ej. las puertas de "vuelta" a la Sala 1), aparece ahí en vez del
             // arranque por defecto de la sala (para no tener que recorrer el pasillo
@@ -3830,6 +4542,19 @@
             player.body.setCollideWorldBounds(true);
             player.body.setBounce(0.1);
             player.setDepth(DEPTH_PLAYER);
+
+            // Ligera lucecita propia del jugador: un halo suave que lo sigue siempre,
+            // por ENCIMA de la niebla (DEPTH_FOG) para que se note incluso parado sobre
+            // una zona atenuada o recién entrando a lo no explorado — textura genérica
+            // (gradiente radial blanco, ensureGlowTexture), coloreada con setTint según
+            // PLAYER_GLOW_COLOR, y re-escalada con setDisplaySize según
+            // PLAYER_GLOW_RADIUS en vez de regenerarse cada vez que cambia el slider.
+            const glowKey = ensureGlowTexture(this);
+            playerGlowImage = this.add.image(player.x, player.y, glowKey);
+            playerGlowImage.setDisplaySize(PLAYER_GLOW_RADIUS * 2, PLAYER_GLOW_RADIUS * 2);
+            playerGlowImage.setTint(hexColorToInt(PLAYER_GLOW_COLOR));
+            playerGlowImage.setDepth(DEPTH_FOG + 1);
+            playerGlowImage.setBlendMode(Phaser.BlendModes.ADD);
 
             // El mundo de esta sala es más grande que el viewport; la cámara sigue al
             // jugador dentro de esos límites, sin salirse nunca del mundo (por eso el
@@ -3862,23 +4587,35 @@
             fogCtx.fillRect(0, 0, FOG_COLS, FOG_ROWS);
             // Restaurar lo ya explorado en esta sala (de una visita anterior en la misma
             // partida) ANTES de que el jugador mueva un píxel — si no, al reingresar a
-            // una sala ya recorrida arrancaría toda en negro de nuevo. Lo ya explorado
-            // vuelve en estado "atenuado", no transparente: recién cuando
-            // updateFogOfWar corra el primer frame se abre el cono de luz actual.
-            // Cada celda de pathfinding (CELL_SIZE) es un bloque de FOG_CELL_SUBDIV²
-            // texeles de niebla — se pinta el bloque entero de una.
-            fogCtx.fillStyle = FOG_DIM_STYLE;
-            exploredCellsSet[currentRoom].forEach(key => {
-                const parts = key.split(',');
-                const fx = Number(parts[0]) * FOG_CELL_SUBDIV, fy = Number(parts[1]) * FOG_CELL_SUBDIV;
-                fogCtx.clearRect(fx, fy, FOG_CELL_SUBDIV, FOG_CELL_SUBDIV);
-                fogCtx.fillRect(fx, fy, FOG_CELL_SUBDIV, FOG_CELL_SUBDIV);
-            });
-            fogCanvasTex.refresh();
+            // una sala ya recorrida arrancaría toda en negro de nuevo.
+            repaintExploredFog();
 
             fogUnexploredImage = this.add.image(0, 0, FOG_TEXTURE_KEY).setOrigin(0, 0);
             fogUnexploredImage.setScale(FOG_TEXEL, FOG_TEXEL);
             fogUnexploredImage.setDepth(DEPTH_FOG);
+
+            // ---- Sombra ambiente (independiente de la niebla, ver el comentario junto
+            // a AMBIENT_SHADOW_OPACITY) ----
+            if (ambientShadowImage) { ambientShadowImage.destroy(); ambientShadowImage = null; }
+            if (this.textures.exists(AMBIENT_SHADOW_TEXTURE_KEY)) this.textures.remove(AMBIENT_SHADOW_TEXTURE_KEY);
+            ambientShadowCanvasTex = this.textures.createCanvas(AMBIENT_SHADOW_TEXTURE_KEY, FOG_COLS, FOG_ROWS);
+            ambientShadowImage = this.add.image(0, 0, AMBIENT_SHADOW_TEXTURE_KEY).setOrigin(0, 0);
+            ambientShadowImage.setScale(FOG_TEXEL, FOG_TEXEL);
+            // Por encima de pisos/paredes/personajes, pero por DEBAJO de la niebla (30) —
+            // así la niebla sigue tapando del todo lo no explorado, y esto solo tiñe lo
+            // que la niebla ya deja ver.
+            ambientShadowImage.setDepth(DEPTH_FOG - 1);
+            updateAmbientShadow();
+
+            // Si este create() vino de cambiar de sala DESDE el selector del Editor de
+            // Mapa (mapEditorSwitchRoom) con el editor ya abierto, fogUnexploredImage/
+            // ambientShadowImage recién creados arriba arrancan visibles por defecto —
+            // sin esto, cada cambio de sala "prendería" la niebla de vuelta aunque
+            // toggleMapEditor() ya la haya apagado antes. Mismo criterio que ahí.
+            if (mapEditorActive) {
+                fogUnexploredImage.setVisible(false);
+                ambientShadowImage.setVisible(false);
+            }
 
 
             // Crear pozos/paredes (pilares, infranqueables para el pathfinding). w/h
@@ -3931,10 +4668,7 @@
             // solas de la colisión. wallsDestroyed persiste entre salidas/reentradas.
             hpWallsState = (activeRoom.hpWalls || []).map(conf => {
                 if (wallsDestroyed[conf.id]) return { conf, rect: null, health: 0, destroyed: true };
-                const rect = this.add.rectangle(conf.x, conf.y, conf.w, conf.h, 0x6b8e23);
-                rect.setStrokeStyle(2, 0x3f5514);
-                rect.setDepth(4);
-                traps.add(rect);
+                const rect = createHpWallVisual(this, conf);
                 return { conf, rect, health: conf.maxHealth, destroyed: false, hitByPlayerSwing: false };
             });
             specialWallsState = (activeRoom.specialWalls || []).map(conf => {
@@ -3955,8 +4689,13 @@
             // borrar/mover una trampa puntual (el grupo físico solo no alcanza para eso).
             blueTraps = this.physics.add.staticGroup();
             blueTrapRects = activeRoom.blueTraps.map(pos => {
-                const trap = this.add.rectangle(pos.x, pos.y, BLUE_TRAP_SIZE, BLUE_TRAP_SIZE, BLUE_TRAP_COLOR);
+                const trap = createBlueTrapSprite(this, pos.x, pos.y);
                 blueTraps.add(trap);
+                // El body estático se arma al agregar al grupo, en base al tamaño NATIVO
+                // del sprite (48x48) — no BLUE_TRAP_SIZE. Se re-sincroniza a mano, mismo
+                // mecanismo que applyBlueTrapSize() usa cuando cambia el slider.
+                trap.body.setSize(BLUE_TRAP_SIZE, BLUE_TRAP_SIZE);
+                trap.body.updateFromGameObject();
                 return { conf: pos, rect: trap };
             });
             buildBlueTrapCostCells();
@@ -3974,6 +4713,18 @@
             // "quién está encima" es manual, ver updateSpikeTraps().
             activeRoom.spikeTraps = activeRoom.spikeTraps || [];
             spikeTrapState = activeRoom.spikeTraps.map(conf => createSpikeTrapVisual(this, conf));
+            buildSpikeTrapCostCells();
+
+            // Trampa de Fuego: dispara sola en loop (firetrap_cycle), no depende de
+            // víctimas paradas encima — ver createFireTrapVisual/updateFireTraps.
+            activeRoom.fireTraps = activeRoom.fireTraps || [];
+            fireTrapState = activeRoom.fireTraps.map(conf => createFireTrapVisual(this, conf));
+
+            // Antorchas: puramente visuales (halo de luz + su agujero en la sombra
+            // ambiente) — no revelan niebla, no bloquean nada ni entran a ningún grupo
+            // físico.
+            torchVisuals = activeRoom.torches.map(conf => createTorchVisual(this, conf));
+            wallSkinVisuals = activeRoom.wallSkins.map(conf => createWallSkinVisual(this, conf));
 
             // Grupo dinámico para los proyectiles del mago
             projectilesGroup = this.physics.add.group();
@@ -4003,6 +4754,11 @@
             // para quedar siempre arriba de todo lo demás mientras se edita.
             mapEditorGraphics = this.make.graphics({ x: 0, y: 0, add: true });
             mapEditorGraphics.setDepth(50);
+            // La escena vieja (si había una, ej. venías de otra sala) ya se destruyó
+            // sola con el restart — sin este reset, la primera llamada a
+            // renderMapEditorOverlay() en la sala nueva intentaría reposicionar un
+            // sprite que ya no existe.
+            mapEditorGhostSprite = null;
 
             // Círculo que muestra el radio de la Bola de Fuego siguiendo al mouse
             // mientras el hechizo está armado (ver updateFireballPreview) — arriba de
@@ -4084,6 +4840,11 @@
                 const triggerZone = this.add.zone(conf.triggerX, conf.triggerY, conf.triggerW, conf.triggerH);
                 this.physics.add.existing(triggerZone, true);
                 this.physics.add.overlap(player, triggerZone, () => onDoorTrigger(doorState), null, this);
+                // Guardado acá para que el Editor de Mapa (Nivel 2/3, ver
+                // findMapEditorEntityAt/handleMapEditorDrag) pueda arrastrar la franja de
+                // disparo junto con el rect visual de la puerta, sin esto quedaría en su
+                // posición original al mover la puerta.
+                doorState.triggerZone = triggerZone;
 
                 return doorState;
             });
@@ -4146,13 +4907,13 @@
                     return;
                 }
                 if (mapEditorActive) {
-                    // 🪚 Trampa de Sierra: arrastre PROPIO, distinto del sistema de
-                    // rectángulo libre de abajo — acá el eje (horizontal/vertical) se fija
-                    // con el primer movimiento y no se puede cambiar a mitad de arrastre
-                    // (ver pointermove), así el riel sale perfectamente recto.
-                    if (mapEditorTool === 'sawtrap') {
+                    // 🪚 Sierra Horizontal/Vertical: arrastre PROPIO, distinto del sistema
+                    // de rectángulo libre de abajo — el eje viene FIJO de qué botón se
+                    // eligió (TRAP_TOOL_INFO[tool].sawAxis), no del primer movimiento, así
+                    // el riel sale perfectamente recto desde el primer píxel arrastrado.
+                    if (TRAP_TOOL_INFO[mapEditorTool] && TRAP_TOOL_INFO[mapEditorTool].sawAxis) {
                         sawTrapDragStart = { x: pointer.worldX, y: pointer.worldY };
-                        sawTrapDragAxis = null;
+                        sawTrapDragAxis = TRAP_TOOL_INFO[mapEditorTool].sawAxis;
                         return;
                     }
                     // Con una herramienta "de rectángulo" (paredes/bloques/Borrar) el
@@ -4178,15 +4939,6 @@
                 }
                 mapEditorLastPointer = { x: pointer.worldX, y: pointer.worldY };
                 if (mapEditorDragging) handleMapEditorDrag(pointer.worldX, pointer.worldY);
-                // Recién se fija el eje cuando el mouse se alejó lo suficiente del punto
-                // inicial (MIN_AXIS_LOCK_DIST) — un temblor de un par de píxeles justo al
-                // apretar el botón no debería decidir "horizontal" o "vertical" al azar.
-                if (sawTrapDragStart && !sawTrapDragAxis) {
-                    const dx = pointer.worldX - sawTrapDragStart.x, dy = pointer.worldY - sawTrapDragStart.y;
-                    if (Math.abs(dx) > MIN_AXIS_LOCK_DIST || Math.abs(dy) > MIN_AXIS_LOCK_DIST) {
-                        sawTrapDragAxis = Math.abs(dx) >= Math.abs(dy) ? 'horizontal' : 'vertical';
-                    }
-                }
             });
             this.input.on('pointerup', (pointer) => {
                 if (mapEditorPanStart) {
@@ -4551,7 +5303,10 @@
 
             // 1) Grabar PERMANENTE lo recién explorado (bloque de FOG_CELL_SUBDIV²
             // texeles por celda de pathfinding) — esto no se vuelve a tocar hasta la
-            // próxima vez que el jugador vuelva a pisar cerca.
+            // próxima vez que el jugador vuelva a pisar cerca. Las antorchas NO
+            // participan acá: solo iluminan (glow + sombra ambiente), nunca revelan ni
+            // alteran la niebla — lo único que la revela es el campo de visión del
+            // jugador.
             if (newlyExplored.length > 0) {
                 fogCtx.fillStyle = FOG_DIM_STYLE;
                 newlyExplored.forEach(key => {
@@ -4573,13 +5328,12 @@
             const boxRowEnd = Math.min(FOG_ROWS, centerRow + boxRadiusTexels);
 
             // Repintar ese recuadro desde cero, a partir de la memoria permanente
-            // (opaco si la celda de pathfinding correspondiente todavía no se exploró,
-            // atenuado si ya se exploró) — así, cuando el jugador se aleja de una zona,
-            // el recuadro de ESTE frame ya no la toca y le queda su estado permanente
-            // (grabado en el paso 1 la primera vez que se vio). Por fila, agrupando
-          // texeles contiguos del mismo estado en un solo fillRect en vez de uno por
-            // texel — con boxRadiusTexels grande (radio de visión al máximo) esto evita
-            // miles de llamadas sueltas.
+            // (opaco si la celda todavía no se exploró, atenuado si ya se exploró) — así,
+            // cuando el jugador se aleja de una zona, el recuadro de ESTE frame ya no la
+            // toca y le queda su estado permanente (grabado en el paso 1 la primera vez
+            // que se vio). Por fila, agrupando texeles contiguos del mismo estado en un
+            // solo fillRect en vez de uno por texel — con boxRadiusTexels grande (radio
+            // de visión al máximo) esto evita miles de llamadas sueltas.
             for (let ty = boxRowStart; ty < boxRowEnd; ty++) {
                 const cellRow = Math.floor((ty * FOG_TEXEL) / CELL_SIZE);
                 let runStart = boxColStart;
@@ -4726,6 +5480,7 @@
             // Niebla de guerra: arma visibleCellsThisFrame ANTES de tocar enemigos, para
             // que updateEnemyInstance ya la tenga lista y decida si se muestran o no.
             updateFogOfWar();
+            updateAmbientShadow();
 
             // ---- Movimiento, ataque y dibujo de cada enemigo ----
             attackGraphics.clear();
@@ -4746,6 +5501,8 @@
 
             updateSawTraps(delta);
             updateSpikeTraps();
+            updateFireTraps();
+            updateBlueTraps();
 
             // ---- Barra de vida de las paredes con vida (las especiales no tienen) ----
             hpWallsState.forEach(w => {
@@ -4833,6 +5590,10 @@
                 specialWallHintText.setPosition(player.x, player.y - 40);
             }
             specialWallHintText.setVisible(!!nearestSpecialWall);
+
+            // Halo del jugador: lo sigue siempre, esté donde esté (niebla, editor de
+            // mapa desactivado acá arriba, etc.) — ver PLAYER_GLOW_RADIUS.
+            playerGlowImage.setPosition(player.x, player.y);
 
             // Mostrar estado (contar sin allocar un array nuevo cada frame con filter())
             let aliveCount = 0;
@@ -5586,6 +6347,13 @@
         // Configuración (ver hideSettings) — si usara togglePauseMenu ahí, como
         // activeModal ya seguía en 'pause' de antes, la cerraría en vez de reabrirla.
         function openPauseMenu() {
+            // Primer ESC de la sesión: desbloquea los botones de editor (⚙️ Editor /
+            // 🗺️ Editor de Mapa) sin necesitar ?editor=1 en la URL — pedido explícito
+            // del usuario para poder entrar a editar sin acordarse del parámetro.
+            if (!editorModeRuntimeUnlocked && !EDITOR_MODE_ENABLED) {
+                editorModeRuntimeUnlocked = true;
+                applyEditorModeGate();
+            }
             activeModal = 'pause';
             isPaused = true;
             player.body.setVelocity(0, 0);
@@ -5861,6 +6629,19 @@
             });
         }
 
+        // Explosión al romper un objeto rompible (barril/caja/jarrón) — sprite sheet
+        // de 6 cuadros SIN transparencia real (fondo gris oscuro), ver el comentario en
+        // preload(). Blend mode ADD: el fondo oscuro no pinta nada (sumar 0 no cambia
+        // el destino), solo las chispas brillantes quedan visibles. Tamaño fijo 64x64
+        // (2x2 celdas) centrado en el objeto roto, sin importar su tamaño real.
+        function spawnBreakableExplosion(x, y) {
+            const fx = scene.add.sprite(x, y, 'explosion_1');
+            fx.setBlendMode(Phaser.BlendModes.ADD);
+            fx.setDepth(13);
+            fx.play('breakable_explosion');
+            fx.on('animationcomplete', () => { if (fx.active) fx.destroy(); });
+        }
+
         // Estallido del proyectil del mago (contra pared o jugador).
         function spawnProjectileShatter(x, y) {
             spawnBurst(x, y, { color: PROJECTILE_COLOR, count: 6, radius: 3, spread: 20, duration: 300 });
@@ -5952,6 +6733,7 @@
 
         function hitBlueTrapPlayer(playerObj, trap) {
             if (gameOver || mapEditorActive) return;
+            if (scene.time.now < trap.frozenUntil) return; // frizada por Inmovilizar: no hace daño
 
             playerHealth -= BLUE_TRAP_DAMAGE;
 
@@ -5974,6 +6756,7 @@
         function hitBlueTrapEnemy(enemyObj, trap) {
             const inst = enemyObj.__enemyInstance;
             if (gameOver || mapEditorActive || !inst || inst.defeated) return;
+            if (scene.time.now < trap.frozenUntil) return; // frizada por Inmovilizar: no hace daño
 
             const type = ENEMY_TYPES[inst.typeKey];
             const dmg = Math.max(0, BLUE_TRAP_DAMAGE - type.armor);
@@ -6000,21 +6783,83 @@
         // vez por frame desde updateGame(). Puramente visual/de daño: no bloquea el
         // paso, ni el pathfinding, ni la línea de visión (no entra a allWallRectsCache).
 
-        // Dibuja el riel: una franja gris clara (mismo tono que el piso normal) con una
-        // línea más oscura al medio marcando el "carril" — ver la referencia que pasó el
-        // usuario. bg y groove son DOS objetos separados (no un Container) para poder
-        // reusar rectContainsPoint/snapToGrid tal cual en el resto del Editor de Mapa.
+        // Reposiciona TODOS los sprites del riel (tapas + tramos centrales + máscaras)
+        // a partir de conf.x/y — se llama una vez al crear el riel y de nuevo cada vez
+        // que la herramienta Mover lo arrastra (ver handleMapEditorDrag). El largo/
+        // orientación/cantidad de tramos NUNCA cambia después de creado (solo mueve),
+        // así que las texturas ya elegidas en createSawTrapVisual no se tocan acá.
+        function layoutSawTrapVisual(entry) {
+            const { conf, railTiles, maskTiles, bg } = entry;
+            bg.setPosition(conf.x, conf.y);
+            if (conf.orientation === 'horizontal') {
+                const leftEdge = conf.x - conf.w / 2;
+                railTiles.forEach((spr, i) => spr.setPosition(leftEdge + CELL_SIZE / 2 + i * CELL_SIZE, conf.y));
+                maskTiles.forEach(m => m.sprite.setPosition(leftEdge + CELL_SIZE / 2 + m.i * CELL_SIZE, conf.y + m.rowOffset));
+            } else {
+                const topEdge = conf.y - conf.h / 2;
+                railTiles.forEach((spr, i) => spr.setPosition(conf.x, topEdge + CELL_SIZE / 2 + i * CELL_SIZE));
+            }
+        }
+
+        // Riel modular: una tapa en cada extremo + tantos tramos centrales como celdas
+        // de largo tenga (conf.w/h, siempre múltiplo de CELL_SIZE — ver
+        // finalizeSawTrapPlacement). Vertical no lleva máscara (la cuchilla fina ya se
+        // ve "recortada" por diseño); horizontal sí: por cada tramo se agrega UNA
+        // máscara color piso en el bloque de ABAJO (el riel horizontal ocupa 2 celdas de
+        // alto; la máscara solo 1) que tapa la mitad de abajo de la cuchilla — ver
+        // spawnSaw, se dibuja 2x2 celdas a propósito para que esta máscara le corte esa
+        // mitad y solo se vea la mitad de arriba asomando, nunca el círculo completo.
+        // bg es un rectángulo INVISIBLE (alpha 0): solo lo usan
+        // findMapEditorEntityAt/handleMapEditorDrag para detectar click/arrastre, el
+        // dibujo real lo hacen los sprites de riel.
         function createSawTrapVisual(sceneRef, conf) {
-            const bg = sceneRef.add.rectangle(conf.x, conf.y, conf.w, conf.h, 0xd9d9d9);
-            bg.setDepth(0); // arriba del piso (-1), abajo de ítems/pilares (4) y sierras (6)
-            const grooveThickness = 6;
-            const groove = conf.orientation === 'horizontal'
-                ? sceneRef.add.rectangle(conf.x, conf.y, conf.w, grooveThickness, SOLID_BLOCK_COLOR)
-                : sceneRef.add.rectangle(conf.x, conf.y, grooveThickness, conf.h, SOLID_BLOCK_COLOR);
-            groove.setDepth(0.5);
+            const bg = sceneRef.add.rectangle(conf.x, conf.y, conf.w, conf.h, 0x000000, 0);
+
+            const railTiles = [];
+            const maskTiles = [];
+
+            if (conf.orientation === 'horizontal') {
+                const tileCount = Math.round(conf.w / CELL_SIZE);
+                for (let i = 0; i < tileCount; i++) {
+                    const railKey = tileCount === 1 ? 'saw2_rail_h_mid'
+                        : i === 0 ? 'saw2_rail_h_left'
+                        : i === tileCount - 1 ? 'saw2_rail_h_right' : 'saw2_rail_h_mid';
+                    const spr = sceneRef.add.sprite(0, 0, railKey);
+                    spr.setDisplaySize(CELL_SIZE, CELL_SIZE * 2);
+                    spr.setDepth(0); // arriba del piso (-1), abajo de ítems/pilares (4) y sierras (6)
+                    railTiles.push(spr);
+
+                    const maskKey = tileCount === 1 ? 'saw2_mask_mid'
+                        : i === 0 ? 'saw2_mask_left'
+                        : i === tileCount - 1 ? 'saw2_mask_right' : 'saw2_mask_mid';
+                    const m = sceneRef.add.sprite(0, 0, maskKey);
+                    m.setDisplaySize(CELL_SIZE, CELL_SIZE);
+                    m.setDepth(6.5); // encima de la sierra en vuelo (depth 6)
+                    // El riel ocupa 2 celdas de alto CENTRADO en conf.y (176..240 en el
+                    // ejemplo de abajo si conf.y=208): la fila de abajo va de conf.y a
+                    // conf.y+CELL_SIZE, así que su CENTRO es conf.y + CELL_SIZE/2 — con
+                    // rowOffset = CELL_SIZE (un offset entero) la máscara quedaba mitad
+                    // adentro de esa fila y mitad afuera, tapando de más/menos.
+                    maskTiles.push({ sprite: m, i, rowOffset: CELL_SIZE / 2 }); // bloque de ABAJO únicamente
+                }
+            } else {
+                const tileCount = Math.round(conf.h / CELL_SIZE);
+                for (let i = 0; i < tileCount; i++) {
+                    const railKey = tileCount === 1 ? 'saw2_rail_v_mid'
+                        : i === 0 ? 'saw2_rail_v_top'
+                        : i === tileCount - 1 ? 'saw2_rail_v_bottom' : 'saw2_rail_v_mid';
+                    const spr = sceneRef.add.sprite(0, 0, railKey);
+                    spr.setDisplaySize(CELL_SIZE, CELL_SIZE);
+                    spr.setDepth(0);
+                    railTiles.push(spr);
+                }
+            }
+
             // Arranca con demora completa (no dispara una sierra apenas se entra a la
             // sala) para no sorprender al jugador en el instante en que aparece el piso.
-            return { conf, bg, groove, nextSpawnAt: sceneRef.time.now + SAW_TRAP_INTERVAL };
+            const entry = { conf, bg, railTiles, maskTiles, nextSpawnAt: sceneRef.time.now + SAW_TRAP_INTERVAL };
+            layoutSawTrapVisual(entry);
+            return entry;
         }
 
         // Overlap simple de rectángulos (no de Arcade Physics — la sierra no tiene body).
@@ -6050,9 +6895,39 @@
                 dirY = goDown ? 1 : -1;
                 travelLength = conf.h;
             }
-            const obj = scene.add.rectangle(startX, startY, SAW_SIZE, SAW_SIZE, SAW_COLOR);
+            const isHorizontal = conf.orientation === 'horizontal';
+
+            // `obj` es siempre el que decide el daño real (rectsOverlap lee su
+            // displayWidth/Height). Arranca en SAW_SIZE (tamaño de siempre) — para
+            // vertical se agranda 2 líneas más abajo a su forma natural (ver comentario
+            // ahí); para horizontal se queda en SAW_SIZE y pasa a invisible, así el área
+            // de daño de ESE caso no cambia un píxel respecto de antes.
+            const obj = scene.add.sprite(startX, startY, isHorizontal ? 'saw2_blade_h_1' : 'saw2_blade_v_1');
+            obj.setDisplaySize(SAW_SIZE, SAW_SIZE);
             obj.setDepth(6);
-            activeSaws.push({ obj, dirX, dirY, remaining: travelLength, hitPlayer: false, hitEnemies: new Set() });
+            const animKey = isHorizontal ? 'saw2_blade_h_spin' : 'saw2_blade_v_spin';
+            if (scene.anims.exists(animKey)) obj.play(animKey);
+
+            // Riel vertical: sin máscara (no hace falta pedirle nada al usuario para
+            // esto — la cuchilla fina ya se ve "recortada" por diseño), así que `obj` se
+            // agranda a su tamaño natural (1 celda de ancho x 2 de alto) y ES el visual,
+            // sin sprite aparte — el hitbox crece junto con ella a propósito (lo que se
+            // ve es lo que golpea). Riel horizontal: `obj` queda invisible (solo hitbox,
+            // SAW_SIZE de siempre) y este segundo sprite puramente cosmético se dibuja
+            // 2x2 celdas (la cuchilla real ocupa eso) centrado en el riel — la máscara
+            // del bloque de abajo (creada en createSawTrapVisual) le tapa la mitad
+            // inferior y solo se ve la mitad de arriba asomando, nunca el círculo completo.
+            let visual = null;
+            if (isHorizontal) {
+                obj.setVisible(false);
+                visual = scene.add.sprite(startX, startY, 'saw2_blade_h_1');
+                visual.setDisplaySize(CELL_SIZE * 2, CELL_SIZE * 2);
+                visual.setDepth(6);
+                if (scene.anims.exists(animKey)) visual.play(animKey);
+            } else {
+                obj.setDisplaySize(CELL_SIZE, CELL_SIZE * 2);
+            }
+            activeSaws.push({ obj, visual, dirX, dirY, remaining: travelLength, hitPlayer: false, hitEnemies: new Set() });
         }
 
         // Se llama una vez por frame desde updateGame(). Primero revisa si algún riel
@@ -6073,6 +6948,9 @@
                 const step = (SAW_TRAP_SPEED * delta) / 1000;
                 saw.obj.x += saw.dirX * step;
                 saw.obj.y += saw.dirY * step;
+                // `visual` (solo existe para el riel horizontal, ver spawnSaw) sigue a
+                // `obj` en posición nomás — `obj` sigue siendo el único que decide daño.
+                if (saw.visual) { saw.visual.x = saw.obj.x; saw.visual.y = saw.obj.y; }
 
                 // Daño al jugador: una sola vez por PASADA de esta sierra puntual (no una
                 // vez por frame mientras siga solapada) — sin este flag, un jugador
@@ -6081,6 +6959,7 @@
                     playerHealth -= SAW_TRAP_DAMAGE;
                     lastDamageTime = now;
                     playSfx('playerDamage');
+                    playSfx('sawHit'); // solo cuando la sierra efectivamente daña al jugador
                     saw.hitPlayer = true;
                 }
 
@@ -6099,59 +6978,68 @@
                 saw.remaining -= step;
                 if (saw.remaining <= 0) {
                     saw.obj.destroy();
+                    if (saw.visual) saw.visual.destroy();
                     activeSaws.splice(i, 1);
                 }
             }
         }
 
         // ---- Trampa de Pinches ----
-        // Un solo bloque de 32x32 (1 celda). A diferencia de la trampa azul (daño
-        // instantáneo al contacto), esta necesita un temporizador POR VÍCTIMA: parado
-        // encima "carga" (picos chicos) y si te quedás SPIKE_TRAP_DELAY se activa
-        // (picos completos + daño); si te vas antes, se cancela sin daño. No bloquea el
-        // paso (no entra a ningún grupo físico ni a blockedGrid) — hay que poder
-        // pararse arriba para que tenga sentido.
+        // Ocupa w x h CELDAS (conf.shape lo identifica; sin shape = 'plate', la 1x1 de
+        // siempre). A diferencia de la trampa azul (daño instantáneo al contacto), esta
+        // necesita un temporizador POR VÍCTIMA: parado encima "carga" (picos chicos) y
+        // si te quedás SPIKE_TRAP_DELAY se activa (picos completos + daño); si te vas
+        // antes, se cancela sin daño. No bloquea el paso (no entra a ningún grupo físico
+        // ni a blockedGrid) — hay que poder pararse arriba para que tenga sentido.
+        // Única variante que queda (las de 3x5 — solid/ring/cross — se eliminaron):
+        // 1 celda de ancho x 2 de alto, el "spray" — ver drawSpikeTrapVisual para el
+        // caso especial de animación al activarse (full_1/2/3, no un solo full estático).
+        const SPIKE_SHAPE_INFO = {
+            plate: { w: 1, h: 2 }
+        };
 
-        // bg: fondo oscuro fijo (siempre visible, como un "hueco" en el piso). spikes:
-        // un Graphics aparte donde se dibujan los picos — se redibuja SOLO cuando
-        // cambia el estado visual, no todos los frames (ver drawSpikeTrapVisual).
-        function createSpikeTrapVisual(sceneRef, conf) {
-            // Círculo (no cuadrado) ocupando el mismo espacio de la celda, en un gris
-            // cercano al del piso (~0x4a4a4a) pero un poco más oscuro, para que se lea
-            // como una marca en el suelo y no como un pozo negro.
-            const bg = sceneRef.add.circle(conf.x, conf.y, CELL_SIZE / 2, 0x3a3a3a);
-            bg.setDepth(0);
-            const spikes = sceneRef.add.graphics();
-            spikes.setDepth(0.5);
-            const entry = { conf, bg, spikes, charges: new Map(), visualState: null };
-            drawSpikeTrapVisual(entry, 'flat');
-            return entry;
+        // `hitbox` es el campo GENÉRICO que usa updateSpikeTraps/findMapEditorEntityAt
+        // para overlap/click, sin importar el tamaño/shape de esta trampa puntual.
+        // Con alto PAR de celdas (ej. "plate", 1x2) conf.x/y NO es el centro geométrico
+        // del sprite: es el centro de la celda de ABAJO, la que efectivamente se
+        // clickea/arrastra en el Editor de Mapa (la de arriba "se pone sola"). Por eso
+        // el sprite se dibuja medio bloque más arriba — así las 2 celdas quedan
+        // COMPLETAS, ninguna a mitad. Con alto IMPAR (3x5) conf.y ya cae justo en el
+        // centro geométrico sin ajuste (la mitad de una cantidad impar de celdas,
+        // centrada en una celda, siempre cae en un borde de grilla).
+        function spikeShapeCenterY(conf, info) {
+            return info.h % 2 === 0 ? conf.y - CELL_SIZE / 2 : conf.y;
         }
 
-        // 3 picos por celda, alturas parejas-pero-no-iguales (más orgánico que 3
-        // triángulos idénticos) — 'small' mientras alguien está cargando encima, 'full'
-        // en el instante en que se activó (fase 'cooldown' de cualquier víctima).
+        function createSpikeTrapVisual(sceneRef, conf) {
+            // Sin shape (diseños viejos guardados antes de este cambio): default a
+            // 'plate', la Trampa de Pinches base (1x2, el "spray") — TODAS las trampas
+            // de pinches (chicas y grandes) son el mismo camino de sprite, solo cambia
+            // qué carpeta de assets usan.
+            const shape = conf.shape || 'plate';
+            const info = SPIKE_SHAPE_INFO[shape];
+            const sprite = sceneRef.add.sprite(conf.x, spikeShapeCenterY(conf, info), `spiketrap_${shape}_flat`);
+            sprite.setDisplaySize(info.w * CELL_SIZE, info.h * CELL_SIZE);
+            sprite.setDepth(0.5);
+            return { conf, sprite, hitbox: sprite, shape, charges: new Map(), visualState: 'flat' };
+        }
+
+        // 'small' mientras alguien está cargando encima, 'full' en el instante en que se
+        // activó (fase 'cooldown' de cualquier víctima) — son 3 texturas ya hechas
+        // (flat/small/full) por shape, solo hay que cambiar cuál está puesta.
         function drawSpikeTrapVisual(entry, state) {
             if (entry.visualState === state) return; // nada cambió, no redibujar de gusto
             entry.visualState = state;
-            entry.spikes.clear();
-            if (state === 'flat') return; // solo el fondo oscuro, sin picos
 
-            const cx = entry.conf.x, cy = entry.conf.y;
-            const isFull = state === 'full';
-            entry.spikes.fillStyle(isFull ? 0x9a9a9a : 0x707070, 1);
-            const baseY = cy + CELL_SIZE / 2 - 3;
-            const offsets = [-8, 0, 8];
-            const heights = isFull ? [23, 27, 21] : [9, 12, 8];
-            const halfBase = isFull ? 4 : 3;
-            offsets.forEach((ox, i) => {
-                const h = heights[i];
-                entry.spikes.fillTriangle(
-                    cx + ox - halfBase, baseY,
-                    cx + ox + halfBase, baseY,
-                    cx + ox, baseY - h
-                );
-            });
+            // "plate" (la Trampa de Pinches base) tiene una animación de 3 cuadros para
+            // "full" (la ráfaga saliendo) en vez de una sola textura fija — el resto de
+            // los shapes (grandes) siguen con el swap de textura de siempre.
+            if (entry.shape === 'plate' && state === 'full') {
+                entry.sprite.play('spiketrap_plate_full_anim');
+            } else {
+                entry.sprite.stop();
+                entry.sprite.setTexture(`spiketrap_${entry.shape}_${state}`);
+            }
         }
 
         // De todas las víctimas encima de este bloque (Map `charges`), decide qué
@@ -6207,15 +7095,16 @@
             spikeTrapState.forEach(trap => {
                 let changed = false;
 
-                changed = updateSpikeCharge(trap.charges, 'player', rectsOverlap(trap.bg, player), now, () => {
+                changed = updateSpikeCharge(trap.charges, 'player', rectsOverlap(trap.hitbox, player), now, () => {
                     playerHealth -= SPIKE_TRAP_DAMAGE;
                     lastDamageTime = now;
                     playSfx('playerDamage');
+                    playSfx('spikeTrapActivate'); // solo cuando la trampa efectivamente daña al jugador
                 }) || changed;
 
                 enemies.forEach(inst => {
                     if (inst.defeated) return;
-                    const on = rectsOverlap(trap.bg, inst.obj);
+                    const on = rectsOverlap(trap.hitbox, inst.obj);
                     changed = updateSpikeCharge(trap.charges, inst, on, now, () => {
                         const type = ENEMY_TYPES[inst.typeKey];
                         inst.health -= Math.max(0, SPIKE_TRAP_DAMAGE - type.armor);
@@ -6224,6 +7113,115 @@
                 });
 
                 if (changed) drawSpikeTrapVisual(trap, pickSpikeVisualState(trap.charges));
+            });
+        }
+
+        // Pared con Vida: antes un Rectangle verde oliva liso 1x1 — ahora un objeto
+        // rompible (barril/caja/jarrón) de tamaño variable. conf.x/y es el CENTRO
+        // geométrico real (no la celda clickeada — ver mapEditorPlace/handleMapEditorDrag,
+        // que convierten el anclaje abajo-izquierda a este centro ANTES de guardarlo en
+        // conf), así que acá no hace falta ningún ajuste de ancla: se dibuja directo.
+        // Sin variantKey (paredes viejas guardadas antes de este cambio): default a un
+        // barril, tamaño 1x2.
+        function createHpWallVisual(sceneRef, conf) {
+            const sprite = sceneRef.add.sprite(conf.x, conf.y, conf.variantKey || 'breakable_barril_1');
+            sprite.setDisplaySize(conf.w, conf.h);
+            sprite.setDepth(4);
+            traps.add(sprite);
+            // El body estático se arma al agregar al grupo en base al tamaño NATIVO del
+            // frame, no a setDisplaySize — mismo re-sync que ya usa la Trampa Giratoria.
+            sprite.body.setSize(conf.w, conf.h);
+            sprite.body.updateFromGameObject();
+            return sprite;
+        }
+
+        // Trampa Azul: antes un Rectangle liso (BLUE_TRAP_COLOR) agregado directo al
+        // grupo físico — ahora esta cuchilla girando, mismo tamaño/daño/colisión
+        // instantánea al contacto, sin cambios (ver hitBlueTrapPlayer/hitBlueTrapEnemy).
+        function createBlueTrapSprite(sceneRef, x, y) {
+            const sprite = sceneRef.add.sprite(x, y, 'rotating_blades_1');
+            sprite.setDisplaySize(BLUE_TRAP_SIZE, BLUE_TRAP_SIZE);
+            if (sceneRef.anims.exists('rotating_blades_spin')) sprite.play('rotating_blades_spin');
+            sprite.frozenUntil = 0; // ver freezeBlueTrap (hechizo Inmovilizar) / updateBlueTraps
+            return sprite;
+        }
+
+        // Tinte celeste + giro MUY lento (no detenido del todo) mientras dura el freeze
+        // del hechizo de Inmovilizar — hitBlueTrapPlayer/hitBlueTrapEnemy ya no hacen
+        // daño en ese lapso (ver el chequeo de frozenUntil ahí). Solo toca tint/
+        // timeScale en la TRANSICIÓN frizada↔normal, no en cada frame de más.
+        const BLUE_TRAP_FROZEN_TINT = 0x99ccff;
+        const BLUE_TRAP_FROZEN_TIME_SCALE = 0.12;
+        function updateBlueTraps() {
+            if (!blueTrapRects) return;
+            const now = scene.time.now;
+            blueTrapRects.forEach(entry => {
+                const sprite = entry.rect;
+                const frozen = now < sprite.frozenUntil;
+                if (frozen === sprite.__wasFrozen) return;
+                sprite.__wasFrozen = frozen;
+                if (frozen) {
+                    sprite.setTint(BLUE_TRAP_FROZEN_TINT);
+                    sprite.anims.timeScale = BLUE_TRAP_FROZEN_TIME_SCALE;
+                } else {
+                    sprite.clearTint();
+                    sprite.anims.timeScale = 1;
+                }
+            });
+        }
+
+        // Sprite simple (sin carga por víctima, a diferencia de las trampas de
+        // pinches): el ciclo de la llama corre SOLO, en loop, sin importar si hay
+        // alguien parado encima. `hitbox` es un rectángulo de 1 celda separado del
+        // sprite visual (que es más alto, para que la llama entre completa) — así el
+        // daño solo se siente parado justo en la celda, no en cualquier punto bajo la
+        // llama alta.
+        function createFireTrapVisual(sceneRef, conf) {
+            const sprite = sceneRef.add.sprite(conf.x, conf.y + CELL_SIZE / 2, 'firetrap_1');
+            sprite.setOrigin(0.5, 1); // anclado abajo: la llama crece hacia arriba, la base no se mueve
+            sprite.setDisplaySize(32, 96);
+            sprite.setDepth(0.5);
+            if (sceneRef.anims.exists('firetrap_cycle')) sprite.play('firetrap_cycle');
+            return { conf, sprite, wasHot: false };
+        }
+
+        // Se llama una vez por frame desde updateGame(). A diferencia de
+        // updateSpikeTraps, no hay temporizador por víctima: el ciclo visual
+        // (firetrap_cycle) YA define cuándo pasa por el pico — acá solo se mira en qué
+        // frame de esa animación está parada cada trampa (currentFrame.index) para
+        // decidir si "está caliente" ahora mismo, y de ser así dañar UNA vez por pico
+        // (wasHot evita que dañe en cada tick mientras siga en la zona caliente).
+        const FIRETRAP_HOT_FRAME_MIN = 6; // índices de frame (0-based) de firetrap_cycle
+        const FIRETRAP_HOT_FRAME_MAX = 10; // que corresponden al pico de la llamarada
+        function updateFireTraps() {
+            if (!fireTrapState) return;
+
+            fireTrapState.forEach(trap => {
+                const currentFrame = trap.sprite.anims.currentFrame;
+                const frameIdx = currentFrame ? currentFrame.index : 0;
+                const isHot = frameIdx >= FIRETRAP_HOT_FRAME_MIN && frameIdx <= FIRETRAP_HOT_FRAME_MAX;
+
+                if (!isHot) {
+                    trap.wasHot = false;
+                    return;
+                }
+                if (trap.wasHot) return; // ya dañó en este mismo pico, no de nuevo cada frame
+                trap.wasHot = true;
+
+                const hitbox = { x: trap.conf.x, y: trap.conf.y, displayWidth: CELL_SIZE, displayHeight: CELL_SIZE };
+                if (!gameOver && rectsOverlap(hitbox, player)) {
+                    playerHealth -= FIRE_TRAP_DAMAGE;
+                    lastDamageTime = scene.time.now;
+                    playSfx('playerDamage');
+                }
+                enemies.forEach(inst => {
+                    if (inst.defeated) return;
+                    if (rectsOverlap(hitbox, inst.obj)) {
+                        const type = ENEMY_TYPES[inst.typeKey];
+                        inst.health -= Math.max(0, FIRE_TRAP_DAMAGE - type.armor);
+                        playSfx('creatureDamage');
+                    }
+                });
             });
         }
 
@@ -6265,21 +7263,45 @@
         // agregar un ítem nuevo a mano (ver mapEditorPlace). Usa `scene` (global) en vez
         // de `this` justamente para poder llamarse desde afuera de create().
         function createLiveItem(itemConf) {
-            // Botín = la moneda del tileset (antes un cuadrado naranja); el manual de
-            // hechizos se queda como estaba (no hay sprite de libro en este pack) —
-            // mismo mecanismo de recolección (pickupItem) para los dos, solo cambia el
-            // dibujo.
+            // Botín = la moneda del tileset (antes un cuadrado naranja) o, si viene de
+            // romper un objeto rompible, el sprite de loot que matchea su tamaño (ver
+            // dropBreakableLoot/lootSpriteKey); el manual de hechizos se queda como
+            // estaba (no hay sprite de libro en este pack) — mismo mecanismo de
+            // recolección (pickupItem) para los tres, solo cambia el dibujo.
             let rect;
             if (itemConf.lootValue) {
-                rect = scene.add.image(itemConf.x, itemConf.y, 'tile_coin');
+                // "loot_1" de fallback para botín viejo guardado ANTES de este cambio
+                // (lootValue sin lootSpriteKey todavía) — botín es loot, mismo elemento.
+                rect = scene.add.sprite(itemConf.x, itemConf.y, itemConf.lootSpriteKey || 'loot_1');
+                rect.setDisplaySize(itemConf.w, itemConf.h);
             } else {
                 rect = scene.add.rectangle(itemConf.x, itemConf.y, itemConf.w, itemConf.h, 0xe8d9b0);
                 rect.setStrokeStyle(2, 0x8a7a52);
             }
             rect.setDepth(4);
             scene.physics.add.existing(rect, true);
+            if (itemConf.lootValue) {
+                // Igual que la Trampa Giratoria/Pared con Vida: el body estático sale
+                // del tamaño NATIVO del frame, no de setDisplaySize — hay que re-sincronizar.
+                rect.body.setSize(itemConf.w, itemConf.h);
+                rect.body.updateFromGameObject();
+            }
             scene.physics.add.overlap(player, rect, () => pickupItem(itemConf, rect), null, scene);
             itemRects.push({ conf: itemConf, rect });
+        }
+
+        // Botín al romper un objeto rompible (barril/caja/jarrón) — el tamaño del loot
+        // matchea el tamaño (en celdas) del objeto roto, ver LOOT_POOLS/pickLootFor.
+        let lootDropCounter = 0;
+        function dropBreakableLoot(conf) {
+            const wCells = conf.w / CELL_SIZE, hCells = conf.h / CELL_SIZE;
+            const loot = pickLootFor(wCells, hCells);
+            createLiveItem({
+                id: 'loot_drop_' + (lootDropCounter++) + '_' + Date.now(),
+                x: conf.x, y: conf.y,
+                w: loot.w * CELL_SIZE, h: loot.h * CELL_SIZE,
+                lootValue: 1, lootSpriteKey: loot.key
+            });
         }
 
         function pickupItem(itemConf, rect) {
@@ -6291,7 +7313,7 @@
             if (itemConf.unlocksSpell) unlockSpell(itemConf.unlocksSpell);
             if (itemConf.lootValue) {
                 lootCollected += itemConf.lootValue;
-                playSfx('fountainCorrect'); // mismo "click" que al destrabar una fuente/puerta
+                playSfx('lootPickup');
             }
         }
 
@@ -6374,14 +7396,22 @@
         // undefined) no agrupan, siempre son una entidad individual.
         function destroyWall(w) {
             if (w.destroyed) return;
-            const group = (w.conf.breaksWith !== undefined) ? getConnectedSpecialWalls(w) : [w];
+            // Sin breaksWith = objeto rompible (barril/caja/jarrón, antes la Pared con
+            // Vida lisa): explota, suelta botín y usa su propio sonido — las paredes
+            // especiales (fuego/hielo/mágica) siguen exactamente como estaban.
+            const isBreakable = w.conf.breaksWith === undefined;
+            const group = isBreakable ? [w] : getConnectedSpecialWalls(w);
             group.forEach(member => {
                 if (member.destroyed) return;
                 member.destroyed = true;
                 wallsDestroyed[member.conf.id] = true;
                 if (member.rect) member.rect.destroy();
+                if (isBreakable) {
+                    spawnBreakableExplosion(member.conf.x, member.conf.y);
+                    dropBreakableLoot(member.conf);
+                }
             });
-            playSfx('fountainCorrect');
+            playSfx(isBreakable ? 'breakableBreak' : 'fountainCorrect');
             buildBlockedGrid();
         }
 
@@ -6557,6 +7587,169 @@
             });
         }
 
+        // Mismo mecanismo que buildBlueTrapCostCells, para las trampas de pinches — la
+        // diferencia (tanque cruza derecho, magos/normales rodean) se aplica en
+        // getNeighbors/computeEnemyPath, no acá: esto solo marca QUÉ celdas ocupa cada
+        // trampa, sin importar quién la va a evitar.
+        function buildSpikeTrapCostCells() {
+            spikeTrapCells = new Set();
+            const margin = 12;
+
+            activeRoom.spikeTraps.forEach(conf => {
+                const info = SPIKE_SHAPE_INFO[conf.shape || 'plate'];
+                const centerY = spikeShapeCenterY(conf, info); // ver el comentario ahí (alto par vs impar)
+                const halfW = (info.w * CELL_SIZE) / 2;
+                const halfH = (info.h * CELL_SIZE) / 2;
+                const left = conf.x - halfW - margin;
+                const right = conf.x + halfW + margin;
+                const top = centerY - halfH - margin;
+                const bottom = centerY + halfH + margin;
+
+                const colStart = Math.max(0, Math.floor(left / CELL_SIZE));
+                const colEnd = Math.min(GRID_COLS - 1, Math.floor(right / CELL_SIZE));
+                const rowStart = Math.max(0, Math.floor(top / CELL_SIZE));
+                const rowEnd = Math.min(GRID_ROWS - 1, Math.floor(bottom / CELL_SIZE));
+
+                for (let col = colStart; col <= colEnd; col++) {
+                    for (let row = rowStart; row <= rowEnd; row++) {
+                        spikeTrapCells.add(col + ',' + row);
+                    }
+                }
+            });
+        }
+
+        // Repinta TODA la niebla ya explorada de la sala activa a partir de su memoria
+        // permanente (atenuada) — usado al armar la sala. Las antorchas NO participan acá
+        // a propósito: solo iluminan (glow + sombra ambiente), nunca revelan ni alteran la
+        // niebla de guerra — lo único que revela niebla es el campo de visión del jugador
+        // (ver updateFogOfWar).
+        function repaintExploredFog() {
+            if (!fogCanvasTex || !exploredCellsSet[currentRoom]) return;
+            const fogCtx = fogCanvasTex.getContext();
+            fogCtx.fillStyle = FOG_DIM_STYLE;
+            exploredCellsSet[currentRoom].forEach(key => {
+                const parts = key.split(',');
+                const fx = Number(parts[0]) * FOG_CELL_SUBDIV, fy = Number(parts[1]) * FOG_CELL_SUBDIV;
+                fogCtx.clearRect(fx, fy, FOG_CELL_SUBDIV, FOG_CELL_SUBDIV);
+                fogCtx.fillRect(fx, fy, FOG_CELL_SUBDIV, FOG_CELL_SUBDIV);
+            });
+            fogCanvasTex.refresh();
+        }
+
+        // Paradas de un gradiente radial con caída GRADUAL/difusa (varios escalones en
+        // vez de las 2 puntas de un gradiente lineal común, que se ven como un borde
+        // marcado y definido, sobre todo con blend ADD/destination-out) — usado tanto
+        // para el halo de luz (ensureGlowTexture) como para el agujero de la sombra
+        // ambiente (updateAmbientShadow), así los dos quedan visualmente parejos.
+        function addSoftRadialStops(grad, colorRGB, peakAlpha) {
+            grad.addColorStop(0, `rgba(${colorRGB},${peakAlpha})`);
+            grad.addColorStop(0.35, `rgba(${colorRGB},${peakAlpha * 0.55})`);
+            grad.addColorStop(0.7, `rgba(${colorRGB},${peakAlpha * 0.15})`);
+            grad.addColorStop(1, `rgba(${colorRGB},0)`);
+        }
+
+        // Repinta ENTERA la capa de sombra ambiente cada frame: fondo oscuro parejo
+        // (AMBIENT_SHADOW_OPACITY) con un agujero de borde suave (gradiente radial,
+        // destination-out) alrededor de cada fuente de luz real — el halo del jugador y
+        // cada antorcha. A diferencia de la niebla, no tiene memoria permanente ni le
+        // importa si el jugador ya "exploró" algo: es puro "¿hay una luz cerca AHORA?".
+        // Sin raycasting/paredes a propósito (no se pidió, y esto es solo ambientación,
+        // no un mecanismo de visibilidad real como la niebla).
+        function updateAmbientShadow() {
+            if (!ambientShadowCanvasTex) return;
+            const ctx = ambientShadowCanvasTex.getContext();
+
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.clearRect(0, 0, FOG_COLS, FOG_ROWS);
+            ctx.fillStyle = `rgba(0,0,0,${AMBIENT_SHADOW_OPACITY})`;
+            ctx.fillRect(0, 0, FOG_COLS, FOG_ROWS);
+
+            ctx.globalCompositeOperation = 'destination-out';
+            const punchLight = (x, y, radiusPx) => {
+                if (radiusPx <= 0) return;
+                const cx = x / FOG_TEXEL, cy = y / FOG_TEXEL, r = radiusPx / FOG_TEXEL;
+                const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+                addSoftRadialStops(grad, '0,0,0', 1);
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.fill();
+            };
+            punchLight(player.x, player.y, PLAYER_GLOW_RADIUS * 1.3);
+            (activeRoom.torches || []).forEach(t => punchLight(t.x, t.y, TORCH_LIGHT_RADIUS * 1.15));
+            ctx.globalCompositeOperation = 'source-over';
+
+            ambientShadowCanvasTex.refresh();
+        }
+
+        // Antorcha: sprite animado (chica o grande según conf.size — ver
+        // TORCH_TOOL_INFO/mapEditorPlace, sin conf.size = chica, para antorchas viejas
+        // guardadas antes de este reskin) + un halo de luz COLOREADO aparte (glow,
+        // Phaser Image) que agujerea la sombra ambiente (ver updateAmbientShadow) — la
+        // antorcha SOLO ilumina, nunca revela ni toca la niebla de guerra. glow.visible
+        // sigue a TORCH_USE_GENERATED_GLOW (checkbox del Editor de Parámetros): si está
+        // apagado, se ve solamente la luz ya pintada en el sprite. glow reusa la MISMA
+        // textura genérica que el halo del jugador (ensureGlowTexture) — el color sale
+        // de un tinte (setTint), no de la textura, así cambiar TORCH_LIGHT_COLOR no
+        // requiere regenerar nada. ambientSound: chisporroteo en loop MUY bajo (ver
+        // TORCH_AMBIENT_BASE_VOLUME) — uno por antorcha, no espacial (no baja con la
+        // distancia al jugador), por eso el volumen base es tan chico.
+        function createTorchVisual(sceneRef, conf) {
+            const size = conf.size === 'large' ? 'large' : 'small';
+            const info = TORCH_TOOL_INFO['torch_' + size];
+
+            const sprite = sceneRef.add.sprite(conf.x, conf.y, 'torch2_' + size + '_1');
+            sprite.setDisplaySize(info.w * CELL_SIZE, info.h * CELL_SIZE);
+            sprite.setDepth(4);
+            const animKey = 'torch2_' + size + '_flicker';
+            if (sceneRef.anims.exists(animKey)) sprite.play(animKey);
+
+            const glow = sceneRef.add.image(conf.x, conf.y, ensureGlowTexture(sceneRef));
+            glow.setDisplaySize(TORCH_LIGHT_RADIUS * 2, TORCH_LIGHT_RADIUS * 2);
+            glow.setTint(hexColorToInt(TORCH_LIGHT_COLOR));
+            glow.setDepth(DEPTH_FOG + 1);
+            glow.setBlendMode(Phaser.BlendModes.ADD);
+            glow.setVisible(TORCH_USE_GENERATED_GLOW);
+
+            const ambientSound = sceneRef.sound.add('sfx_torch_ambience', { loop: true, volume: TORCH_AMBIENT_BASE_VOLUME * ambienceVolume });
+            ambientSound.play();
+
+            return { conf, sprite, glow, ambientSound };
+        }
+
+        // "Paredes" del Editor de Mapa: un sprite de 1 celda pintado ARRIBA de lo que
+        // ya haya ahí (normalmente un Bloque sólido) — puramente cosmético, no toca
+        // colisión/pathfinding/línea de visión (esas siguen leyendo activeRoom.editorBlocks,
+        // que esto ni siquiera toca).
+        function createWallSkinVisual(sceneRef, conf) {
+            const image = sceneRef.add.image(conf.x, conf.y, 'wallskin_' + conf.key);
+            image.setDisplaySize(CELL_SIZE, CELL_SIZE);
+            image.setDepth(4.5);
+            return { conf, image };
+        }
+
+        // Textura fija (gradiente radial BLANCO, 200x200) para cualquier halo de luz del
+        // juego (jugador, antorchas, y lo que se agregue después) — se crea UNA sola vez
+        // para todo el juego (no depende de la sala, a diferencia de la niebla/el piso) y
+        // se reusa entre reinicios de escena. Blanco a propósito: el color real de cada
+        // halo sale de tintarla (setTint) por separado, no de la textura — así un mismo
+        // dibujo sirve para cualquier color sin tener que regenerar el canvas. El tamaño
+        // en pantalla se ajusta con setDisplaySize según el radio de cada halo.
+        function ensureGlowTexture(sceneRef) {
+            const key = '__glow';
+            if (sceneRef.textures.exists(key)) return key;
+            const size = 200;
+            const tex = sceneRef.textures.createCanvas(key, size, size);
+            const ctx = tex.getContext();
+            const r = size / 2;
+            const grad = ctx.createRadialGradient(r, r, 0, r, r, r);
+            addSoftRadialStops(grad, '255,255,255', 0.5);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, size, size);
+            tex.refresh();
+            return key;
+        }
+
         function worldToCell(x, y) {
             return {
                 col: Phaser.Math.Clamp(Math.floor(x / CELL_SIZE), 0, GRID_COLS - 1),
@@ -6618,7 +7811,9 @@
 
         // Solo movimiento ortogonal (arriba/abajo/izquierda/derecha): sin diagonales,
         // para que los enemigos caminen igual que el jugador (4 direcciones).
-        function getNeighbors(col, row) {
+        // avoidSpikes: false para el Tanque (cruza las trampas de pinches derecho, sin
+        // rodearlas) — ver computeEnemyPath, que es quien decide esto según el tipo.
+        function getNeighbors(col, row, avoidSpikes) {
             const dirs = [
                 { dc: 1, dr: 0, cost: 1 },
                 { dc: -1, dr: 0, cost: 1 },
@@ -6635,10 +7830,14 @@
 
                 // Las trampas azules no bloquean el paso, pero encarecen mucho la celda:
                 // el pathfinding preferirá rodearlas salvo que cruzarlas sea claramente
-                // más corto para seguir alcanzando al jugador.
+                // más corto para seguir alcanzando al jugador. Pinches: mismo criterio,
+                // pero solo para quien avoidSpikes=true (el Tanque las cruza gratis).
                 let cost = dir.cost;
                 if (blueTrapCells.has(newCol + ',' + newRow)) {
                     cost += BLUE_TRAP_COST_PENALTY;
+                }
+                if (avoidSpikes && spikeTrapCells && spikeTrapCells.has(newCol + ',' + newRow)) {
+                    cost += SPIKE_TRAP_COST_PENALTY;
                 }
 
                 neighbors.push({ col: newCol, row: newRow, cost });
@@ -6679,7 +7878,7 @@
             return { col, row };
         }
 
-        function findPath(startCol, startRow, endCol, endRow) {
+        function findPath(startCol, startRow, endCol, endRow, avoidSpikes) {
             const target = findNearestOpenCell(endCol, endRow);
             endCol = target.col;
             endRow = target.row;
@@ -6720,7 +7919,7 @@
                 closedSet.add(curKey);
                 if (++expansions > MAX_EXPANSIONS) break;
 
-                const neighbors = getNeighbors(current[1], current[2]);
+                const neighbors = getNeighbors(current[1], current[2], avoidSpikes);
 
                 for (const neighbor of neighbors) {
                     const neighborKey = neighbor.col + ',' + neighbor.row;
@@ -6752,7 +7951,10 @@
             const start = worldToCell(inst.obj.x, inst.obj.y);
             const end = worldToCell(targetX, targetY);
 
-            const path = findPath(start.col, start.row, end.col, end.row);
+            // El Tanque cruza las trampas de pinches derecho (no las rodea); Mago y
+            // Normal sí las evitan, mismo criterio que la trampa azul/giratoria.
+            const avoidSpikes = inst.typeKey !== 'tanque';
+            const path = findPath(start.col, start.row, end.col, end.row, avoidSpikes);
 
             inst.path = path.map(cell => cellToWorld(cell.col, cell.row));
             inst.pathIndex = 0;
@@ -6846,31 +8048,41 @@
 
         const MAP_EDITOR_TOOL_LABELS = {
             wall: '🧱 Bloque sólido — bloquea el paso, sin vida ni efectos.',
-            hpwall: '🟩 Pared con vida — se rompe a golpes o con cualquier hechizo de daño.',
             firewall: '🟧 Pared de fuego — se rompe SOLO con la Bola de Fuego (área).',
             icewall: '🟦 Pared de hielo — se rompe SOLO con Inmovilizar.',
             magicwall: '🟪 Pared mágica — se rompe SOLO con la Bola Mágica.',
-            trap: '🔷 Trampa — se puede pisar, hace daño y empuja.',
-            sawtrap: '🪚 Trampa de Sierra — mantené apretado y arrastrá (horizontal o vertical) para dibujar el riel.',
-            spiketrap: '⚠️ Trampa de Pinches — no bloquea el paso; quedate parado encima el tiempo configurado para que se active.',
-            loot: '💰 Botín — suma 1 al contador al pisarlo.',
+            trap: '🔷 Trampa Giratoria — se puede pisar, hace daño y empuja. El hechizo de Inmovilizar la friza (deja de dañar) por el tiempo configurado.',
+            sawtrap_h: '🪚 Sierra Horizontal — mantené apretado y arrastrá a los costados para dibujar el riel.',
+            sawtrap_v: '🪚 Sierra Vertical — mantené apretado y arrastrá hacia arriba/abajo para dibujar el riel.',
+            spiketrap: '⚠️ Trampa de Pinches (1x2) — una ráfaga de pinches sale del piso; no bloquea el paso, quedate parado encima el tiempo configurado para que se active.',
             spellbook_magic: '📖🔮 Manual de Bola Mágica — desbloquea el hechizo al pisarlo. Único en los 3 niveles.',
             spellbook_immobilize: '📖❄️ Manual de Inmovilizar — desbloquea el hechizo al pisarlo. Único en los 3 niveles.',
             spellbook_fireball: '📖🔥 Manual de Bola de Fuego — desbloquea el hechizo al pisarlo. Único en los 3 niveles.',
             normal: '💀 Esqueleto Normal — cuerpo a cuerpo.',
             tanque: '🛡️ Esqueleto Tanque — cuerpo a cuerpo, lento y resistente.',
             mago: '🔮 Esqueleto Mago — ataca a distancia.',
-            deco_barrel: '🛢️ Barril — puramente decorativo, se puede caminar encima, sin más efecto.',
-            deco_crate: '📦 Caja — puramente decorativa, se puede caminar encima, sin más efecto.',
-            deco_chest: '🗃️ Cofre — puramente decorativo, se puede caminar encima, sin más efecto.',
-            deco_key: '🔑 Llave — puramente decorativa, se puede caminar encima, sin más efecto.',
-            deco_door: '🚪 Puerta decorativa — NO es una puerta de nivel, solo un detalle visual, puramente decorativo (se camina encima).',
-            deco_plank: '🪵 Tabla/puente — puramente decorativa, se puede caminar encima, sin más efecto.',
             move: '✋ Mover — click y arrastrá cualquier bloque/entidad existente.',
             erase: '🗑️ Borrar — click (o arrastrar) sobre lo que quieras sacar del mapa.'
         };
+        // Un hint por sprite EXACTO, generado desde las mismas tablas que arman los
+        // botones de miniatura — nada hardcodeado a mano por variante.
+        Object.keys(BREAKABLE_TOOL_LOOKUP).forEach(tool => {
+            const v = BREAKABLE_TOOL_LOOKUP[tool];
+            MAP_EDITOR_TOOL_LABELS[tool] = `Objeto rompible (${v.w}x${v.h}) — se rompe a golpes o con cualquier hechizo de daño (más resistente cuanto más ancho). Al romperse: sonido + explosión + botín que matchea su tamaño.`;
+        });
+        Object.keys(LOOT_TOOL_LOOKUP).forEach(tool => {
+            const v = LOOT_TOOL_LOOKUP[tool];
+            MAP_EDITOR_TOOL_LABELS[tool] = `💰 Botín (${v.w}x${v.h}) — suma 1 al contador al pisarlo.`;
+        });
+        Object.keys(TORCH_TOOL_INFO).forEach(tool => {
+            const v = TORCH_TOOL_INFO[tool];
+            MAP_EDITOR_TOOL_LABELS[tool] = `🔥 ${v.label} — ilumina el radio configurado a su alrededor (halo + sombra ambiente + chisporroteo en loop), sin bloquear el paso ni revelar niebla de guerra.`;
+        });
 
         function setupMapEditor() {
+            setupMapEditorTabs();
+            setupMapEditorRoomSwitch();
+            document.getElementById('me-collapse-toggle').addEventListener('click', toggleMapEditorPanelCollapse);
             document.getElementById('map-editor-toggle-btn').addEventListener('click', toggleMapEditor);
             document.getElementById('btn-copy-map-json').addEventListener('click', copyMapEditorStateToClipboard);
             document.getElementById('btn-restore-map').addEventListener('click', restoreOriginalMap);
@@ -6891,18 +8103,76 @@
                 status.style.color = ok ? '#7fffa0' : '#ff8080';
             });
 
-            document.querySelectorAll('.me-tool-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const tool = btn.dataset.tool;
-                    mapEditorTool = (mapEditorTool === tool) ? null : tool;
-                    mapEditorDragging = null;
-                    updateMapEditorToolUI();
+            buildAllThumbGrids(); // antes de wirear clicks: arma los botones de miniatura (rompibles/botín/trampas)
+
+            document.querySelectorAll('.me-tool-btn, .me-tool-btn-thumb').forEach(wireMapEditorToolButton);
+        }
+
+        // Un solo click-handler para CUALQUIER botón de herramienta (texto o miniatura)
+        // — mismo toggle de siempre: clickear la ya elegida la deselecciona.
+        function wireMapEditorToolButton(btn) {
+            btn.addEventListener('click', () => {
+                const tool = btn.dataset.tool;
+                mapEditorTool = (mapEditorTool === tool) ? null : tool;
+                mapEditorDragging = null;
+                updateMapEditorToolUI();
+            });
+        }
+
+        // Arma un botón de miniatura (imagen real + tamaño en celdas) para el panel
+        // de Objetos/Trampas — reemplaza los botones de solo texto para todo lo que
+        // tiene un sprite concreto que mostrar (rompibles/botín/trampas), así se elige
+        // a ojo exactamente cuál poner en vez de "una caja cualquiera" al azar.
+        function createThumbButton(tool, imgSrc, label) {
+            const btn = document.createElement('button');
+            btn.className = 'me-tool-btn-thumb';
+            btn.dataset.tool = tool;
+            btn.title = label;
+            const img = document.createElement('img');
+            img.src = imgSrc;
+            img.alt = '';
+            const span = document.createElement('span');
+            span.textContent = label;
+            btn.appendChild(img);
+            btn.appendChild(span);
+            return btn;
+        }
+
+        // Arma TODAS las grillas de miniaturas de una — botín, cada categoría de
+        // rompible, y las 3 trampas — a partir de las mismas tablas de datos que ya
+        // usa mapEditorPlace (BREAKABLE_VARIANTS/LOOT_ALL/TRAP_TOOL_INFO), así el panel
+        // y la lógica de colocación nunca pueden desincronizarse entre sí.
+        function buildAllThumbGrids() {
+            const lootGrid = document.getElementById('me-loot-grid');
+            LOOT_ALL.forEach((loot, i) => {
+                const tool = 'loot_' + (i + 1);
+                lootGrid.appendChild(createThumbButton(tool, 'assets/loot/' + (i + 1) + '.png', loot.w + 'x' + loot.h));
+            });
+
+            Object.keys(BREAKABLE_VARIANTS).forEach(cat => {
+                const grid = document.getElementById('me-breakable-' + cat + '-grid');
+                if (!grid) return;
+                BREAKABLE_VARIANTS[cat].forEach((variant, i) => {
+                    const tool = 'hpwall_' + cat + '_' + (i + 1);
+                    grid.appendChild(createThumbButton(tool, 'assets/breakables/' + cat + '/' + (i + 1) + '.png', variant.w + 'x' + variant.h));
                 });
+            });
+
+            const trapGrid = document.getElementById('me-trap-grid');
+            Object.keys(TRAP_TOOL_INFO).forEach(tool => {
+                const info = TRAP_TOOL_INFO[tool];
+                trapGrid.appendChild(createThumbButton(tool, info.thumb, info.label));
+            });
+
+            const torchGrid = document.getElementById('me-torch-grid');
+            Object.keys(TORCH_TOOL_INFO).forEach(tool => {
+                const info = TORCH_TOOL_INFO[tool];
+                torchGrid.appendChild(createThumbButton(tool, info.thumb, info.label));
             });
         }
 
         function updateMapEditorToolUI() {
-            document.querySelectorAll('.me-tool-btn').forEach(btn => {
+            document.querySelectorAll('.me-tool-btn, .me-tool-btn-thumb').forEach(btn => {
                 btn.classList.toggle('selected', btn.dataset.tool === mapEditorTool);
             });
             const hint = document.getElementById('me-current-tool-hint');
@@ -6913,7 +8183,7 @@
         // (no tiene sentido tener las dos pestañas de edición pisándose el input) y con
         // cualquier modal/pausa/game-over en curso.
         function toggleMapEditor() {
-            if (!EDITOR_MODE_ENABLED) return;
+            if (!isEditorModeActive()) return;
             if (gameOver || activeModal) return;
 
             const paramsPanel = document.getElementById('editor-panel');
@@ -6945,6 +8215,7 @@
             // verse TODO (incluidos los enemigos, sin importar dónde quedaron parados
             // la última vez que corrió updateFogOfWar) para poder editar alrededor.
             if (fogUnexploredImage) fogUnexploredImage.setVisible(!mapEditorActive);
+            if (ambientShadowImage) ambientShadowImage.setVisible(!mapEditorActive);
 
             // La cámara se desacopla del jugador mientras se edita — WASD la mueve
             // directo (ver updateGame), no al jugador, que queda congelado donde estaba.
@@ -6969,6 +8240,7 @@
                 }
             } else {
                 if (mapEditorGraphics) mapEditorGraphics.clear();
+                if (mapEditorGhostSprite) mapEditorGhostSprite.setVisible(false);
                 if (enemies) unfreezeAllEnemies();
             }
         }
@@ -6993,7 +8265,7 @@
             if (!scene) return;
 
             const view = scene.cameras.main.worldView;
-            mapEditorGraphics.lineStyle(1, 0xffffff, 0.12);
+            mapEditorGraphics.lineStyle(1, 0xffffff, 0.2);
             const colStart = Math.floor(view.x / CELL_SIZE) * CELL_SIZE;
             const rowStart = Math.floor(view.y / CELL_SIZE) * CELL_SIZE;
             for (let x = colStart; x < view.x + view.width + CELL_SIZE; x += CELL_SIZE) {
@@ -7009,10 +8281,38 @@
                 : mapEditorTool ? (MAP_EDITOR_TOOL_COLORS[mapEditorTool] || 0xffffff)
                 : 0x888888;
 
-            // Preview del riel de la Trampa de Sierra mientras se arrastra: angosto
-            // (una celda de espesor) y solo crece en el eje ya fijado por pointermove
-            // — si `sawTrapDragAxis` todavía es null (recién apretaste, sin mover lo
-            // suficiente), se ve nomás la celda de partida, sin adelantar un eje al azar.
+            // Fantasma semitransparente con el SPRITE real (rompibles/botín/trampas,
+            // ver PLACEABLE_SPRITE_INFO) en vez de la caja de color de siempre — así se
+            // ve de antemano exactamente cómo va a quedar, no solo qué celda ocupa.
+            const spriteInfo = mapEditorTool && !sawTrapDragStart && !mapEditorSelectStart ? PLACEABLE_SPRITE_INFO[mapEditorTool] : null;
+            if (spriteInfo) {
+                const snapped = snapToGrid(mapEditorLastPointer.x, mapEditorLastPointer.y);
+                const centerX = spriteInfo.anchor === 'bottom-left' ? snapped.x + (spriteInfo.w - 1) * CELL_SIZE / 2 : snapped.x;
+                const centerY = spriteInfo.anchor === 'bottom-left' || spriteInfo.anchor === 'bottom-center'
+                    ? snapped.y - (spriteInfo.h - 1) * CELL_SIZE / 2
+                    : snapped.y;
+                if (!mapEditorGhostSprite) {
+                    mapEditorGhostSprite = scene.add.sprite(0, 0, spriteInfo.textureKey);
+                    mapEditorGhostSprite.setDepth(50);
+                    mapEditorGhostSprite.setAlpha(0.55);
+                }
+                mapEditorGhostSprite.setTexture(spriteInfo.textureKey);
+                mapEditorGhostSprite.setDisplaySize(spriteInfo.w * CELL_SIZE, spriteInfo.h * CELL_SIZE);
+                mapEditorGhostSprite.setPosition(centerX, centerY);
+                mapEditorGhostSprite.setVisible(true);
+
+                // El contorno blanco de precisión sigue mostrando la celda CLICKEADA
+                // (abajo-izquierda), no el sprite entero — es lo que realmente se
+                // ajusta a la grilla al hacer click.
+                mapEditorGraphics.lineStyle(2, 0xffffff, 0.95);
+                mapEditorGraphics.strokeRect(snapped.x - CELL_SIZE / 2, snapped.y - CELL_SIZE / 2, CELL_SIZE, CELL_SIZE);
+                return;
+            }
+            if (mapEditorGhostSprite) mapEditorGhostSprite.setVisible(false);
+
+            // Preview del riel de Sierra Horizontal/Vertical mientras se arrastra:
+            // angosto (una celda de espesor), crece solo en el eje fijo de la
+            // herramienta elegida (sawTrapDragAxis, ver TRAP_TOOL_INFO.sawAxis).
             if (sawTrapDragStart) {
                 const a = snapToGrid(sawTrapDragStart.x, sawTrapDragStart.y);
                 const b = sawTrapDragAxis === 'horizontal' ? snapToGrid(mapEditorLastPointer.x, a.y)
@@ -7038,7 +8338,7 @@
                 const top = Math.min(a.y, b.y) - CELL_SIZE / 2, bottom = Math.max(a.y, b.y) + CELL_SIZE / 2;
                 mapEditorGraphics.fillStyle(color, 0.3);
                 mapEditorGraphics.fillRect(left, top, right - left, bottom - top);
-                mapEditorGraphics.lineStyle(2, color, 0.95);
+                mapEditorGraphics.lineStyle(2, 0xffffff, 0.95); // ver comentario de contorno blanco más abajo
                 mapEditorGraphics.strokeRect(left, top, right - left, bottom - top);
                 return;
             }
@@ -7046,39 +8346,32 @@
             const snapped = snapToGrid(mapEditorLastPointer.x, mapEditorLastPointer.y);
             mapEditorGraphics.fillStyle(color, 0.35);
             mapEditorGraphics.fillRect(snapped.x - CELL_SIZE / 2, snapped.y - CELL_SIZE / 2, CELL_SIZE, CELL_SIZE);
-            mapEditorGraphics.lineStyle(2, color, 0.9);
+            // Contorno SIEMPRE blanco (no el color de la herramienta): en salas oscuras
+            // sin antorchas (Nivel 2/3, recién editables) un contorno del mismo tono
+            // apagado que el piso (ej. la pared 0x634d4d) se perdía casi por completo.
+            // El relleno de color sigue avisando qué herramienta está activa.
+            mapEditorGraphics.lineStyle(2, 0xffffff, 0.95);
             mapEditorGraphics.strokeRect(snapped.x - CELL_SIZE / 2, snapped.y - CELL_SIZE / 2, CELL_SIZE, CELL_SIZE);
         }
 
+        // Sigue usándose de fallback SOLO para tools que no tienen sprite propio (ver
+        // PLACEABLE_SPRITE_INFO/renderMapEditorOverlay) — rompibles/botín/trampas ya
+        // no pasan por acá, muestran su fantasma real en vez de una caja de color.
         const MAP_EDITOR_TOOL_COLORS = {
-            wall: 0x634d4d, hpwall: 0x6b8e23, firewall: 0xf96c14, icewall: 0x0355a1, magicwall: 0x9b30ff,
-            trap: 0x2266ff, sawtrap: SAW_COLOR, spiketrap: 0x9a9a9a, loot: 0xffb361,
+            wall: 0x634d4d, firewall: 0xf96c14, icewall: 0x0355a1, magicwall: 0x9b30ff,
             spellbook_magic: 0xe8d9b0, spellbook_immobilize: 0xe8d9b0, spellbook_fireball: 0xe8d9b0,
-            normal: 0x8b4513, tanque: 0x5c5c66, mago: 0x7d3c98,
-            deco_barrel: 0x8a5a2b, deco_crate: 0x8a5a2b, deco_chest: 0x8a5a2b,
-            deco_key: 0xffd24d, deco_door: 0x5b3a29, deco_plank: 0x8a5a2b
+            normal: 0x8b4513, tanque: 0x5c5c66, mago: 0x7d3c98
         };
 
-        // tool de decoración -> textura ya cargada en preload(). Todas comparten
-        // exactamente el mismo camino de creación (mapEditorPlace) y de colisión
-        // (buildBlockedGrid/getNearbyWalls/hasLineOfSight ya recorren
-        // activeRoom.editorBlocks genérico) — lo único que cambia es qué imagen
-        // dibujan, por eso una sola tabla alcanza en vez de un branch por tipo.
-        const DECO_TOOL_TEXTURES = {
-            deco_barrel: 'tile_barrel',
-            deco_crate: 'tile_crate',
-            deco_chest: 'tile_chest',
-            deco_key: 'tile_key',
-            deco_door: 'tile_door_decor',
-            deco_plank: 'tile_plank'
-        };
-
-        // Barril, caja, cofre, llave, puerta decorativa y tabla/puente son TODOS
-        // puramente decorativos: el jugador (y los enemigos) los atraviesan caminando,
-        // sin ningún efecto de juego. Se identifica por conf.textureKey (no por el
-        // nombre de la herramienta) para que un mapa YA guardado con estos props
-        // también se vuelva pasable solo, sin tener que volver a colocarlos.
-        const PASSABLE_DECO_TEXTURES = new Set(['tile_crate', 'tile_chest', 'tile_plank', 'tile_barrel', 'tile_key', 'tile_door_decor']);
+        // La decoración puramente cosmética (barril/caja/cofre/llave/etc.) se eliminó
+        // del todo — estas 2 tablas quedan VACÍAS a propósito, no borradas, porque
+        // "Bloque sólido" (tool === 'wall') sigue pasando por el mismo mecanismo
+        // genérico (activeRoom.editorBlocks + isPassableDecoBlock) en buildBlockedGrid/
+        // bakeFloorTexture/mapEditorPlace — si algún día se agrega un prop pasable
+        // nuevo, alcanza con sumar una entrada acá de nuevo, no hace falta tocar nada
+        // de esos otros lugares.
+        const DECO_TOOL_TEXTURES = {};
+        const PASSABLE_DECO_TEXTURES = new Set();
         function isPassableDecoBlock(conf) {
             return !!(conf.textureKey && PASSABLE_DECO_TEXTURES.has(conf.textureKey));
         }
@@ -7198,10 +8491,10 @@
             }, 3000);
         }
 
-        // Termina el arrastre de la Trampa de Sierra (ver pointerup en create()).
-        // `axis` viene de pointermove (null si el arrastre fue tan corto que nunca llegó
-        // a fijarse — en ese caso se trata como un click simple y sale un riel mínimo de
-        // 2 celdas horizontal). `start` YA está en coordenadas del mundo, sin snapear.
+        // Termina el arrastre de Sierra Horizontal/Vertical (ver pointerup en create()).
+        // `axis` viene FIJO desde pointerdown (TRAP_TOOL_INFO[tool].sawAxis) — el
+        // fallback a 'horizontal' de acá abajo es solo defensivo, no debería pasar en la
+        // práctica. `start` YA está en coordenadas del mundo, sin snapear.
         function finalizeSawTrapPlacement(start, axis, endX, endY) {
             pushMapEditorUndoSnapshot();
             const a = snapToGrid(start.x, start.y);
@@ -7261,17 +8554,35 @@
                 if (!isPassableDecoBlock(conf)) traps.add(rect);
                 editorBlockRects.push({ conf, rect });
                 if (!mapEditorBatching) buildBlockedGrid();
-            } else if (tool === 'spiketrap') {
-                const conf = { id: 'spiketrap_' + uid, x: sx, y: sy };
+            } else if (tool === 'spiketrap' || SPIKE_SHAPE_INFO[tool.replace('spiketrap_', '')]) {
+                // 'spiketrap' (el botón base, 1x1) es directamente la trampilla ahora —
+                // antes dejaba shape sin definir y se dibujaba a mano (círculo + picos en
+                // Graphics); ver createSpikeTrapVisual/drawSpikeTrapVisual, unificado a un
+                // solo camino de sprites.
+                const shape = tool === 'spiketrap' ? 'plate' : tool.replace('spiketrap_', '');
+                const conf = { id: 'spiketrap_' + uid, x: sx, y: sy, shape };
                 activeRoom.spikeTraps.push(conf);
                 spikeTrapState.push(createSpikeTrapVisual(scene, conf));
-            } else if (tool === 'hpwall') {
-                const conf = { id: 'wall_hp_editor_' + uid, x: sx, y: sy, w: CELL_SIZE, h: CELL_SIZE, maxHealth: HP_WALL_MAX_HEALTH };
+                if (!mapEditorBatching) buildSpikeTrapCostCells();
+            } else if (BREAKABLE_TOOL_LOOKUP[tool]) {
+                // Ya NO es al azar: cada miniatura del panel es su PROPIO botón (tool
+                // key = "hpwall_<categoría>_<índice>"), así el usuario elige el sprite
+                // exacto que ve, no una variante random de su categoría.
+                const variant = BREAKABLE_TOOL_LOOKUP[tool];
+                // Anclaje abajo-izquierda: (sx,sy) es el centro de la celda CLICKEADA,
+                // que es la esquina de abajo-a-la-izquierda del objeto — se convierte acá,
+                // UNA vez, al centro geométrico real, que es lo que conf.x/y guarda de acá
+                // en más (así buildBlockedGrid/fog/línea de visión no necesitan saber nada
+                // de anclajes, todos asumen conf.x/y = centro, igual que siempre).
+                const centerX = sx + (variant.w - 1) * CELL_SIZE / 2;
+                const centerY = sy - (variant.h - 1) * CELL_SIZE / 2;
+                const conf = {
+                    id: 'wall_hp_editor_' + uid, x: centerX, y: centerY,
+                    w: variant.w * CELL_SIZE, h: variant.h * CELL_SIZE,
+                    maxHealth: HP_WALL_MAX_HEALTH * variant.w, variantKey: variant.key
+                };
                 activeRoom.hpWalls.push(conf);
-                const rect = scene.add.rectangle(sx, sy, CELL_SIZE, CELL_SIZE, 0x6b8e23);
-                rect.setStrokeStyle(2, 0x3f5514);
-                rect.setDepth(4);
-                traps.add(rect);
+                const rect = createHpWallVisual(scene, conf);
                 hpWallsState.push({ conf, rect, health: conf.maxHealth, destroyed: false, hitByPlayerSwing: false });
                 if (!mapEditorBatching) buildBlockedGrid();
             } else if (tool === 'firewall' || tool === 'icewall' || tool === 'magicwall') {
@@ -7292,8 +8603,17 @@
                 blueTraps.add(rect);
                 blueTrapRects.push({ conf, rect });
                 if (!mapEditorBatching) buildBlueTrapCostCells();
-            } else if (tool === 'loot') {
-                const conf = { id: 'loot_editor_' + uid, x: sx, y: sy, w: 22, h: 21, lootValue: 1 };
+            } else if (LOOT_TOOL_LOOKUP[tool]) {
+                // Mismo anclaje abajo-izquierda que los rompibles (ver más arriba) — con
+                // loot de hasta 2x2 el viejo anclaje centrado ya no alcanzaba.
+                const loot = LOOT_TOOL_LOOKUP[tool];
+                const centerX = sx + (loot.w - 1) * CELL_SIZE / 2;
+                const centerY = sy - (loot.h - 1) * CELL_SIZE / 2;
+                const conf = {
+                    id: 'loot_editor_' + uid, x: centerX, y: centerY,
+                    w: loot.w * CELL_SIZE, h: loot.h * CELL_SIZE,
+                    lootValue: 1, lootSpriteKey: loot.key
+                };
                 activeRoom.items.push(conf);
                 createLiveItem(conf);
             } else if (tool.startsWith('spellbook_')) {
@@ -7314,6 +8634,13 @@
                 inst.stateKey = currentRoom + '_' + idx;
                 inst.spawnIndex = idx;
                 enemies.push(inst);
+            } else if (TORCH_TOOL_INFO[tool]) {
+                // Anclaje 'center' (no bottom-left): igual que siempre, el sprite (más
+                // alto que 1 celda) queda centrado en el punto clickeado, sin ajuste.
+                const info = TORCH_TOOL_INFO[tool];
+                const conf = { id: 'torch_' + uid, x: sx, y: sy, size: info.size };
+                activeRoom.torches.push(conf);
+                torchVisuals.push(createTorchVisual(scene, conf));
             }
 
             if (!mapEditorBatching) saveMapEditorState();
@@ -7333,6 +8660,12 @@
             const specialWall = specialWallsState.find(w => !w.destroyed && rectContainsPoint(w.rect, x, y));
             if (specialWall) return { kind: 'specialwall', entry: specialWall };
 
+            // Antes que "block" a propósito: si una celda tiene wall-skin ENCIMA de un
+            // Bloque sólido, Mover/Borrar apuntan primero a la pintura (así se puede
+            // corregir un wall-skin sin arriesgar tirar abajo la pared de estructura).
+            const wallSkin = wallSkinVisuals.find(w => rectContainsPoint(w.image, x, y));
+            if (wallSkin) return { kind: 'wallskin', entry: wallSkin };
+
             const block = editorBlockRects.find(b => rectContainsPoint(b.rect, x, y));
             if (block) return { kind: 'block', entry: block };
 
@@ -7342,11 +8675,33 @@
             const sawTrap = sawTrapState.find(s => rectContainsPoint(s.bg, x, y));
             if (sawTrap) return { kind: 'sawtrap', entry: sawTrap };
 
-            const spikeTrap = spikeTrapState.find(s => rectContainsPoint(s.bg, x, y));
+            const spikeTrap = spikeTrapState.find(s => rectContainsPoint(s.hitbox, x, y));
             if (spikeTrap) return { kind: 'spiketrap', entry: spikeTrap };
 
             const item = itemRects.find(i => rectContainsPoint(i.rect, x, y));
             if (item) return { kind: 'item', entry: item };
+
+            const torch = torchVisuals.find(t => rectContainsPoint(t.sprite, x, y));
+            if (torch) return { kind: 'torch', entry: torch };
+
+            // Se prueba contra la celda de 1x1 (conf.x/y), no el sprite alto y
+            // desplazado (que arranca en y+CELL_SIZE/2 y sube) — más previsible para
+            // encontrarla al click justo donde se ve la base de la llama.
+            const fireTrap = fireTrapState.find(f => Math.abs(f.conf.x - x) < CELL_SIZE / 2 && Math.abs(f.conf.y - y) < CELL_SIZE / 2);
+            if (fireTrap) return { kind: 'firetrap', entry: fireTrap };
+
+            // Puerta y fuente mágica: movibles SOLO en Nivel 2/3 (exactamente una de cada
+            // una por nivel, ver el comentario en handleMapEditorDrag/mapEditorEraseAt) —
+            // en la Sala 1 (3 puertas + la fuente final, con lógica de victoria/hechizos
+            // de por medio) se dejan intactas, ni siquiera se buscan acá.
+            if (currentRoom !== 'sala1') {
+                const door = doors.find(d => rectContainsPoint(d.rect, x, y));
+                if (door) return { kind: 'door', entry: door };
+
+                if (rectContainsPoint(interactObject, x, y)) {
+                    return { kind: 'fountain', entry: { rect: interactObject, prompt: interactPrompt, conf: activeRoom.fountain } };
+                }
+            }
 
             // Pilares del diseño original (Figma) — SOLO en salas con floorZones (Sala 1).
             // Van al final a propósito: son rectángulos largos fusionados que suelen
@@ -7453,6 +8808,9 @@
         function mapEditorEraseAt(x, y) {
             const found = findMapEditorEntityAt(x, y);
             if (!found) return;
+            // Puerta y fuente: exactamente una de cada una por nivel, nunca cero — se
+            // pueden mover (ver handleMapEditorDrag) pero Borrar no hace nada acá.
+            if (found.kind === 'door' || found.kind === 'fountain') return;
             // Recién ACÁ, con algo realmente encontrado para borrar — un Borrar en el
             // aire (nada bajo el cursor) no cuenta como acción, no hay que poder
             // "deshacer" no haber hecho nada. Mismo criterio de batching que mapEditorPlace.
@@ -7498,21 +8856,39 @@
                 // pesa distinto para el pathfinding. Las sierras YA en vuelo de este riel
                 // (si había alguna) se dejan terminar solas su recorrido.
                 entry.bg.destroy();
-                entry.groove.destroy();
+                entry.railTiles.forEach(spr => spr.destroy());
+                entry.maskTiles.forEach(m => m.sprite.destroy());
                 sawTrapState.splice(sawTrapState.indexOf(entry), 1);
                 const ciSaw = activeRoom.sawTraps.indexOf(entry.conf);
                 if (ciSaw !== -1) activeRoom.sawTraps.splice(ciSaw, 1);
             } else if (kind === 'spiketrap') {
-                entry.bg.destroy();
-                entry.spikes.destroy();
+                entry.sprite.destroy();
                 spikeTrapState.splice(spikeTrapState.indexOf(entry), 1);
                 const ciSpike = activeRoom.spikeTraps.indexOf(entry.conf);
                 if (ciSpike !== -1) activeRoom.spikeTraps.splice(ciSpike, 1);
+                if (!mapEditorBatching) buildSpikeTrapCostCells();
+            } else if (kind === 'wallskin') {
+                entry.image.destroy();
+                wallSkinVisuals.splice(wallSkinVisuals.indexOf(entry), 1);
+                const ciWallSkin = activeRoom.wallSkins.indexOf(entry.conf);
+                if (ciWallSkin !== -1) activeRoom.wallSkins.splice(ciWallSkin, 1);
             } else if (kind === 'item') {
                 entry.rect.destroy();
                 itemRects.splice(itemRects.indexOf(entry), 1);
                 const ci = activeRoom.items.indexOf(entry.conf);
                 if (ci !== -1) activeRoom.items.splice(ci, 1);
+            } else if (kind === 'torch') {
+                entry.sprite.destroy();
+                entry.glow.destroy();
+                entry.ambientSound.destroy(); // para el loop y libera el Sound (ver createTorchVisual)
+                torchVisuals.splice(torchVisuals.indexOf(entry), 1);
+                const ciTorch = activeRoom.torches.indexOf(entry.conf);
+                if (ciTorch !== -1) activeRoom.torches.splice(ciTorch, 1);
+            } else if (kind === 'firetrap') {
+                entry.sprite.destroy();
+                fireTrapState.splice(fireTrapState.indexOf(entry), 1);
+                const ciFire = activeRoom.fireTraps.indexOf(entry.conf);
+                if (ciFire !== -1) activeRoom.fireTraps.splice(ciFire, 1);
             } else if (kind === 'pillar') {
                 // No se borra el pilar entero (podría ser una franja de varios metros):
                 // se marca SOLO la celda de 32px bajo el click como "sacada". En batch
@@ -7544,22 +8920,64 @@
                     activeRoom.enemySpawns[entry.spawnIndex].y = sy;
                 }
             } else if (kind === 'sawtrap') {
-                // Dos objetos visuales (bg + groove), no uno solo — se mueven los dos
-                // juntos. Solo reposiciona, no cambia largo/orientación/ancho.
-                entry.bg.setPosition(sx, sy);
-                entry.groove.setPosition(sx, sy);
+                // Varios sprites (tapas + tramos + máscaras), no uno solo — se mueven
+                // todos juntos vía layoutSawTrapVisual. Solo reposiciona, no cambia
+                // largo/orientación/cantidad de tramos.
                 entry.conf.x = sx;
                 entry.conf.y = sy;
+                layoutSawTrapVisual(entry);
             } else if (kind === 'spiketrap') {
-                // Los picos son un Graphics dibujado con coordenadas ABSOLUTAS del
-                // mundo (no relativas a un x/y propio) — mover el bloque significa
-                // redibujarlos en la posición nueva, no solo reposicionar el objeto.
-                entry.bg.setPosition(sx, sy);
                 entry.conf.x = sx;
                 entry.conf.y = sy;
-                const stateToKeep = entry.visualState;
-                entry.visualState = null; // fuerza el redibujado aunque el estado no cambie
-                drawSpikeTrapVisual(entry, stateToKeep || 'flat');
+                // conf.x/y sigue siendo la celda de ABAJO (ver spikeShapeCenterY) —
+                // mismo ajuste que createSpikeTrapVisual, para que no se desalinee al
+                // moverla con la herramienta Mover.
+                const info = SPIKE_SHAPE_INFO[entry.shape];
+                entry.sprite.setPosition(sx, spikeShapeCenterY(entry.conf, info));
+            } else if (kind === 'torch') {
+                entry.sprite.setPosition(sx, sy);
+                entry.conf.x = sx;
+                entry.conf.y = sy;
+                entry.glow.setPosition(sx, sy);
+            } else if (kind === 'firetrap') {
+                entry.sprite.setPosition(sx, sy + CELL_SIZE / 2); // ver createFireTrapVisual (anclado abajo)
+                entry.conf.x = sx;
+                entry.conf.y = sy;
+            } else if (kind === 'wallskin') {
+                entry.image.setPosition(sx, sy);
+                entry.conf.x = sx;
+                entry.conf.y = sy;
+            } else if (kind === 'door') {
+                // La franja de disparo (triggerX/Y) es un offset propio, no el mismo
+                // punto que el rect visual (ver la puerta de "vuelta" en nivel2/nivel3:
+                // el trigger está pegado más allá, del otro lado) — se mueve por delta
+                // para conservar ese offset, no se pisa con sx/sy directo.
+                const dx = sx - entry.conf.x, dy = sy - entry.conf.y;
+                entry.rect.setPosition(sx, sy);
+                if (entry.rect.body) entry.rect.body.updateFromGameObject();
+                entry.conf.x = sx;
+                entry.conf.y = sy;
+                entry.conf.triggerX += dx;
+                entry.conf.triggerY += dy;
+                entry.triggerZone.setPosition(entry.conf.triggerX, entry.conf.triggerY);
+                if (entry.triggerZone.body) entry.triggerZone.body.updateFromGameObject();
+                entry.lockedPrompt.setPosition(sx, sy - entry.conf.h / 2 - 16);
+            } else if (kind === 'fountain') {
+                entry.rect.setPosition(sx, sy);
+                entry.prompt.setPosition(sx, sy - (entry.rect.width / 2 + 20));
+                entry.conf.x = sx;
+                entry.conf.y = sy;
+            } else if (kind === 'hpwall') {
+                // Mismo anclaje abajo-izquierda que al colocarla (ver mapEditorPlace):
+                // (sx,sy) es la celda que se está arrastrando, la de abajo-a-la-izquierda
+                // del objeto — se convierte al centro geométrico real antes de guardar.
+                const wCells = entry.conf.w / CELL_SIZE, hCells = entry.conf.h / CELL_SIZE;
+                const centerX = sx + (wCells - 1) * CELL_SIZE / 2;
+                const centerY = sy - (hCells - 1) * CELL_SIZE / 2;
+                entry.rect.setPosition(centerX, centerY);
+                entry.conf.x = centerX;
+                entry.conf.y = centerY;
+                if (entry.rect.body) entry.rect.body.updateFromGameObject();
             } else {
                 entry.rect.setPosition(sx, sy);
                 entry.conf.x = sx;
@@ -7571,6 +8989,8 @@
                 buildBlockedGrid();
             } else if (kind === 'trap') {
                 buildBlueTrapCostCells();
+            } else if (kind === 'spiketrap') {
+                buildSpikeTrapCostCells();
             }
         }
 
@@ -7589,8 +9009,13 @@
                 blueTraps: activeRoom.blueTraps,
                 sawTraps: activeRoom.sawTraps,
                 spikeTraps: activeRoom.spikeTraps,
+                torches: activeRoom.torches,
+                wallSkins: activeRoom.wallSkins,
+                fireTraps: activeRoom.fireTraps,
                 items: activeRoom.items,
-                enemySpawns: activeRoom.enemySpawns
+                enemySpawns: activeRoom.enemySpawns,
+                doors: activeRoom.doors,
+                fountain: activeRoom.fountain
             }));
         }
 
@@ -7658,11 +9083,17 @@
                 blueTraps: activeRoom.blueTraps,
                 sawTraps: activeRoom.sawTraps,
                 spikeTraps: activeRoom.spikeTraps,
+                torches: activeRoom.torches,
+                wallSkins: activeRoom.wallSkins,
+                fireTraps: activeRoom.fireTraps,
                 items: activeRoom.items,
-                enemySpawns: activeRoom.enemySpawns
+                enemySpawns: activeRoom.enemySpawns,
+                doors: activeRoom.doors,
+                fountain: activeRoom.fountain
             };
             try {
                 localStorage.setItem(MAP_EDITOR_STORAGE_KEY, JSON.stringify(all));
+                scheduleServerSave();
                 return true;
             } catch (e) {
                 console.warn('No se pudo guardar el mapa en localStorage:', e.message);
@@ -7692,8 +9123,13 @@
             if (saved.blueTraps) target.blueTraps = saved.blueTraps;
             if (saved.sawTraps) target.sawTraps = saved.sawTraps;
             if (saved.spikeTraps) target.spikeTraps = saved.spikeTraps;
+            if (saved.torches) target.torches = saved.torches;
+            if (saved.wallSkins) target.wallSkins = saved.wallSkins;
+            if (saved.fireTraps) target.fireTraps = saved.fireTraps;
             if (saved.items) target.items = saved.items;
             if (saved.enemySpawns) target.enemySpawns = saved.enemySpawns;
+            if (saved.doors) target.doors = saved.doors;
+            if (saved.fountain) target.fountain = saved.fountain;
         }
 
         // Borra la edición guardada de la sala ACTUAL y recarga desde cero: como
@@ -7726,8 +9162,13 @@
                 blueTraps: activeRoom.blueTraps,
                 sawTraps: activeRoom.sawTraps,
                 spikeTraps: activeRoom.spikeTraps,
+                torches: activeRoom.torches,
+                wallSkins: activeRoom.wallSkins,
+                fireTraps: activeRoom.fireTraps,
                 items: activeRoom.items,
-                enemySpawns: activeRoom.enemySpawns
+                enemySpawns: activeRoom.enemySpawns,
+                doors: activeRoom.doors,
+                fountain: activeRoom.fountain
             };
             const json = JSON.stringify(snapshot, null, 2);
             navigator.clipboard.writeText(json).then(() => {
