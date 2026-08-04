@@ -325,6 +325,17 @@
             color: white;
             box-sizing: border-box;
         }
+        .cinematic-speaker {
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #ffd166;
+            margin-bottom: 6px;
+        }
+        .cinematic-speaker.hidden {
+            display: none;
+        }
         #cinematic-dialogue-text {
             margin: 0;
             font-size: 18px;
@@ -1649,6 +1660,10 @@
              showSlide), a pantalla completa detrás del cuadro de diálogo. -->
         <div id="cinematic-bg" class="cinematic-bg"></div>
         <div class="cinematic-dialogue-box">
+            <!-- Nombre del narrador — solo visible en las diapositivas con "speaker"
+                 seteado (ver INTRO_SLIDES/showSlide), oculta en las que son historia/
+                 lore sin un personaje puntual hablando. -->
+            <div id="cinematic-speaker" class="cinematic-speaker hidden"></div>
             <p id="cinematic-dialogue-text"></p>
             <div class="cinematic-nav-row">
                 <button id="cinematic-prev-btn" class="cinematic-nav-btn">◀ Previous</button>
@@ -2675,6 +2690,9 @@
         // pantalla completa + un párrafo de texto — parametrizable acá nomás (agregar/
         // sacar/reordenar una diapositiva no necesita tocar el markup). Se avanza con
         // los botones Next/Previous (o Enter para Next), y Skip/ESC saltea todo.
+        // speaker (opcional): nombre a mostrar en la etiqueta arriba del texto — la
+        // diapositiva 1 es historia/lore (el libro), sin narrador puntual; la 2 ya es
+        // Klegar (el aventurero) hablando en primera persona, relatando él mismo.
         const INTRO_SLIDES = [
             {
                 image: 'assets/cinematic/1.jpeg',
@@ -2682,7 +2700,8 @@
             },
             {
                 image: 'assets/cinematic/2.jpeg',
-                text: 'Así que fui enviado aquí, a esta Cripta de Nekkman, a ver si puedo encontrarlo, o a un paradero de él, para acabar con esta amenaza que ataca al mundo. Y de paso... hacerme con algunas monedas.'
+                speaker: 'Klegar',
+                text: 'Por eso, fui enviado a esta asquerosa cripta desde Paxtria, para buscar información del nigromante. Es importante acabar con la amenaza que azota al mundo pero... también está bueno tener algo de oro en los bolsillos jeje'
             }
         ];
 
@@ -2941,6 +2960,9 @@
         function showSlide() {
             const slide = INTRO_SLIDES[cinematicSlideIndex];
             document.getElementById('cinematic-bg').style.backgroundImage = `url('${slide.image}')`;
+            const speakerEl = document.getElementById('cinematic-speaker');
+            speakerEl.textContent = slide.speaker || '';
+            speakerEl.classList.toggle('hidden', !slide.speaker);
             document.getElementById('cinematic-dialogue-text').textContent = slide.text;
             document.getElementById('cinematic-slide-counter').textContent =
                 (cinematicSlideIndex + 1) + ' / ' + INTRO_SLIDES.length;
