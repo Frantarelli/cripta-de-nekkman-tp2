@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "savedAt": "2026-08-04T04:05:25.665Z",
+  "savedAt": "2026-08-04T21:52:27.570Z",
   "editorSettings": {
     "ctrl-player-cooldown": "35",
     "ctrl-player-damage": "15",
@@ -37,6 +37,8 @@
     "ctrl-torch-radius": "150",
     "ctrl-torch-color": "#ff9c1a",
     "ctrl-torch-generated-glow": false,
+    "ctrl-fountain-glow-radius": "90",
+    "ctrl-fountain-glow-color": "#9b6bff",
     "ctrl-ambient-shadow": "50",
     "ctrl-spell-magic-amount": "25",
     "ctrl-spell-magic-cooldown": "4",
@@ -21653,6 +21655,7 @@
           "size": "small"
         }
       ],
+      "checkpoints": [],
       "wallSkins": [],
       "fireTraps": [],
       "items": [
@@ -21993,8 +21996,8 @@
         "size": 100
       },
       "playerStart": {
-        "x": 1552,
-        "y": 2064
+        "x": 112,
+        "y": 2320
       }
     }
   }
