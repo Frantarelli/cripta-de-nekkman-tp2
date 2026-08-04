@@ -3767,6 +3767,12 @@
             }
         };
 
+        // Qué familia de sprite animado (ver preload/anims.create) usa el reskin de
+        // cada fuente, por su id — A (Sala 1, la central) con la imagen "uno" del
+        // usuario, B/C (Nivel 2/Nivel 3) con la imagen "cero". Ver interactObject en
+        // create() y showInteractResult (setTint al resolverla).
+        const FOUNTAIN_SPRITE_FAMILY = { A: 'fountain1', B: 'fountain0', C: 'fountain0' };
+
         // ---- Definición de las categorías de enemigo. Un solo objeto de config por
         // categoría controla a TODOS los enemigos de ese tipo (aunque haya varios en
         // el mapa): tocar un valor acá (o desde el Editor) los afecta a todos por igual.
@@ -4579,6 +4585,17 @@
             }
             this.load.audio('sfx_torch_ambience', 'assets/sfx/sfx_torch_ambience.mp3');
 
+            // Fuentes (objeto interactuable de los acertijos, ver interactObject/
+            // FOUNTAIN_RIDDLES): reskin animado en reemplazo del cuadrado negro/dorado
+            // liso de siempre — "fountain0" (7 cuadros) para Nivel 2 y Nivel 3, "fountain1"
+            // (6 cuadros) para la fuente central de Sala 1, ver FOUNTAIN_SPRITE_FAMILY.
+            for (let i = 1; i <= 7; i++) {
+                this.load.image('fountain0_' + i, 'assets/fountain0/' + i + '.png');
+            }
+            for (let i = 1; i <= 6; i++) {
+                this.load.image('fountain1_' + i, 'assets/fountain1/' + i + '.png');
+            }
+
             // "plate": la única Trampa de Pinches que queda (1x2 celdas) — flat/small
             // estáticos, "full" es una animación de 3 cuadros (la ráfaga saliendo) en
             // vez de una sola imagen fija, ver drawSpikeTrapVisual.
@@ -4808,6 +4825,22 @@
                     key: 'torch2_large_flicker',
                     frames: [1, 2, 3, 4, 5, 6].map(i => ({ key: 'torch2_large_' + i })),
                     frameRate: 6,
+                    repeat: -1
+                });
+            }
+            if (!this.anims.exists('fountain0_idle')) {
+                this.anims.create({
+                    key: 'fountain0_idle',
+                    frames: [1, 2, 3, 4, 5, 6, 7].map(i => ({ key: 'fountain0_' + i })),
+                    frameRate: 8,
+                    repeat: -1
+                });
+            }
+            if (!this.anims.exists('fountain1_idle')) {
+                this.anims.create({
+                    key: 'fountain1_idle',
+                    frames: [1, 2, 3, 4, 5, 6].map(i => ({ key: 'fountain1_' + i })),
+                    frameRate: 8,
                     repeat: -1
                 });
             }
@@ -5349,13 +5382,22 @@
             // se mueva la cámara a donde se mueva.
             screenFlashOverlay.setScrollFactor(0);
 
-            // Fuente (objeto interactuable) de esta sala. Si ya se resolvió antes
-            // (persiste en fountainsSolved entre salas/reinicios) arranca dorada, como
-            // quedó la última vez, en vez de "reseteada" a negra.
+            // Fuente (objeto interactuable) de esta sala — sprite animado (ver
+            // FOUNTAIN_SPRITE_FAMILY/preload), reemplaza al cuadrado negro/dorado liso
+            // de siempre. fountainSize pasa a ser la ALTURA visual (no un cuadrado: los
+            // sprites son bastante más altos que anchos, forzarlos a una caja cuadrada
+            // los deformaría) — el ancho se escala proporcional al frame nativo. Si ya
+            // se resolvió antes (persiste en fountainsSolved entre salas/reinicios)
+            // arranca con el tinte dorado, como quedó la última vez, en vez de
+            // "reseteada" al color normal del sprite.
             const fountainSize = activeRoom.fountain.size || 50;
-            interactObject = this.add.rectangle(activeRoom.fountain.x, activeRoom.fountain.y, fountainSize, fountainSize,
-                fountainsSolved[activeRoom.fountain.id] ? 0xffd700 : 0x000000);
-            interactObject.setStrokeStyle(3, 0xffffff);
+            const fountainFamily = FOUNTAIN_SPRITE_FAMILY[activeRoom.fountain.id] || 'fountain0';
+            interactObject = this.add.sprite(activeRoom.fountain.x, activeRoom.fountain.y, fountainFamily + '_1');
+            const fountainNative = this.textures.get(fountainFamily + '_1').getSourceImage();
+            const fountainScale = fountainSize / fountainNative.height;
+            interactObject.setDisplaySize(fountainNative.width * fountainScale, fountainSize);
+            if (this.anims.exists(fountainFamily + '_idle')) interactObject.play(fountainFamily + '_idle');
+            if (fountainsSolved[activeRoom.fountain.id]) interactObject.setTint(0xffd700);
             interactObject.setDepth(4);
             interactPrompt = this.add.text(activeRoom.fountain.x, activeRoom.fountain.y - (fountainSize / 2 + 20), 'Presiona E', {
                 fontSize: '14px',
@@ -6847,7 +6889,7 @@
             if (wasCorrect) {
                 onFountainCorrect();
                 fountainsSolved[activeRoom.fountain.id] = true;
-                interactObject.setFillStyle(0xffd700);
+                interactObject.setTint(0xffd700);
                 // Destrabar en el acto cualquier puerta de ESTA sala que dependía nada
                 // más que de esta fuente (si además necesita otra fuente de otra sala
                 // que todavía no se resolvió, isDoorUnlocked() sigue dando false y
@@ -9912,7 +9954,7 @@
                 entry.lockedPrompt.setPosition(sx, sy - entry.conf.h / 2 - 16);
             } else if (kind === 'fountain') {
                 entry.rect.setPosition(sx, sy);
-                entry.prompt.setPosition(sx, sy - (entry.rect.width / 2 + 20));
+                entry.prompt.setPosition(sx, sy - (entry.rect.displayHeight / 2 + 20));
                 entry.conf.x = sx;
                 entry.conf.y = sy;
             } else if (kind === 'hpwall') {
