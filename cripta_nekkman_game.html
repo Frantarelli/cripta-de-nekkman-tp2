@@ -1274,6 +1274,22 @@
                         Sumar halo de color generado (si está apagado, se ve solo la luz ya pintada en el sprite de la antorcha)
                     </label>
                 </div>
+                <h4>🔮 Fuentes de los acertijos</h4>
+                <p class="editor-subhint">
+                    Mismo mecanismo que las antorchas — un solo radio/color para las 3
+                    fuentes de la partida (Sala 1, Nivel 2, Nivel 3).
+                </p>
+                <div class="control-row">
+                    <label for="ctrl-fountain-glow-radius">
+                        Intensidad de las fuentes (radio)
+                        <span class="control-value" id="val-fountain-glow-radius">90</span> px
+                    </label>
+                    <input type="range" id="ctrl-fountain-glow-radius" min="30" max="300" step="10" value="90">
+                </div>
+                <div class="control-row">
+                    <label for="ctrl-fountain-glow-color">Color de las fuentes</label>
+                    <input type="color" id="ctrl-fountain-glow-color" value="#9b6bff">
+                </div>
                 <p class="editor-subhint">
                     La luz propia del jugador se configura en la pestaña 🧍 Jugador.
                 </p>
@@ -1928,6 +1944,14 @@
             bindCheckbox('ctrl-torch-generated-glow', v => {
                 TORCH_USE_GENERATED_GLOW = v;
                 if (scene) torchVisuals.forEach(t => t.glow.setVisible(v));
+            });
+            bindSlider('ctrl-fountain-glow-radius', 'val-fountain-glow-radius', v => {
+                FOUNTAIN_LIGHT_RADIUS = v;
+                if (fountainGlow) fountainGlow.setDisplaySize(v * 2, v * 2);
+            });
+            bindTextInput('ctrl-fountain-glow-color', v => {
+                FOUNTAIN_LIGHT_COLOR = v;
+                if (fountainGlow) fountainGlow.setTint(hexColorToInt(v));
             });
             bindSlider('ctrl-player-glow-radius', 'val-player-glow-radius', v => {
                 PLAYER_GLOW_RADIUS = v;
@@ -3534,6 +3558,13 @@
         // antorchas ni de la niebla) — ver playerGlowImage/updateGame.
         let PLAYER_GLOW_RADIUS = 50;
         let PLAYER_GLOW_COLOR = '#fff4d6';
+        // Halo de luz de la fuente (objeto interactuable de los acertijos, ver
+        // interactObject/FOUNTAIN_SPRITE_FAMILY) — mismo mecanismo que las antorchas
+        // (glow con ensureGlowTexture + agujero en updateAmbientShadow), un solo
+        // radio/color para las 3 fuentes de la partida (misma sala nunca tiene más de
+        // una a la vez, así que no hace falta "por instancia").
+        let FOUNTAIN_LIGHT_RADIUS = 90;
+        let FOUNTAIN_LIGHT_COLOR = '#9b6bff';
 
         // Los <input type="color"> del HTML dan "#rrggbb"; Phaser (setTint) necesita el
         // número 0xrrggbb — conversión chica, usada por ambos halos (jugador y antorcha).
@@ -4088,7 +4119,7 @@
                     { id: 'wall_magic_2', x: 732, y: 250, w: 32, h: 32, breaksWith: 'magic', color: 0x9b30ff },
                     { id: 'wall_magic_3', x: 764, y: 250, w: 32, h: 32, breaksWith: 'magic', color: 0x9b30ff }
                 ],
-                fountain: { id: 'A', x: 1232, y: 640, size: 100 }, // posición y tamaño visual x2
+                fountain: { id: 'A', x: 1232, y: 640, size: 250 }, // posición y tamaño visual x2.5 (la fuente central es más grande que las otras 2)
                 doors: [
                     // Izquierda: la destraba la fuente de esta misma sala -> Nivel 2.
                     {
@@ -4143,7 +4174,7 @@
                 // x/y ajustados al múltiplo de CELL_SIZE más cercano (60,200 no caía en
                 // grilla) — para que arranque ya alineada, ahora que la fuente se puede
                 // arrastrar con el Editor de Mapa (ver handleMapEditorDrag/snapToGrid).
-                fountain: { id: 'B', x: 48, y: 208 },
+                fountain: { id: 'B', x: 48, y: 208, size: 100 }, // tamaño visual x2 (antes 50 por default)
                 doors: [
                     // Vuelta a la Sala 1: siempre destrabada (requires: []), no hay nada que
                     // cruzar, es directamente por dónde entraste. entryPoint: aparecés
@@ -4187,7 +4218,7 @@
                 ],
                 items: [],
                 // Ver comentario equivalente en nivel2: x/y ajustados a la grilla.
-                fountain: { id: 'C', x: 1744, y: 208 },
+                fountain: { id: 'C', x: 1744, y: 208, size: 100 }, // tamaño visual x2 (antes 50 por default)
                 doors: [
                     // entryPoint: aparecés junto a la puerta derecha de la Sala 1.
                     // Ver comentario equivalente en nivel2: x/y/triggerX/triggerY
@@ -4439,6 +4470,7 @@
         // razón de ser del checkpoint.
         let activeCheckpoint = null;
         let playerGlowImage; // halo sutil que sigue al jugador, ver PLAYER_GLOW_RADIUS
+        let fountainGlow; // halo de la fuente de esta sala, ver FOUNTAIN_LIGHT_RADIUS
         let scene;
 
         // ---- Optimización del HUD ----
@@ -5400,6 +5432,15 @@
             if (this.anims.exists(fountainFamily + '_idle')) interactObject.play(fountainFamily + '_idle');
             if (fountainsSolved[activeRoom.fountain.id]) interactObject.setTint(0xffd700);
             interactObject.setDepth(4);
+
+            // Halo de luz de la fuente — mismo mecanismo que las antorchas (glow con
+            // ensureGlowTexture, agujerea la sombra ambiente, ver updateAmbientShadow),
+            // configurable desde el Editor de Parámetros (FOUNTAIN_LIGHT_RADIUS/COLOR).
+            fountainGlow = this.add.image(activeRoom.fountain.x, activeRoom.fountain.y, ensureGlowTexture(this));
+            fountainGlow.setDisplaySize(FOUNTAIN_LIGHT_RADIUS * 2, FOUNTAIN_LIGHT_RADIUS * 2);
+            fountainGlow.setTint(hexColorToInt(FOUNTAIN_LIGHT_COLOR));
+            fountainGlow.setDepth(DEPTH_FOG + 1);
+            fountainGlow.setBlendMode(Phaser.BlendModes.ADD);
             interactPrompt = this.add.text(activeRoom.fountain.x, activeRoom.fountain.y - (fountainSize / 2 + 20), 'Presiona E', {
                 fontSize: '14px',
                 fill: '#ffffff',
@@ -8482,6 +8523,7 @@
             };
             punchLight(player.x, player.y, PLAYER_GLOW_RADIUS * 1.3);
             (activeRoom.torches || []).forEach(t => punchLight(t.x, t.y, TORCH_LIGHT_RADIUS * 1.15));
+            if (interactObject) punchLight(interactObject.x, interactObject.y, FOUNTAIN_LIGHT_RADIUS * 1.15);
             ctx.globalCompositeOperation = 'source-over';
 
             ambientShadowCanvasTex.refresh();
@@ -9956,6 +9998,7 @@
             } else if (kind === 'fountain') {
                 entry.rect.setPosition(sx, sy);
                 entry.prompt.setPosition(sx, sy - (entry.rect.displayHeight / 2 + 20));
+                if (fountainGlow) fountainGlow.setPosition(sx, sy);
                 entry.conf.x = sx;
                 entry.conf.y = sy;
             } else if (kind === 'hpwall') {
