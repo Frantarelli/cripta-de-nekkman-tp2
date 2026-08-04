@@ -761,7 +761,7 @@
                 <img class="health-fill" id="health-fill" src="assets/hud/health_bar.png" alt="">
             </div>
         </div>
-        <div id="loot-counter">💰 <span id="loot-count">0</span></div>
+        <div id="loot-counter">💰 Botín capturado: <span id="loot-count">0</span> de <span id="loot-max">0</span></div>
     </div>
     <div id="hud-topleft">⎋ ESC · Pausa</div>
     <div id="status">Usa WASD para moverte | ESPACIO para atacar</div>
@@ -2707,7 +2707,7 @@
                 ambienceVolume = Number(ambienceInput.value) / 100;
                 document.getElementById('val-volume-ambience').textContent = ambienceInput.value;
                 if (ambienceSound) ambienceSound.setVolume(ambienceVolume);
-                if (torchVisuals) torchVisuals.forEach(t => t.ambientSound.setVolume(TORCH_AMBIENT_BASE_VOLUME * ambienceVolume));
+                updateTorchAmbientVolumes();
             });
 
             const brightnessInput = document.getElementById('ctrl-brightness');
@@ -2953,7 +2953,7 @@
             // Un solo sonido de daño aunque haya agarrado a varios enemigos a la vez
             // (es lo que pasa siempre con un hechizo de área) — sonarían todos pisados
             // uno encima del otro si se disparara uno por enemigo.
-            if (hitAnyEnemy) playSfx('creatureDamage');
+            if (hitAnyEnemy) playSfx('creatureDamage', x, y);
 
             if (within(player.x, player.y)) {
                 playerHealth -= spell.damage;
@@ -3016,7 +3016,7 @@
                 const type = ENEMY_TYPES[target.typeKey];
                 const dmg = Math.max(0, spell.damage - type.armor);
                 target.health -= dmg; // el flash de daño (efecto de recibir daño) se dispara solo
-                playSfx('creatureDamage');
+                playSfx('creatureDamage', target.obj.x, target.obj.y);
             } else if (spellKey === 'immobilize') {
                 target.immobilizedUntil = scene.time.now + spell.immobilizeDuration;
             }
@@ -3347,9 +3347,15 @@
         let TORCH_USE_GENERATED_GLOW = false;
         // Chisporroteo ambiente en loop, MUY bajo (el usuario lo pidió así) — factor
         // fijo, no configurable con slider propio: el volumen real de cada antorcha es
-        // este factor por el mismo ambienceVolume de Configuración (así respeta el
-        // volumen general y el mute, sin agregar un control nuevo). Ver createTorchVisual.
+        // este factor por el mismo ambienceVolume de Configuración Y por qué tan cerca
+        // está el jugador (espacial, ver updateTorchAmbientVolumes) — así respeta el
+        // volumen general y el mute, sin agregar un control nuevo. Ver createTorchVisual.
         const TORCH_AMBIENT_BASE_VOLUME = 0.15;
+        // Rango de audición del chisporroteo — más corto que SFX_HEAR_DISTANCE porque es
+        // un sonido de ambiente bajo, no un efecto fuerte (no tendría sentido escucharlo
+        // desde la otra punta del mapa).
+        const TORCH_SOUND_FULL_VOLUME_DISTANCE = 90;
+        const TORCH_SOUND_HEAR_DISTANCE = 320;
         // Paleta de "Paredes" del Editor de Mapa (ver createWallSkinVisual/mapEditorPlace)
         // — un sprite fijo por celda, pintado ARRIBA de un Bloque sólido, sin efecto en
         // la colisión. Nombres = archivo en assets/wall_palette/<key>.png.
@@ -4509,6 +4515,7 @@
             dom.status = document.getElementById('status');
             dom.healthFill = document.getElementById('health-fill');
             dom.lootCount = document.getElementById('loot-count');
+            dom.lootMax = document.getElementById('loot-max');
             dom.phaserContainer = document.getElementById('phaser-container');
             dom.spells = {};
             Object.keys(SPELLS).forEach(key => {
@@ -5953,6 +5960,7 @@
             updateSpikeTraps();
             updateFireTraps();
             updateBlueTraps();
+            updateTorchAmbientVolumes();
 
             // ---- Barra de vida de las paredes con vida (las especiales no tienen) ----
             hpWallsState.forEach(w => {
@@ -6089,6 +6097,11 @@
             if (hudLast.lootCollected !== lootCollected) {
                 dom.lootCount.textContent = lootCollected;
                 hudLast.lootCollected = lootCollected;
+            }
+            const maxLootNow = computeMaxLootForRoom();
+            if (hudLast.maxLoot !== maxLootNow) {
+                dom.lootMax.textContent = maxLootNow;
+                hudLast.maxLoot = maxLootNow;
             }
 
             // Contador de FPS del HUD (promedio real del loop de Phaser). Redondeado a
@@ -6231,7 +6244,7 @@
                 // azar cada vez (SOUNDS.skeletonWalk es un array, ver playSfx).
                 if (isMoving && scene.time.now - inst.lastWalkSoundTime > WALK_SOUND_INTERVAL) {
                     inst.lastWalkSoundTime = scene.time.now;
-                    playSfx('skeletonWalk');
+                    playSfx('skeletonWalk', inst.obj.x, inst.obj.y);
                 }
                 const attackConf = type.sprite.attack;
                 // Si el ataque tiene variantes direccionales propias (hoy solo el
@@ -6542,7 +6555,32 @@
             fireball: 1.4
         };
 
-        function playSfx(soundEventKey) {
+        // Audio espacial: efectos con una fuente en el mundo (esqueleto, sierra, pincho,
+        // rompible, hechizo que impacta) suenan más flojo cuanto más lejos está el
+        // jugador, y no se escuchan directamente fuera de SFX_HEAR_DISTANCE — a
+        // diferencia de música/ambiente (loops globales, ver musicSound/ambienceSound)
+        // y de los sonidos que ocurren EN el jugador mismo (playerDamage, casteo de
+        // hechizo), que se quedan a volumen fijo, ver playSfx.
+        const SFX_FULL_VOLUME_DISTANCE = 220;
+        const SFX_HEAR_DISTANCE = 700;
+        function distanceVolumeFactor(x, y) {
+            if (!player) return 1;
+            const dist = Phaser.Math.Distance.Between(player.x, player.y, x, y);
+            if (dist <= SFX_FULL_VOLUME_DISTANCE) return 1;
+            if (dist >= SFX_HEAR_DISTANCE) return 0;
+            return 1 - (dist - SFX_FULL_VOLUME_DISTANCE) / (SFX_HEAR_DISTANCE - SFX_FULL_VOLUME_DISTANCE);
+        }
+
+        // Reproduce un efecto de sonido por su clave de SOUNDS (ej. playSfx('fountainCorrect')).
+        // No revienta si todavía no cargó o el navegador bloqueó el audio.
+        // Algunos audios grabados quedaron con menos nivel que el resto del paquete —
+        // en vez de reprocesar los archivos, se compensa acá con una ganancia extra por
+        // evento (multiplica a sfxVolume). 1 = sin cambio. playerDamage y fireball se
+        // sentían bajos incluso contra el resto de los efectos, ver pedido del usuario.
+        // x/y opcionales: si se pasan, el volumen se atenúa según la distancia del
+        // jugador a ese punto (ver distanceVolumeFactor) — quien llama sin x/y sigue
+        // sonando a volumen fijo de siempre (sonidos "en" el jugador, o UI).
+        function playSfx(soundEventKey, x, y) {
             let audioKey = SOUNDS[soundEventKey];
             if (!audioKey || !scene || !scene.sound) return;
             // SOUNDS[key] puede ser un array de variaciones (mismo evento, distintos
@@ -6552,7 +6590,12 @@
                 audioKey = audioKey[Math.floor(Math.random() * audioKey.length)];
             }
             const gain = SFX_GAIN[soundEventKey] || 1;
-            const volume = Math.min(1, sfxVolume * gain);
+            let volume = Math.min(1, sfxVolume * gain);
+            if (x !== undefined && y !== undefined) {
+                const factor = distanceVolumeFactor(x, y);
+                if (factor <= 0) return; // fuera de rango de audición, ni vale la pena reproducirlo
+                volume *= factor;
+            }
             // Si el audio no llegó a cargar (ej. abriste el HTML como archivo local en
             // vez de por http:// — los navegadores bloquean la carga de audio por XHR
             // bajo file://, ver el aviso que le di al usuario sobre esto), Phaser tira
@@ -6922,7 +6965,7 @@
                     const dmg = Math.max(0, PLAYER_MELEE_DAMAGE - type.armor);
                     inst.health -= dmg;
                     inst.hitByPlayerSwing = true;
-                    playSfx('creatureDamage');
+                    playSfx('creatureDamage', inst.obj.x, inst.obj.y);
                 }
             });
 
@@ -7102,6 +7145,32 @@
             });
         }
 
+        // Texto flotante genérico: sube y se desvanece desde (x,y) — lo usa el aviso de
+        // "Checkpoint alcanzado" (ver activateCheckpoint), armado aparte de spawnBurst/
+        // spawnExpandingFlash porque esto es texto, no partículas.
+        function spawnFloatingText(x, y, text, opts) {
+            opts = opts || {};
+            const t = scene.add.text(x, y, text, {
+                fontSize: opts.fontSize || '16px',
+                fontStyle: 'bold',
+                fill: opts.color || '#ffffff',
+                stroke: '#000000',
+                strokeThickness: 3
+            }).setOrigin(0.5).setDepth(DEPTH_WORLD_PROMPT);
+            const duration = opts.duration || 1200;
+            const rise = opts.rise || 40;
+            scene.time.delayedCall(duration + 60, () => { if (t.active) t.destroy(); });
+            scene.tweens.add({
+                targets: t,
+                y: y - rise,
+                alpha: 0,
+                duration,
+                ease: 'Cubic.easeOut',
+                onComplete: () => { if (t.active) t.destroy(); }
+            });
+            return t;
+        }
+
         // Explosión al romper un objeto rompible (barril/caja/jarrón) — sprite sheet
         // de 6 cuadros SIN transparencia real (fondo gris oscuro), ver el comentario en
         // preload(). Blend mode ADD: el fondo oscuro no pinta nada (sumar 0 no cambia
@@ -7145,7 +7214,7 @@
                     spread: hitEnemy ? 30 : 22,
                     duration: 320
                 });
-                playSfx('ice');
+                playSfx('ice', x, y);
             }
         }
 
@@ -7180,7 +7249,7 @@
             spawnBurst(x, y, { color: 0xff6600, count: 16, radius: 4, spread: radius * 0.55, duration: 380 });
             spawnBurst(x, y, { color: 0xffcc33, count: 10, radius: 3, spread: radius * 0.75, duration: 420 });
             spawnBurst(x, y, { color: 0xcc2200, count: 8, radius: 3, spread: radius * 0.35, duration: 300 });
-            playSfx('fireball');
+            playSfx('fireball', x, y);
         }
 
         function checkEnemyAttackHit(inst) {
@@ -7244,7 +7313,7 @@
 
                 enemyObj.body.setVelocity((dx / mag) * KNOCKBACK_SPEED, (dy / mag) * KNOCKBACK_SPEED);
                 inst.knockbackTimer = KNOCKBACK_DURATION;
-                playSfx('creatureDamage');
+                playSfx('creatureDamage', enemyObj.x, enemyObj.y);
             }
         }
 
@@ -7447,7 +7516,7 @@
                     playerHealth -= SAW_TRAP_DAMAGE;
                     lastDamageTime = now;
                     playSfx('playerDamage');
-                    playSfx('sawHit'); // solo cuando la sierra efectivamente daña al jugador
+                    playSfx('sawHit', saw.obj.x, saw.obj.y); // solo cuando la sierra efectivamente daña al jugador
                     saw.hitPlayer = true;
                 }
 
@@ -7458,7 +7527,7 @@
                     if (rectsOverlap(saw.obj, inst.obj)) {
                         const type = ENEMY_TYPES[inst.typeKey];
                         inst.health -= Math.max(0, SAW_TRAP_DAMAGE - type.armor);
-                        playSfx('creatureDamage');
+                        playSfx('creatureDamage', saw.obj.x, saw.obj.y);
                         saw.hitEnemies.add(inst);
                     }
                 });
@@ -7587,7 +7656,7 @@
                     playerHealth -= SPIKE_TRAP_DAMAGE;
                     lastDamageTime = now;
                     playSfx('playerDamage');
-                    playSfx('spikeTrapActivate'); // solo cuando la trampa efectivamente daña al jugador
+                    playSfx('spikeTrapActivate', trap.hitbox.x, trap.hitbox.y); // solo cuando la trampa efectivamente daña al jugador
                 }) || changed;
 
                 enemies.forEach(inst => {
@@ -7596,7 +7665,7 @@
                     changed = updateSpikeCharge(trap.charges, inst, on, now, () => {
                         const type = ENEMY_TYPES[inst.typeKey];
                         inst.health -= Math.max(0, SPIKE_TRAP_DAMAGE - type.armor);
-                        playSfx('creatureDamage');
+                        playSfx('creatureDamage', trap.hitbox.x, trap.hitbox.y);
                     }) || changed;
                 });
 
@@ -7707,7 +7776,7 @@
                     if (rectsOverlap(hitbox, inst.obj)) {
                         const type = ENEMY_TYPES[inst.typeKey];
                         inst.health -= Math.max(0, FIRE_TRAP_DAMAGE - type.armor);
-                        playSfx('creatureDamage');
+                        playSfx('creatureDamage', trap.conf.x, trap.conf.y);
                     }
                 });
             });
@@ -7804,6 +7873,18 @@
                 lootCollected += itemConf.lootValue;
                 playSfx('lootPickup');
             }
+        }
+
+        // Botín máximo posible en la sala actual: el botín ya puesto a mano (Editor,
+        // activeRoom.items con lootValue) + uno por cada rompible vivo (cada barril/caja/
+        // jarrón suelta EXACTO 1 al romperse, ver dropBreakableLoot) — las paredes
+        // especiales (breaksWith definido) no cuentan, no sueltan botín. Se recalcula
+        // en vivo desde el HUD (ver updateGame) así que agregar/sacar cajas o botín en
+        // el Editor de Mapa actualiza el máximo mostrado sin recargar la página.
+        function computeMaxLootForRoom() {
+            const placedLoot = activeRoom.items.filter(i => i.lootValue).length;
+            const breakables = activeRoom.hpWalls.filter(w => w.breaksWith === undefined).length;
+            return placedLoot + breakables;
         }
 
         // Habilita un hechizo en la barra de abajo: saca el candado y muestra su ícono
@@ -7903,7 +7984,7 @@
                     dropBreakableLoot(member.conf);
                 }
             });
-            playSfx(isBreakable ? 'breakableBreak' : 'fountainCorrect');
+            playSfx(isBreakable ? 'breakableBreak' : 'fountainCorrect', isBreakable ? w.conf.x : undefined, isBreakable ? w.conf.y : undefined);
             buildBlockedGrid();
         }
 
@@ -8184,8 +8265,10 @@
         // textura genérica que el halo del jugador (ensureGlowTexture) — el color sale
         // de un tinte (setTint), no de la textura, así cambiar TORCH_LIGHT_COLOR no
         // requiere regenerar nada. ambientSound: chisporroteo en loop MUY bajo (ver
-        // TORCH_AMBIENT_BASE_VOLUME) — uno por antorcha, no espacial (no baja con la
-        // distancia al jugador), por eso el volumen base es tan chico.
+        // TORCH_AMBIENT_BASE_VOLUME) — uno por antorcha, espacial (ver
+        // updateTorchAmbientVolumes, llamada una vez por frame): arranca en volumen 0 y
+        // esa misma función lo sube ni bien el jugador entra en rango, así no se
+        // escucha "a pleno" un instante antes de que el primer frame la baje.
         function createTorchVisual(sceneRef, conf) {
             const size = conf.size === 'large' ? 'large' : 'small';
             const info = TORCH_TOOL_INFO['torch_' + size];
@@ -8203,10 +8286,27 @@
             glow.setBlendMode(Phaser.BlendModes.ADD);
             glow.setVisible(TORCH_USE_GENERATED_GLOW);
 
-            const ambientSound = sceneRef.sound.add('sfx_torch_ambience', { loop: true, volume: TORCH_AMBIENT_BASE_VOLUME * ambienceVolume });
+            const ambientSound = sceneRef.sound.add('sfx_torch_ambience', { loop: true, volume: 0 });
             ambientSound.play();
 
             return { conf, sprite, glow, ambientSound };
+        }
+
+        // Une por distancia el chisporroteo de CADA antorcha — se llama una vez por
+        // frame desde updateGame() (mismo criterio que updateSawTraps/updateSpikeTraps)
+        // y también de nuevo si se mueve el slider de ambiente, para no esperar al
+        // próximo frame a que se note el cambio. factor 0 (fuera de rango) = volumen 0,
+        // no hace falta pausar el Sound: en loop silencioso no gasta nada distinto.
+        function updateTorchAmbientVolumes() {
+            if (!torchVisuals) return;
+            torchVisuals.forEach(t => {
+                const dist = player ? Phaser.Math.Distance.Between(player.x, player.y, t.conf.x, t.conf.y) : Infinity;
+                let factor;
+                if (dist <= TORCH_SOUND_FULL_VOLUME_DISTANCE) factor = 1;
+                else if (dist >= TORCH_SOUND_HEAR_DISTANCE) factor = 0;
+                else factor = 1 - (dist - TORCH_SOUND_FULL_VOLUME_DISTANCE) / (TORCH_SOUND_HEAR_DISTANCE - TORCH_SOUND_FULL_VOLUME_DISTANCE);
+                t.ambientSound.setVolume(TORCH_AMBIENT_BASE_VOLUME * ambienceVolume * factor);
+            });
         }
 
         // Checkpoint: marca invisible durante el juego real (setVisible arranca en
@@ -8236,6 +8336,9 @@
             if (alreadyActive) return; // ya era el checkpoint activo, no repetir el aviso
             playSfx('fountainCorrect');
             if (dom.status) dom.status.textContent = '🚩 Checkpoint alcanzado.';
+            spawnFloatingText(player.x, player.y - PLAYER_SPRITE_DISPLAY_HEIGHT / 2 - 12, 'Checkpoint alcanzado', {
+                color: '#00e5ff', duration: 1300, rise: 45
+            });
         }
 
         // "Paredes" del Editor de Mapa: un sprite de 1 celda pintado ARRIBA de lo que
