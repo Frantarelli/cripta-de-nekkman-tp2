@@ -587,6 +587,73 @@
             color: white;
             border-color: #3498db;
         }
+        .me-tool-btn.select.selected {
+            background: #9b59b6;
+            color: white;
+            border-color: #9b59b6;
+        }
+        /* Panel flotante de "Seleccionar" — a diferencia de #map-editor-panel (a la
+           izquierda) y #editor-panel (a la derecha, Editor de Parámetros), este vive
+           SIEMPRE en el DOM (display:none/flex, no una clase .open con transición):
+           solo existe mientras hay algo elegido con la herramienta Seleccionar, así
+           que no necesita animar entrada/salida — aparece y desaparece con el click.
+           right:14px, no 0: no pisa el borde del viewport ni el scrollbar. */
+        #saw-select-panel {
+            display: none;
+            position: fixed;
+            top: 80px;
+            right: 14px;
+            width: 260px;
+            background: rgba(18, 18, 18, 0.97);
+            color: white;
+            border: 1px solid #9b59b6;
+            border-radius: 8px;
+            padding: 16px;
+            box-sizing: border-box;
+            z-index: 57;
+        }
+        #saw-select-panel h3 {
+            margin: 0 0 10px;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        #saw-select-panel-close {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 16px;
+            cursor: pointer;
+            line-height: 1;
+            padding: 2px 4px;
+        }
+        #saw-select-panel-close:hover {
+            color: white;
+        }
+        .saw-select-direction-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .saw-select-dir-btn {
+            flex: 1 1 auto;
+            padding: 8px 4px;
+            font-size: 13px;
+            background: #262626;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .saw-select-dir-btn:hover {
+            background: #3a3a3a;
+        }
+        .saw-select-dir-btn.selected {
+            background: #9b59b6;
+            border-color: #9b59b6;
+            font-weight: bold;
+        }
         /* Miniaturas (rompibles/botín/trampas): un botón por sprite EXACTO, con la
            imagen real — para elegir a ojo cuál poner, no solo "una caja cualquiera". */
         .me-thumb-grid {
@@ -1458,6 +1525,7 @@
             <div class="me-tool-grid">
                 <button class="me-tool-btn move" data-tool="move">✋ Mover</button>
                 <button class="me-tool-btn danger" data-tool="erase">🗑️ Borrar</button>
+                <button class="me-tool-btn select" data-tool="select">🖱️ Seleccionar</button>
             </div>
             <p class="editor-subhint">
                 Sala 1: la fuente y las 3 puertas no se pueden borrar ni mover (son
@@ -1465,6 +1533,11 @@
                 salida) y su única fuente SÍ se pueden mover con esta herramienta —
                 nunca se pueden borrar ni duplicar, siempre hay exactamente una de cada
                 una. El resto de las herramientas no tiene restricciones.
+            </p>
+            <p class="editor-subhint">
+                🖱️ Seleccionar: por ahora solo funciona con la Trampa de Sierra — click
+                sobre un riel para abrir su panel de velocidad y dirección, a la
+                derecha.
             </p>
         </div>
 
@@ -1476,6 +1549,22 @@
         </p>
         <button id="btn-copy-map-json" class="editor-copy-btn">📋 Copiar mapa como JSON</button>
         <button id="btn-restore-map" class="editor-copy-btn">↺ Restaurar diseño original</button>
+    </div>
+
+    <!-- Panel de la herramienta 🖱️ Seleccionar: solo existe mientras hay UNA sierra
+         elegida (ver openSawSelectPanel/closeSawSelectPanel) — velocidad y dirección
+         de ESA instancia puntual, no de todas las sierras del mapa (eso lo sigue
+         controlando el Editor de Parámetros, ⚠️ Trampas → Sierra). -->
+    <div id="saw-select-panel">
+        <h3>🪚 Sierra seleccionada <button id="saw-select-panel-close" title="Cerrar">✕</button></h3>
+        <div class="control-row">
+            <label>Velocidad: <span class="control-value" id="saw-select-speed-value">220</span> px/s</label>
+            <input type="range" id="saw-select-speed" min="50" max="500" step="10" value="220">
+        </div>
+        <div class="control-row">
+            <label>Dirección</label>
+            <div class="saw-select-direction-row" id="saw-select-direction-row"></div>
+        </div>
     </div>
 
     <!-- Menú principal: visible desde que carga la página (aunque Phaser todavía
@@ -1878,6 +1967,7 @@
             mapEditorSelectStart = null;
             sawTrapDragStart = null;
             sawTrapDragAxis = null;
+            closeSawSelectPanel(); // el sawTrapState de la sala vieja se va a reemplazar entero
             updateMapEditorToolUI();
             scene.scene.restart({ room: roomKey });
         }
@@ -7436,16 +7526,21 @@
         // el extremo opuesto. `remaining` es cuánto le falta recorrer (arranca en el
         // largo total del riel); updateSawTraps() la destruye sola al llegar a 0.
         function spawnSaw(conf) {
+            // conf.reversed/conf.speed: override por instancia (ver 🖱️ Seleccionar,
+            // saw-select-panel) — sin uno puesto, cae al global de siempre
+            // (sawTrapReversed/SAW_TRAP_SPEED, Editor de Parámetros).
+            const reversed = conf.reversed !== undefined ? conf.reversed : sawTrapReversed;
+            const speed = conf.speed !== undefined ? conf.speed : SAW_TRAP_SPEED;
             let startX, startY, dirX, dirY, travelLength;
             if (conf.orientation === 'horizontal') {
-                const goRight = !sawTrapReversed;
+                const goRight = !reversed;
                 startX = goRight ? conf.x - conf.w / 2 : conf.x + conf.w / 2;
                 startY = conf.y;
                 dirX = goRight ? 1 : -1;
                 dirY = 0;
                 travelLength = conf.w;
             } else {
-                const goDown = !sawTrapReversed;
+                const goDown = !reversed;
                 startX = conf.x;
                 startY = goDown ? conf.y - conf.h / 2 : conf.y + conf.h / 2;
                 dirX = 0;
@@ -7484,7 +7579,7 @@
             } else {
                 obj.setDisplaySize(CELL_SIZE, CELL_SIZE * 2);
             }
-            activeSaws.push({ obj, visual, dirX, dirY, remaining: travelLength, hitPlayer: false, hitEnemies: new Set() });
+            activeSaws.push({ obj, visual, dirX, dirY, speed, remaining: travelLength, hitPlayer: false, hitEnemies: new Set() });
         }
 
         // Se llama una vez por frame desde updateGame(). Primero revisa si algún riel
@@ -7502,7 +7597,7 @@
 
             for (let i = activeSaws.length - 1; i >= 0; i--) {
                 const saw = activeSaws[i];
-                const step = (SAW_TRAP_SPEED * delta) / 1000;
+                const step = (saw.speed * delta) / 1000;
                 saw.obj.x += saw.dirX * step;
                 saw.obj.y += saw.dirY * step;
                 // `visual` (solo existe para el riel horizontal, ver spawnSaw) sigue a
@@ -7915,10 +8010,25 @@
         // Daño genérico a una pared con vida (lo usan el golpe cuerpo a cuerpo, la Bola
         // Mágica de un solo objetivo, y la Bola de Fuego de área — ver castSpellOnWall
         // y castFireballAoE).
+        // Golpe que NO mata (health sigue > 0 después): flash rojo breve + el mismo
+        // "toc" que suena al romperse, así se nota que el golpe pegó — pedido del
+        // usuario. Si el golpe SÍ mata, no hace nada de esto: destroyWall() ya tiene su
+        // propio sonido + explosión, sonarían los dos pisados uno sobre el otro. Solo
+        // aplica a rompibles (breaksWith === undefined) — las paredes especiales
+        // (fuego/hielo/mágica) no pasan por acá con daño incremental, mueren de un
+        // hechizo directo (ver castSpellOnWall/castFireballAoE → destroyWall).
         function damageHpWall(w, amount) {
             if (w.destroyed) return;
             w.health -= amount;
-            if (w.health <= 0) destroyWall(w);
+            if (w.health <= 0) {
+                destroyWall(w);
+                return;
+            }
+            if (w.conf.breaksWith === undefined && w.rect) {
+                w.rect.setTint(0xff4444);
+                playSfx('breakableBreak', w.rect.x, w.rect.y);
+                scene.time.delayedCall(120, () => { if (w.rect && w.rect.active) w.rect.clearTint(); });
+            }
         }
 
         // ¿Se tocan o se superponen dos rectángulos (formato centro x/y/w/h), con un
@@ -8687,7 +8797,8 @@
             mago: '🔮 Esqueleto Mago — ataca a distancia.',
             checkpoint: '🚩 Checkpoint — invisible en el juego real (solo se ve acá, editando). Cuando el jugador lo pisa por primera vez, ahí reaparece si muere en esta sala, en vez de en el punto de inicio de siempre. Click o arrastrá para pintar varias celdas de una.',
             move: '✋ Mover — click y arrastrá cualquier bloque/entidad existente.',
-            erase: '🗑️ Borrar — click (o arrastrar) sobre lo que quieras sacar del mapa.'
+            erase: '🗑️ Borrar — click (o arrastrar) sobre lo que quieras sacar del mapa.',
+            select: '🖱️ Seleccionar — click sobre una Trampa de Sierra para abrir su panel de velocidad y dirección (a la derecha). Por ahora no funciona con otros objetos.'
         };
         // Un hint por sprite EXACTO, generado desde las mismas tablas que arman los
         // botones de miniatura — nada hardcodeado a mano por variante.
@@ -8707,6 +8818,7 @@
         function setupMapEditor() {
             setupMapEditorTabs();
             setupMapEditorRoomSwitch();
+            setupSawSelectPanel();
             document.getElementById('me-collapse-toggle').addEventListener('click', toggleMapEditorPanelCollapse);
             document.getElementById('map-editor-toggle-btn').addEventListener('click', toggleMapEditor);
             document.getElementById('btn-copy-map-json').addEventListener('click', copyMapEditorStateToClipboard);
@@ -8802,6 +8914,10 @@
             });
             const hint = document.getElementById('me-current-tool-hint');
             hint.textContent = mapEditorTool ? MAP_EDITOR_TOOL_LABELS[mapEditorTool] : 'Sin herramienta seleccionada.';
+            // Cambiar a cualquier otra herramienta (o deseleccionar del todo) cierra el
+            // panel de Sierra si había uno abierto — cubre tanto el click de otro botón
+            // como toggleMapEditor() (que resetea mapEditorTool a null y llama acá).
+            if (mapEditorTool !== 'select') closeSawSelectPanel();
         }
 
         // Abre/cierra el modo Editor de Mapa. Se excluye con el Editor de Parámetros
@@ -9010,7 +9126,7 @@
             wall: 0x634d4d, firewall: 0xf96c14, icewall: 0x0355a1, magicwall: 0x9b30ff,
             spellbook_magic: 0xe8d9b0, spellbook_immobilize: 0xe8d9b0, spellbook_fireball: 0xe8d9b0,
             normal: 0x8b4513, tanque: 0x5c5c66, mago: 0x7d3c98,
-            checkpoint: 0x00e5ff
+            checkpoint: 0x00e5ff, select: 0x9b59b6
         };
 
         // La decoración puramente cosmética (barril/caja/cofre/llave/etc.) se eliminó
@@ -9033,6 +9149,17 @@
                 mapEditorEraseAt(x, y);
                 return;
             }
+            if (mapEditorTool === 'select') {
+                // Por ahora solo entiende trampas de Sierra (ver pedido del usuario) —
+                // clickear cualquier otra cosa, o vacío, cierra el panel si había uno abierto.
+                const found = findMapEditorEntityAt(x, y);
+                if (found && found.kind === 'sawtrap') {
+                    openSawSelectPanel(found.entry);
+                } else {
+                    closeSawSelectPanel();
+                }
+                return;
+            }
             if (mapEditorTool === 'move') {
                 const found = findMapEditorEntityAt(x, y);
                 // Los pilares del diseño original no se "mueven": son franjas fusionadas
@@ -9050,6 +9177,83 @@
                 return;
             }
             mapEditorPlace(mapEditorTool, x, y);
+        }
+
+        // ---- Panel de la herramienta 🖱️ Seleccionar (por ahora, solo Trampa de Sierra) ----
+        // sawSelectPanelEntry === null cuando no hay nada elegido (panel cerrado). Un
+        // panel FLOTANTE aparte del panel del Editor de Mapa (que vive a la izquierda)
+        // y del Editor de Parámetros (a la derecha, pero un drawer aparte): este es
+        // chico y puntual, solo para la instancia clickeada.
+        let sawSelectPanelEntry = null;
+        // Un solo snapshot de undo por sesión de edición del panel (se resetea cada vez
+        // que se abre para una sierra), no uno por cada tick del slider — mismo criterio
+        // que "Mover" (ver pushMapEditorUndoSnapshot en handleMapEditorClick).
+        let sawSelectUndoPushed = false;
+
+        function openSawSelectPanel(entry) {
+            sawSelectPanelEntry = entry;
+            sawSelectUndoPushed = false;
+            populateSawSelectPanel();
+            document.getElementById('saw-select-panel').style.display = 'block';
+        }
+
+        function closeSawSelectPanel() {
+            sawSelectPanelEntry = null;
+            const panel = document.getElementById('saw-select-panel');
+            if (panel) panel.style.display = 'none';
+        }
+
+        // Vuelve a pintar el panel entero desde sawSelectPanelEntry.conf — al abrir y
+        // cada vez que se toca un control, así el toggle de dirección se ve al instante.
+        // Sin override guardado (sierra vieja, de antes de este cambio) se muestra el
+        // valor EFECTIVO actual (el global de siempre — ver SAW_TRAP_SPEED/
+        // sawTrapReversed), no un 0/false engañoso.
+        function populateSawSelectPanel() {
+            if (!sawSelectPanelEntry) return;
+            const conf = sawSelectPanelEntry.conf;
+            const effectiveSpeed = conf.speed !== undefined ? conf.speed : SAW_TRAP_SPEED;
+            const effectiveReversed = conf.reversed !== undefined ? conf.reversed : sawTrapReversed;
+
+            const speedInput = document.getElementById('saw-select-speed');
+            speedInput.value = effectiveSpeed;
+            document.getElementById('saw-select-speed-value').textContent = effectiveSpeed;
+
+            // Solo las 2 direcciones válidas para SU orientación (fija desde que se
+            // dibujó el riel) — no un genérico de 4, como pidió el usuario.
+            const isHorizontal = conf.orientation === 'horizontal';
+            const options = isHorizontal
+                ? [{ label: '⬅️ Izquierda', reversed: true }, { label: '➡️ Derecha', reversed: false }]
+                : [{ label: '⬆️ Arriba', reversed: true }, { label: '⬇️ Abajo', reversed: false }];
+
+            const row = document.getElementById('saw-select-direction-row');
+            row.innerHTML = '';
+            options.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'saw-select-dir-btn' + (effectiveReversed === opt.reversed ? ' selected' : '');
+                btn.textContent = opt.label;
+                btn.addEventListener('click', () => {
+                    if (!sawSelectPanelEntry) return;
+                    if (!sawSelectUndoPushed) { pushMapEditorUndoSnapshot(); sawSelectUndoPushed = true; }
+                    sawSelectPanelEntry.conf.reversed = opt.reversed;
+                    populateSawSelectPanel();
+                    saveMapEditorState();
+                });
+                row.appendChild(btn);
+            });
+        }
+
+        function setupSawSelectPanel() {
+            document.getElementById('saw-select-panel-close').addEventListener('click', closeSawSelectPanel);
+            const speedInput = document.getElementById('saw-select-speed');
+            speedInput.addEventListener('input', () => {
+                if (!sawSelectPanelEntry) return;
+                if (!sawSelectUndoPushed) { pushMapEditorUndoSnapshot(); sawSelectUndoPushed = true; }
+                const value = Number(speedInput.value);
+                sawSelectPanelEntry.conf.speed = value;
+                document.getElementById('saw-select-speed-value').textContent = value;
+                saveMapEditorState();
+            });
         }
 
         // Tope de seguridad: una selección de más de esto (ej. arrastraste sin querer de
@@ -9512,6 +9716,7 @@
                 sawTrapState.splice(sawTrapState.indexOf(entry), 1);
                 const ciSaw = activeRoom.sawTraps.indexOf(entry.conf);
                 if (ciSaw !== -1) activeRoom.sawTraps.splice(ciSaw, 1);
+                if (sawSelectPanelEntry === entry) closeSawSelectPanel();
             } else if (kind === 'spiketrap') {
                 entry.sprite.destroy();
                 spikeTrapState.splice(spikeTrapState.indexOf(entry), 1);
