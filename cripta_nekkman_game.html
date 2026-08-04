@@ -2696,12 +2696,13 @@
         const INTRO_SLIDES = [
             {
                 image: 'assets/cinematic/1.jpeg',
-                text: 'Hace muchos años existía un mago nigromante llamado Nekkman. Este contactó con una deidad y se convirtió en su heraldo.\n\nEsta deidad lo utilizó para poder construir a un ejército de no muertos y atacar el mundo.'
+                speaker: 'Klegar',
+                text: 'Hace muchos años existía un mago nigromante llamado Nekkman. Este contactó con una deidad y se convirtió en su heraldo. Esta deidad lo utilizó para poder construir a un ejército de no muertos y atacar el mundo.'
             },
             {
                 image: 'assets/cinematic/2.jpeg',
                 speaker: 'Klegar',
-                text: 'Por eso, fui enviado a esta asquerosa cripta desde Paxtria, para buscar información del nigromante. Es importante acabar con la amenaza que azota al mundo pero... también está bueno tener algo de oro en los bolsillos jeje'
+                text: 'Por eso, fui enviado a esta asquerosa cripta desde Paxtria, para buscar información del nigromante. Es importante acabar con la amenaza que azota al mundo pero... también está bueno tener algo de oro en los bolsillos.'
             }
         ];
 
@@ -6275,7 +6276,7 @@
             }
             this.statusText.setText(
                 `${activeRoom.label} | ` +
-                `Yamel: ${Math.max(0, Math.round(playerHealth))}/100 | ` +
+                `Klegar: ${Math.max(0, Math.round(playerHealth))}/100 | ` +
                 `Enemigos vivos: ${aliveCount}/${enemies.length} | ` +
                 `Cooldown Ataque: ${playerAttackCooldown > 0 ? playerAttackCooldown : 'Listo'}`
             );
@@ -6286,7 +6287,7 @@
                 player.body.setVelocity(0, 0);
                 freezeAllEnemies();
                 player.setTint(0xff0000);
-                showGameOverOverlay('GAME OVER', 'Yamel ha caído en la cripta...', '#ff5555');
+                showGameOverOverlay('GAME OVER', 'Klegar ha caído en la cripta...', '#ff5555');
                 dom.status.textContent = 'Derrota. Presiona R para reiniciar.';
             }
 
@@ -6689,7 +6690,7 @@
             player.body.setVelocity(0, 0);
             freezeAllEnemies();
             onGameWon();
-            showGameOverOverlay('¡GANASTE!', `Escapaste de la Cripta de Nekkman. Botín recolectado: ${lootCollected}.`, '#ffd700');
+            showGameOverOverlay('¡GANASTE!', `Has obtenido la información que estabas buscando. Botín recolectado: ${lootCollected}.`, '#ffd700');
             // Un ratito para que se lea el cartel de victoria y recién ahí de vuelta al
             // menú principal (Iniciar Partida / Configuración / Salir). scene.time sigue
             // corriendo aunque gameOver ya haya congelado el update() de juego.
