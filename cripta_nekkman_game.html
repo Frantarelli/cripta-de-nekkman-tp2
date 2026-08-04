@@ -1381,7 +1381,15 @@
                 <button class="me-tool-btn" data-tool="firewall">🟧 Pared de fuego</button>
                 <button class="me-tool-btn" data-tool="icewall">🟦 Pared de hielo</button>
                 <button class="me-tool-btn" data-tool="magicwall">🟪 Pared mágica</button>
+                <button class="me-tool-btn" data-tool="checkpoint">🚩 Checkpoint</button>
             </div>
+            <p class="editor-subhint">
+                🚩 Checkpoint: invisible durante el juego real — solo se ve (celeste)
+                acá, mientras estás editando. La primera vez que el jugador lo pisa,
+                pasa a reaparecer ahí (centro de la celda) si muere en esta sala, en vez
+                de en el punto de inicio de siempre. Click para una celda, arrastrá para
+                pintar varias de una.
+            </p>
         </div>
 
         <div class="me-tab-panel" data-metab-panel="trampas">
@@ -2753,6 +2761,10 @@
             itemsPickedUp = {};
             lootCollected = 0;
             wallsDestroyed = {};
+            // Partida nueva de verdad: ningún checkpoint pisado todavía. Un restart
+            // normal (morir, Reiniciar Nivel, "R") NO pasa por acá — el checkpoint
+            // tiene que sobrevivir exactamente eso, es su razón de ser.
+            activeCheckpoint = null;
             // Niebla de guerra: qué celdas de cada sala ya viste alguna vez. A
             // diferencia de wallsDestroyed/fountainsSolved (que tampoco se tocan acá),
             // esto SÍ se resetea con cada partida nueva a pedido — dentro de la misma
@@ -3832,10 +3844,9 @@
                     { x: 384, y: 1056 }, { x: 640, y: 1056 }, { x: 928, y: 1192 }
                 ],
                 sawTraps: [],
-                spikeTraps: [],
-                torches: [], // se agregan con la herramienta 🪚 del Editor de Mapa
                 spikeTraps: [], // se agregan con la herramienta ⚠️ del Editor de Mapa
                 torches: [], // se agregan con la herramienta 🔥 del Editor de Mapa
+                checkpoints: [], // se agregan con la herramienta 🚩 del Editor de Mapa
                 enemySpawns: [
                     // 21 esqueletos normales (cubos rojos del frame) — posiciones x2
                     { type: 'normal', x: 1088, y: 854 }, { type: 'normal', x: 1406, y: 912 },
@@ -3941,6 +3952,7 @@
                 sawTraps: [],
                 spikeTraps: [],
                 torches: [],
+                checkpoints: [],
                 enemySpawns: [
                     { type: 'tanque', x: 1000, y: 200 },
                     { type: 'mago', x: 500, y: 200 }
@@ -3985,6 +3997,7 @@
                 sawTraps: [],
                 spikeTraps: [],
                 torches: [],
+                checkpoints: [],
                 enemySpawns: [
                     { type: 'tanque', x: 800, y: 200 },
                     { type: 'mago', x: 1200, y: 200 },
@@ -4225,7 +4238,7 @@
         // no repetir un rebuild caro decenas de veces en una sola selección grande.
         let mapEditorBatching = false;
         const MAP_EDITOR_RECT_TOOLS = new Set([
-            'wall', 'hpwall', 'firewall', 'icewall', 'magicwall', 'spiketrap', 'erase',
+            'wall', 'hpwall', 'firewall', 'icewall', 'magicwall', 'spiketrap', 'checkpoint', 'erase',
             ...WALL_SKIN_KEYS.map(k => 'wallskin_' + k)
         ]);
         let blockedCells;
@@ -4233,7 +4246,16 @@
         let blueTrapCells;
         let spikeTrapCells; // ver buildSpikeTrapCostCells — mismo mecanismo, pero opcional según el tipo de enemigo
         let torchVisuals; // [{ conf, sprite, glow }] — ver createTorchVisual
+        let checkpointState; // [{ conf, rect }] — ver createCheckpointVisual
         let wallSkinVisuals; // [{ conf, image }] — ver createWallSkinVisual
+        // Último checkpoint pisado en la sala ACTUAL — { room, x, y } o null si todavía
+        // no se pisó ninguno en esta sala esta partida. Se usa en vez de
+        // activeRoom.playerStart al reaparecer (ver el cálculo de spawnPoint en create())
+        // — SOLO si activeCheckpoint.room === currentRoom, así un checkpoint de otra
+        // sala no interfiere. Se resetea en resetGameProgress() (partida nueva), NO en
+        // un restart normal (morir/Reiniciar Nivel) — tiene que sobrevivir eso, es la
+        // razón de ser del checkpoint.
+        let activeCheckpoint = null;
         let playerGlowImage; // halo sutil que sigue al jugador, ver PLAYER_GLOW_RADIUS
         let scene;
 
@@ -4883,11 +4905,18 @@
             activeRoom.hpWalls = activeRoom.hpWalls || [];
             activeRoom.specialWalls = activeRoom.specialWalls || [];
 
-            // Crear el jugador (rana). Si venimos de cruzar una puerta con entryPoint
-            // propio (ej. las puertas de "vuelta" a la Sala 1), aparece ahí en vez del
-            // arranque por defecto de la sala (para no tener que recorrer el pasillo
-            // de nuevo cada vez que volvés).
-            const spawnPoint = pendingEntryPoint || activeRoom.playerStart;
+            // Dónde aparece el jugador, en orden de prioridad:
+            // 1) pendingEntryPoint: venimos de cruzar una puerta con entryPoint propio
+            //    (ej. las puertas de "vuelta" a la Sala 1) — aparece ahí, no hay
+            //    checkpoint ni playerStart que valga en este caso.
+            // 2) activeCheckpoint: si ya pisó un 🚩 Checkpoint EN ESTA MISMA SALA en
+            //    algún momento de la partida (sobrevive morir/Reiniciar Nivel, se
+            //    resetea solo en resetGameProgress — partida nueva de verdad), aparece
+            //    en el centro de esa celda en vez del arranque de siempre.
+            // 3) activeRoom.playerStart: el default de toda la vida.
+            const spawnPoint = pendingEntryPoint
+                || (activeCheckpoint && activeCheckpoint.room === currentRoom ? { x: activeCheckpoint.x, y: activeCheckpoint.y } : null)
+                || activeRoom.playerStart;
             // Antes un Rectangle liso (0x00ff00); ahora un Sprite real con las 16
             // animaciones cargadas en preload()/registradas arriba en create() —
             // arranca en idle_down, el estado de animación del primer frame lo fija el
@@ -5087,6 +5116,11 @@
             // ambiente) — no revelan niebla, no bloquean nada ni entran a ningún grupo
             // físico.
             torchVisuals = activeRoom.torches.map(conf => createTorchVisual(this, conf));
+            // Checkpoints: invisibles durante el juego real (setVisible sigue a
+            // mapEditorActive, ver toggleMapEditor), solo se ven mientras se edita el
+            // mapa. Overlap real de Arcade (no el rectsOverlap a mano de las trampas)
+            // porque no hace falta chequear cada frame — dispara UNA vez por pisada.
+            checkpointState = activeRoom.checkpoints.map(conf => createCheckpointVisual(this, conf));
             wallSkinVisuals = activeRoom.wallSkins.map(conf => createWallSkinVisual(this, conf));
 
             // Grupo dinámico para los proyectiles del mago
@@ -8175,6 +8209,35 @@
             return { conf, sprite, glow, ambientSound };
         }
 
+        // Checkpoint: marca invisible durante el juego real (setVisible arranca en
+        // mapEditorActive — false en una partida normal, ver toggleMapEditor para cuándo
+        // se prende/apaga) que actualiza activeCheckpoint la primera vez que el jugador
+        // la pisa (y cada vez después, sin problema — total ya es la activa). Overlap
+        // real de Arcade Physics (no el rectsOverlap a mano de las trampas manuales):
+        // no hace falta chequear a mano cada frame, alcanza con UN callback al entrar.
+        function createCheckpointVisual(sceneRef, conf) {
+            const rect = sceneRef.add.rectangle(conf.x, conf.y, CELL_SIZE, CELL_SIZE, 0x00e5ff, 0.35);
+            rect.setStrokeStyle(2, 0x00e5ff, 0.9);
+            rect.setDepth(4.5);
+            rect.setVisible(mapEditorActive);
+            sceneRef.physics.add.existing(rect, true);
+            sceneRef.physics.add.overlap(player, rect, () => activateCheckpoint(conf), null, sceneRef);
+            return { conf, rect };
+        }
+
+        // Chico aviso en el HUD (reusa #status, mismo elemento que "Usa WASD para
+        // moverte...") + un sonido prestado (fountainCorrect: mismo tono de "algo bueno
+        // pasó" que ya usa el juego) — sin ESTO el checkpoint es 100% invisible/mudo y
+        // el jugador nunca se entera de que quedó guardado un punto de reaparición.
+        function activateCheckpoint(conf) {
+            const alreadyActive = activeCheckpoint && activeCheckpoint.room === currentRoom
+                && activeCheckpoint.x === conf.x && activeCheckpoint.y === conf.y;
+            activeCheckpoint = { room: currentRoom, x: conf.x, y: conf.y };
+            if (alreadyActive) return; // ya era el checkpoint activo, no repetir el aviso
+            playSfx('fountainCorrect');
+            if (dom.status) dom.status.textContent = '🚩 Checkpoint alcanzado.';
+        }
+
         // "Paredes" del Editor de Mapa: un sprite de 1 celda pintado ARRIBA de lo que
         // ya haya ahí (normalmente un Bloque sólido) — puramente cosmético, no toca
         // colisión/pathfinding/línea de visión (esas siguen leyendo activeRoom.editorBlocks,
@@ -8519,6 +8582,7 @@
             normal: '💀 Esqueleto Normal — cuerpo a cuerpo.',
             tanque: '🛡️ Esqueleto Tanque — cuerpo a cuerpo, lento y resistente.',
             mago: '🔮 Esqueleto Mago — ataca a distancia.',
+            checkpoint: '🚩 Checkpoint — invisible en el juego real (solo se ve acá, editando). Cuando el jugador lo pisa por primera vez, ahí reaparece si muere en esta sala, en vez de en el punto de inicio de siempre. Click o arrastrá para pintar varias celdas de una.',
             move: '✋ Mover — click y arrastrá cualquier bloque/entidad existente.',
             erase: '🗑️ Borrar — click (o arrastrar) sobre lo que quieras sacar del mapa.'
         };
@@ -8674,6 +8738,10 @@
             // la última vez que corrió updateFogOfWar) para poder editar alrededor.
             if (fogUnexploredImage) fogUnexploredImage.setVisible(!mapEditorActive);
             if (ambientShadowImage) ambientShadowImage.setVisible(!mapEditorActive);
+
+            // Checkpoints: al revés que la niebla/sombra — INVISIBLES en juego real,
+            // visibles SOLO mientras se edita (para poder verlos y moverlos/borrarlos).
+            if (checkpointState) checkpointState.forEach(c => c.rect.setVisible(mapEditorActive));
 
             // Mismo criterio: el efecto CRT (RGB split/scanlines/viñeta/pulsos de
             // interferencia) se suspende mientras se edita el mapa, sin tocar
@@ -8838,7 +8906,8 @@
         const MAP_EDITOR_TOOL_COLORS = {
             wall: 0x634d4d, firewall: 0xf96c14, icewall: 0x0355a1, magicwall: 0x9b30ff,
             spellbook_magic: 0xe8d9b0, spellbook_immobilize: 0xe8d9b0, spellbook_fireball: 0xe8d9b0,
-            normal: 0x8b4513, tanque: 0x5c5c66, mago: 0x7d3c98
+            normal: 0x8b4513, tanque: 0x5c5c66, mago: 0x7d3c98,
+            checkpoint: 0x00e5ff
         };
 
         // La decoración puramente cosmética (barril/caja/cofre/llave/etc.) se eliminó
@@ -9129,6 +9198,10 @@
                 const conf = { id: 'torch_' + uid, x: sx, y: sy, size: info.size };
                 activeRoom.torches.push(conf);
                 torchVisuals.push(createTorchVisual(scene, conf));
+            } else if (tool === 'checkpoint') {
+                const conf = { id: 'checkpoint_' + uid, x: sx, y: sy };
+                activeRoom.checkpoints.push(conf);
+                checkpointState.push(createCheckpointVisual(scene, conf));
             }
 
             if (!mapEditorBatching) saveMapEditorState();
@@ -9177,6 +9250,12 @@
 
             const torch = torchVisuals.find(t => rectContainsPoint(t.sprite, x, y));
             if (torch) return { kind: 'torch', entry: torch };
+
+            // rectContainsPoint funciona igual con este rect aunque esté invisible
+            // (setVisible no afecta el tamaño/posición) — se puede seleccionar con
+            // Mover/Borrar mientras se está editando, que es cuando SÍ se ve.
+            const checkpoint = checkpointState.find(c => rectContainsPoint(c.rect, x, y));
+            if (checkpoint) return { kind: 'checkpoint', entry: checkpoint };
 
             // Se prueba contra la celda de 1x1 (conf.x/y), no el sprite alto y
             // desplazado (que arranca en y+CELL_SIZE/2 y sube) — más previsible para
@@ -9353,6 +9432,11 @@
                 torchVisuals.splice(torchVisuals.indexOf(entry), 1);
                 const ciTorch = activeRoom.torches.indexOf(entry.conf);
                 if (ciTorch !== -1) activeRoom.torches.splice(ciTorch, 1);
+            } else if (kind === 'checkpoint') {
+                entry.rect.destroy();
+                checkpointState.splice(checkpointState.indexOf(entry), 1);
+                const ciCheckpoint = activeRoom.checkpoints.indexOf(entry.conf);
+                if (ciCheckpoint !== -1) activeRoom.checkpoints.splice(ciCheckpoint, 1);
             } else if (kind === 'firetrap') {
                 entry.sprite.destroy();
                 fireTrapState.splice(fireTrapState.indexOf(entry), 1);
@@ -9487,6 +9571,7 @@
                 sawTraps: activeRoom.sawTraps,
                 spikeTraps: activeRoom.spikeTraps,
                 torches: activeRoom.torches,
+                checkpoints: activeRoom.checkpoints,
                 wallSkins: activeRoom.wallSkins,
                 fireTraps: activeRoom.fireTraps,
                 items: activeRoom.items,
@@ -9567,6 +9652,7 @@
                 sawTraps: activeRoom.sawTraps,
                 spikeTraps: activeRoom.spikeTraps,
                 torches: activeRoom.torches,
+                checkpoints: activeRoom.checkpoints,
                 wallSkins: activeRoom.wallSkins,
                 fireTraps: activeRoom.fireTraps,
                 items: activeRoom.items,
@@ -9608,6 +9694,7 @@
             if (saved.sawTraps) target.sawTraps = saved.sawTraps;
             if (saved.spikeTraps) target.spikeTraps = saved.spikeTraps;
             if (saved.torches) target.torches = saved.torches;
+            if (saved.checkpoints) target.checkpoints = saved.checkpoints;
             if (saved.wallSkins) target.wallSkins = saved.wallSkins;
             if (saved.fireTraps) target.fireTraps = saved.fireTraps;
             if (saved.items) target.items = saved.items;
@@ -9648,6 +9735,7 @@
                 sawTraps: activeRoom.sawTraps,
                 spikeTraps: activeRoom.spikeTraps,
                 torches: activeRoom.torches,
+                checkpoints: activeRoom.checkpoints,
                 wallSkins: activeRoom.wallSkins,
                 fireTraps: activeRoom.fireTraps,
                 items: activeRoom.items,
