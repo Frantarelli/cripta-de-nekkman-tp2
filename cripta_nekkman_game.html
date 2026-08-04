@@ -84,18 +84,43 @@
             pointer-events: none;
         }
         .health-bar {
-            width: 200px;
-            height: 20px;
-            background: #333;
-            border: 2px solid #fff;
+            display: flex;
+            align-items: flex-start;
+            height: 62px;
+        }
+        .health-bar-heart {
+            display: block;
+            width: 55px;
+            height: 62px;
+            image-rendering: pixelated;
+        }
+        .health-bar-track {
             position: relative;
+            width: 155px;
+            height: 62px;
             overflow: hidden;
         }
-        .health-fill {
-            height: 100%;
-            background: #00ff00;
+        .health-bar-track img {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            transition: width 0.2s;
+            height: 100%;
+            image-rendering: pixelated;
+            display: block;
+        }
+        .health-bar-empty {
+            /* Copia oscurecida/desaturada del mismo crop "bar" (idéntico layout de
+               segmentos que .health-fill) usada como fondo "vacío" — evita tener que
+               generar a mano una segunda imagen con los segmentos apagados. */
+            filter: brightness(0.35) saturate(0.4);
+        }
+        .health-fill {
+            /* clip-path recorta desde la derecha según % de vida (ver hudLast.healthClip
+               en el loop de update) — el corazón (.health-bar-heart) queda afuera de este
+               contenedor así que nunca se ve afectado, solo el tramo de segmentos. */
+            clip-path: inset(0 0% 0 0);
+            transition: clip-path 0.2s;
         }
         .modal-overlay {
             position: fixed;
@@ -650,6 +675,15 @@
             color: #ccc;
             z-index: 2;
         }
+        /* Ícono real del hechizo ya desbloqueado (ver unlockSpell) — el candado 🔒
+           sigue siendo texto/emoji dentro del mismo .spell-icon, esto solo aplica
+           al <img> que unlockSpell inyecta adentro al desbloquear. */
+        .spell-icon-img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            pointer-events: none;
+        }
         .spell-cooldown-overlay {
             position: absolute;
             bottom: 0;
@@ -676,12 +710,56 @@
 <body>
     <div id="phaser-container"></div>
 
+    <!-- Filtro SVG del efecto CRT (⚙️ Editor → 🖥️ Shaders): separa el canvas en 3
+         copias (roja/verde/azul, ver feColorMatrix), corre roja/azul unos px con
+         feOffset y las vuelve a mezclar (feBlend "screen") — el clásico truco de
+         "aberración cromática" en CSS. display:none en el propio <svg> no rompe el
+         filtro (los navegadores igual lo ejecutan vía url(#crt-rgb-split) desde
+         #phaser-container), pero SÍ lo saca de layout/pintado normal. dx de cada
+         feOffset se actualiza en vivo desde updateCrtEffect() según el slider. -->
+    <svg width="0" height="0" style="position:absolute;display:none;">
+        <defs>
+            <filter id="crt-rgb-split" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+                <feColorMatrix in="SourceGraphic" type="matrix"
+                    values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="crtRed"/>
+                <feOffset in="crtRed" dx="2" dy="0" result="crtRedOffset" id="crt-red-offset"/>
+
+                <feColorMatrix in="SourceGraphic" type="matrix"
+                    values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="crtGreen"/>
+
+                <feColorMatrix in="SourceGraphic" type="matrix"
+                    values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="crtBlue"/>
+                <feOffset in="crtBlue" dx="-2" dy="0" result="crtBlueOffset" id="crt-blue-offset"/>
+
+                <feBlend in="crtRedOffset" in2="crtGreen" mode="screen" result="crtRG"/>
+                <feBlend in="crtRG" in2="crtBlueOffset" mode="screen"/>
+            </filter>
+        </defs>
+    </svg>
+
+    <!-- Overlays del efecto CRT: capa de líneas de escaneo + viñeta oscura en las
+         esquinas — ambas arrancan en opacity:0 (efecto apagado) y las controla
+         updateCrtEffect() según los sliders de 🖥️ Shaders. pointer-events:none para
+         no tapar clicks del juego/HUD; z-index bajo (1) para quedar SOBRE el canvas
+         pero DEBAJO de cualquier HUD/panel real (esos usan 2 o más, ver el resto del
+         <style>). Hermanas de #phaser-container, no hijas: Phaser inyecta el canvas
+         ahí adentro y no hay que arriesgar que le toque el innerHTML a estos overlays. -->
+    <div id="crt-scanlines" style="position:fixed;inset:0;pointer-events:none;opacity:0;z-index:1;
+         background-image:repeating-linear-gradient(to bottom, rgba(0,0,0,0.6) 0px, rgba(0,0,0,0.6) 1px, transparent 2px, transparent 3px);
+         mix-blend-mode:multiply;"></div>
+    <div id="crt-vignette" style="position:fixed;inset:0;pointer-events:none;opacity:0;z-index:1;
+         background:radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.85) 100%);"></div>
+
     <!-- HUD flotante sobre el juego: FPS + vida arriba, aviso de ESC arriba a la
          izquierda, recordatorio de controles abajo a la izquierda -->
     <div id="hud-top">
         <div id="hud-fps">-- FPS</div>
         <div class="health-bar">
-            <div class="health-fill" id="health-fill"></div>
+            <img class="health-bar-heart" src="assets/hud/health_heart.png" alt="">
+            <div class="health-bar-track">
+                <img class="health-bar-empty" src="assets/hud/health_bar.png" alt="">
+                <img class="health-fill" id="health-fill" src="assets/hud/health_bar.png" alt="">
+            </div>
         </div>
         <div id="loot-counter">💰 <span id="loot-count">0</span></div>
     </div>
@@ -766,6 +844,7 @@
                 <button class="editor-tab-btn" data-etab="entorno">🌍 Entorno</button>
                 <button class="editor-tab-btn" data-etab="hechizos">🪄 Hechizos</button>
                 <button class="editor-tab-btn" data-etab="textos">📝 Textos</button>
+                <button class="editor-tab-btn" data-etab="shaders">🖥️ Shaders</button>
             </div>
 
             <div class="editor-tab-panel" data-etab-panel="jugador">
@@ -1104,9 +1183,9 @@
                 <div class="control-row">
                     <label for="ctrl-ambient-shadow">
                         Oscuridad ambiente (fuera de la luz)
-                        <span class="control-value" id="val-ambient-shadow">35</span>%
+                        <span class="control-value" id="val-ambient-shadow">70</span>%
                     </label>
-                    <input type="range" id="ctrl-ambient-shadow" min="0" max="80" step="5" value="35">
+                    <input type="range" id="ctrl-ambient-shadow" min="0" max="90" step="5" value="70">
                 </div>
             </section>
             </div>
@@ -1208,6 +1287,57 @@
                     <label for="ctrl-door-text-ice">Mensaje</label>
                     <input type="text" id="ctrl-door-text-ice" value="Esta puerta no puede ser abierta a menos que se use hielo." style="width:100%;box-sizing:border-box;">
                 </div>
+            </section>
+            </div>
+
+            <div class="editor-tab-panel" data-etab-panel="shaders">
+            <section class="editor-section">
+                <h3>🖥️ Efecto CRT</h3>
+                <p class="editor-subhint">
+                    Filtro de pantalla vieja sobre TODO el juego (aberración de color RGB +
+                    líneas de escaneo + viñeta oscura en los bordes), con pulsos de
+                    interferencia cada tanto. Puramente visual — no toca luces, sombra
+                    ambiente ni niebla de guerra, se dibuja encima de todo eso.
+                </p>
+                <div class="control-row">
+                    <label for="ctrl-crt-enabled" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="checkbox" id="ctrl-crt-enabled" style="width:auto;">
+                        Activar efecto CRT
+                    </label>
+                </div>
+                <div class="control-row">
+                    <label for="ctrl-crt-rgbsplit">
+                        Aberración cromática (separación RGB)
+                        <span class="control-value" id="val-crt-rgbsplit">2</span> px
+                    </label>
+                    <input type="range" id="ctrl-crt-rgbsplit" min="0" max="8" step="0.5" value="2">
+                </div>
+                <div class="control-row">
+                    <label for="ctrl-crt-scanlines">
+                        Líneas de escaneo
+                        <span class="control-value" id="val-crt-scanlines">25</span>%
+                    </label>
+                    <input type="range" id="ctrl-crt-scanlines" min="0" max="100" step="5" value="25">
+                </div>
+                <div class="control-row">
+                    <label for="ctrl-crt-vignette">
+                        Viñeta (bordes oscuros)
+                        <span class="control-value" id="val-crt-vignette">35</span>%
+                    </label>
+                    <input type="range" id="ctrl-crt-vignette" min="0" max="100" step="5" value="35">
+                </div>
+                <div class="control-row">
+                    <label for="ctrl-crt-glitch">
+                        Interferencia (pulsos de disrupción)
+                        <span class="control-value" id="val-crt-glitch">30</span>%
+                    </label>
+                    <input type="range" id="ctrl-crt-glitch" min="0" max="100" step="5" value="30">
+                </div>
+                <p class="editor-subhint">
+                    A más interferencia, pulsos de "ruido" más seguidos y más fuertes
+                    (aberración/líneas de escaneo se disparan un instante y vuelven a lo
+                    normal) — en 0 el efecto queda fijo, sin parpadeo.
+                </p>
             </section>
             </div>
     </div>
@@ -1670,6 +1800,12 @@
             // fracción 0-0.8 que usa el canvas directamente.
             bindSlider('ctrl-ambient-shadow', 'val-ambient-shadow', v => { AMBIENT_SHADOW_OPACITY = v / 100; });
 
+            bindCheckbox('ctrl-crt-enabled', v => { CRT_ENABLED = v; updateCrtEffect(); });
+            bindSlider('ctrl-crt-rgbsplit', 'val-crt-rgbsplit', v => { CRT_RGB_SPLIT = v; updateCrtEffect(); });
+            bindSlider('ctrl-crt-scanlines', 'val-crt-scanlines', v => { CRT_SCANLINE_OPACITY = v / 100; updateCrtEffect(); });
+            bindSlider('ctrl-crt-vignette', 'val-crt-vignette', v => { CRT_VIGNETTE = v / 100; updateCrtEffect(); });
+            bindSlider('ctrl-crt-glitch', 'val-crt-glitch', v => { CRT_GLITCH_INTENSITY = v; updateCrtEffect(); });
+
             // Los sliders muestran segundos (más legible), pero SPELLS guarda todo en ms
             bindSlider('ctrl-spell-magic-amount', 'val-spell-magic-amount', v => { SPELLS.magic.damage = v; });
             bindSlider('ctrl-spell-magic-cooldown', 'val-spell-magic-cooldown', v => { SPELLS.magic.cooldown = v * 1000; });
@@ -1989,16 +2125,51 @@
         // Ahora CADA llamada a saveMapEditorState()/saveEditorSettings() (o sea, cada
         // click/arrastre/slider, no solo un botón de "Guardar") programa además una
         // escritura real a cripta_nekkman_config.json, sin pedir permiso ni depender
-        // del navegador. Debounced (400ms) para no mandar un POST por cada tick de un
-        // slider arrastrado. Si el endpoint no existe (abriste el .html suelto, o es
-        // el deploy estático de GitHub Pages) el fetch falla y no rompe nada más — el
+        // del navegador. Si el endpoint no existe (abriste el .html suelto, o es el
+        // deploy estático de GitHub Pages) el fetch falla y no rompe nada más — el
         // guardado en localStorage (y el flujo manual de descarga) siguen andando igual.
+        //
+        // immediate=true (usado por saveMapEditorState — colocar/borrar/mover es una
+        // acción discreta y deliberada, no hace falta esperar) manda el POST ya mismo,
+        // sin pasar por el setTimeout de abajo. Motivo concreto: los navegadores
+        // THROTTLEAN los setTimeout de una pestaña en segundo plano (background tab
+        // throttling de Chrome) — colocar algo y enseguida cambiar de pestaña (para
+        // preguntarme algo a mí, por ejemplo) podía dejar el guardado a disco esperando
+        // en el aire un buen rato, aunque localStorage ya se hubiera actualizado al
+        // toque. Detectado en vivo: un enemigo colocado en Nivel 2 quedó en localStorage
+        // pero SIN llegar al archivo hasta que se forzó el POST a mano.
+        // saveEditorSettings() (sliders arrastrados, muchos ticks por segundo) sigue
+        // usando el debounce (400ms) para no mandar un POST por cada pixel de arrastre.
         let serverSaveDebounceTimer = null;
-        function scheduleServerSave() {
+        function scheduleServerSave(immediate) {
             if (SERVER_AUTOSAVE_DISABLED) return;
             clearTimeout(serverSaveDebounceTimer);
-            serverSaveDebounceTimer = setTimeout(writeConfigToServerNow, 400);
+            serverSaveDebounceTimer = null;
+            if (immediate) {
+                writeConfigToServerNow();
+            } else {
+                serverSaveDebounceTimer = setTimeout(writeConfigToServerNow, 400);
+            }
         }
+        // Red de seguridad para el debounce de saveEditorSettings (400ms): si la pestaña
+        // se oculta (cambiaste de pestaña/ventana, o la cerrás) CON un guardado todavía
+        // pendiente, no hay que esperar a que el setTimeout throttleado decida disparar
+        // solo — se manda YA con sendBeacon, pensado justo para "la página se está
+        // yendo" (a diferencia de fetch, el navegador garantiza el mejor esfuerzo de
+        // entrega aunque la pestaña se cierre a mitad de camino).
+        function flushPendingServerSave() {
+            if (SERVER_AUTOSAVE_DISABLED || !serverSaveDebounceTimer) return;
+            clearTimeout(serverSaveDebounceTimer);
+            serverSaveDebounceTimer = null;
+            try {
+                const blob = new Blob([JSON.stringify(getCombinedConfigData())], { type: 'application/json' });
+                navigator.sendBeacon('/save-config', blob);
+            } catch (e) { /* best-effort, no hay forma de reintentar desde acá */ }
+        }
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') flushPendingServerSave();
+        });
+        window.addEventListener('pagehide', flushPendingServerSave);
         async function writeConfigToServerNow() {
             try {
                 const resp = await fetch('/save-config', {
@@ -2403,6 +2574,86 @@
         let ambienceVolume = 0.35;
         let settingsBrightness = 100; // %, ver ctrl-brightness
 
+        // ---- Efecto CRT (⚙️ Editor → 🖥️ Shaders) ----
+        // Filtro de pantalla vieja puramente visual, encima de TODO (juego + HUD ya
+        // pintados) — no toca luces/sombra ambiente/niebla, esos siguen siendo su propio
+        // sistema (ver AMBIENT_SHADOW_OPACITY). 3 piezas, cada una independiente:
+        // 1) aberración RGB (filtro SVG #crt-rgb-split sobre #phaser-container, ver
+        //    updateCrtEffect), 2) líneas de escaneo (#crt-scanlines, overlay con
+        //    gradiente repetido), 3) viñeta (#crt-vignette, gradiente radial oscuro en
+        //    los bordes). CRT_GLITCH_INTENSITY maneja pulsos de "interferencia" cada
+        //    tanto (scheduleCrtGlitch) que exageran 1) y 2) un instante y vuelven solos.
+        let CRT_ENABLED = false;
+        let CRT_RGB_SPLIT = 2; // px de separación entre canales
+        let CRT_SCANLINE_OPACITY = 0.25;
+        let CRT_VIGNETTE = 0.35;
+        let CRT_GLITCH_INTENSITY = 30; // 0-100, 0 = sin parpadeo (efecto fijo)
+        let crtGlitchTimer = null;
+
+        // Recalcula TODO el efecto CRT desde los valores actuales de las 4 variables de
+        // arriba — se llama tanto desde los sliders (bindSlider/bindCheckbox, ver
+        // setupEditorPanel) como desde el propio ctrl-brightness (ver más abajo: los dos
+        // comparten el filter de #phaser-container, hay que armarlo junto para que uno
+        // no pise al otro).
+        function updateCrtEffect() {
+            // mapEditorActive suspende el efecto en pantalla SIN tocar CRT_ENABLED (el
+            // checkbox/valor guardado) — es una suspensión visual momentánea mientras se
+            // edita el mapa (pedido del usuario), no un cambio de la preferencia
+            // persistida. Por eso "effectivelyEnabled" y no CRT_ENABLED a secas en todo
+            // lo de abajo. Ver toggleMapEditor(), que llama a esta función al entrar/salir
+            // del Editor de Mapa para que la suspensión/reanudación sea inmediata.
+            const effectivelyEnabled = CRT_ENABLED && !mapEditorActive;
+            const container = document.getElementById('phaser-container');
+            if (container) {
+                const filterParts = [`brightness(${settingsBrightness}%)`];
+                if (effectivelyEnabled) filterParts.push('url(#crt-rgb-split)');
+                container.style.filter = filterParts.join(' ');
+            }
+            const scanlines = document.getElementById('crt-scanlines');
+            if (scanlines) scanlines.style.opacity = effectivelyEnabled ? CRT_SCANLINE_OPACITY : 0;
+            const vignette = document.getElementById('crt-vignette');
+            if (vignette) vignette.style.opacity = effectivelyEnabled ? CRT_VIGNETTE : 0;
+            const redOffset = document.getElementById('crt-red-offset');
+            const blueOffset = document.getElementById('crt-blue-offset');
+            if (redOffset) redOffset.setAttribute('dx', CRT_RGB_SPLIT);
+            if (blueOffset) blueOffset.setAttribute('dx', -CRT_RGB_SPLIT);
+
+            clearTimeout(crtGlitchTimer);
+            crtGlitchTimer = null;
+            if (effectivelyEnabled && CRT_GLITCH_INTENSITY > 0) scheduleCrtGlitch();
+        }
+
+        // Programa el PRÓXIMO pulso de interferencia (no un setInterval fijo, a
+        // propósito: un intervalo parejo se siente mecánico/artificial para algo que
+        // tiene que leerse como una falla de señal — el próximo delay siempre se
+        // recalcula con algo de azar). Más intensidad = pulsos más seguidos.
+        function scheduleCrtGlitch() {
+            const avgGapMs = Math.max(400, 6000 - CRT_GLITCH_INTENSITY * 55); // intensidad 100 -> ~500ms, 5 -> ~5.7s
+            const delay = avgGapMs * (0.5 + Math.random());
+            crtGlitchTimer = setTimeout(() => {
+                triggerCrtGlitchPulse();
+                if (CRT_ENABLED && !mapEditorActive && CRT_GLITCH_INTENSITY > 0) scheduleCrtGlitch();
+            }, delay);
+        }
+
+        // UN pulso: exagera la aberración RGB y las líneas de escaneo un instante corto
+        // (90-210ms) y vuelve sola a los valores base — simula una interferencia de
+        // señal momentánea, no un cambio permanente de los sliders.
+        function triggerCrtGlitchPulse() {
+            const redOffset = document.getElementById('crt-red-offset');
+            const blueOffset = document.getElementById('crt-blue-offset');
+            const scanlines = document.getElementById('crt-scanlines');
+            const strength = 1 + (CRT_GLITCH_INTENSITY / 100) * 3;
+            if (redOffset) redOffset.setAttribute('dx', CRT_RGB_SPLIT * strength);
+            if (blueOffset) blueOffset.setAttribute('dx', -CRT_RGB_SPLIT * strength);
+            if (scanlines) scanlines.style.opacity = Math.min(1, CRT_SCANLINE_OPACITY * 1.8);
+            setTimeout(() => {
+                if (redOffset) redOffset.setAttribute('dx', CRT_RGB_SPLIT);
+                if (blueOffset) blueOffset.setAttribute('dx', -CRT_RGB_SPLIT);
+                if (scanlines) scanlines.style.opacity = (CRT_ENABLED && !mapEditorActive) ? CRT_SCANLINE_OPACITY : 0;
+            }, 90 + Math.random() * 120);
+        }
+
         // Se llama al final de create() — recién ahí el mundo de verdad existe (assets
         // cargados, scene armada). Antes de esto el menú solo muestra el spinner de
         // "Cargando…"; los botones ni están en el DOM visible, así que no hay forma de
@@ -2455,7 +2706,10 @@
             brightnessInput.addEventListener('input', () => {
                 settingsBrightness = Number(brightnessInput.value);
                 document.getElementById('val-brightness').textContent = brightnessInput.value;
-                document.getElementById('phaser-container').style.filter = `brightness(${settingsBrightness}%)`;
+                // updateCrtEffect() arma el filter completo (brightness + el filtro SVG
+                // del CRT si está activo) — pisarlo acá directo con solo brightness()
+                // borraría el efecto CRT cada vez que se toca este slider.
+                updateCrtEffect();
             });
         }
 
@@ -2920,8 +3174,8 @@
         // "pozos negros" de Figma dentro de las zonas de piso — y el bloque liso del
         // Editor de Mapa): antes 0x000000 puro, que con la niebla apagada (Editor de
         // Mapa, se ve TODO de una) quedaba como "cuadraditos negros" desperdigados por
-        // la zona caminable, muy distinto del gris de las baldosas de al lado (bakeFloorTexture,
-        // 0x4a4a4a). Un gris oscuro CERCANO a ese tono (no idéntico a propósito: si
+        // la zona caminable, muy distinto del gris del piso de al lado (bakeFloorTexture,
+        // color plano 0x4b4b4b). Un gris oscuro CERCANO a ese tono (no idéntico a propósito: si
         // fuera EXACTAMENTE el mismo gris del piso, un bloque en pleno juego se vería
         // igual que piso caminable y el jugador chocaría con una "pared invisible") —
         // sigue bloqueando el paso igual que siempre, solo cambia el color.
@@ -3130,6 +3384,17 @@
         let PLAYER_MELEE_DAMAGE = 15; // daño del golpe del jugador
         let PLAYER_SPEED = 200; // px/s de movimiento del jugador
         let PLAYER_MAX_HEALTH_BASE = 100; // vida máxima del jugador (resetState() arranca cada partida con este valor)
+        // Animación de ataque del jugador (attack1_*/attack2_*, ver create()): 8 frames
+        // a este frameRate. La ventana de playerIsAttacking (durante la que
+        // checkPlayerAttackHit() puede pegarle a los enemigos, ver playerAttack()) se
+        // calcula a partir de esto para que dure EXACTAMENTE lo que tarda la animación
+        // en jugarse una vez — antes era un 200ms fijo sin relación con ningún sprite
+        // real porque no había animación de ataque, solo el arco dibujado a mano
+        // (drawAttackSlash) que ahora se sacó del jugador por quedar duplicado con el
+        // swing real.
+        const PLAYER_ATTACK_ANIM_FRAMERATE = 16;
+        const PLAYER_ATTACK_ANIM_FRAME_COUNT = 8;
+        const PLAYER_ATTACK_ANIM_DURATION_MS = Math.round(1000 * PLAYER_ATTACK_ANIM_FRAME_COUNT / PLAYER_ATTACK_ANIM_FRAMERATE);
 
         // Regeneración pasiva: si el jugador pasa este tiempo sin recibir daño,
         // empieza a curarse solo hasta la vida máxima (no editable por ahora).
@@ -3463,6 +3728,17 @@
         const KNOCKBACK_SPEED = 260; // impulso del "saltito" hacia atrás al tocar una trampa azul
         const KNOCKBACK_DURATION = 14; // frames durante los que no se controla el movimiento (jugador o enemigo)
         const PLAYER_COLOR = 0x00ff00;
+        // Tamaño VISUAL del sprite del jugador (Adventurer, ver preload/create): el arte
+        // nativo de cada frame es de solo 22x34px dentro de un lienzo de 96x80 (con
+        // relleno para el overhang del arma en los ataques) — como ese relleno ocupa la
+        // mayor parte del lienzo, escalar el lienzo COMPLETO a un tamaño parecido al del
+        // resto del elenco (~60x72, ver ENEMY_TYPES.normal.sprite) dejaba el personaje
+        // VISIBLE final chiquito y perdido contra su propio hitbox — al doble (pedido
+        // explícito del usuario) se nota mucho más. El hitbox de física NO usa este
+        // tamaño (ver player.body.setSize en create(), que se queda con el 40x50
+        // original) — esto es puramente cosmético, no cambia balance/dificultad.
+        const PLAYER_SPRITE_DISPLAY_WIDTH = 134;
+        const PLAYER_SPRITE_DISPLAY_HEIGHT = 173;
         const BLUE_TRAP_COLOR = 0x2266ff;
         const PROJECTILE_COLOR = 0xcc66ff;
 
@@ -3588,7 +3864,7 @@
                 // para poder romper la pared mágica más adelante. Los 6 naranjas son
                 // botín puro (lootValue, ver pickupItem). Posiciones y tamaño x2.
                 items: [
-                    { id: 'spellbook_magic', x: 400, y: 2280, w: 68, h: 52, unlocksSpell: 'magic' },
+                    { id: 'spellbook_magic', x: 400, y: 2280, w: CELL_SIZE, h: CELL_SIZE, unlocksSpell: 'magic' },
                     { id: 'loot_1', x: 1834, y: 44, w: 44, h: 42, lootValue: 1 },
                     { id: 'loot_2', x: 150, y: 834, w: 44, h: 42, lootValue: 1 },
                     { id: 'loot_3', x: 2296, y: 1110, w: 44, h: 42, lootValue: 1 },
@@ -3881,6 +4157,36 @@
         // de la lógica de movimiento/cámara no tiene que enterarse de que existen.
         const ARROW_KEY_TO_WASD = { arrowup: 'w', arrowdown: 's', arrowleft: 'a', arrowright: 'd' };
         let playerDirection;
+        // 'up'/'down'/'left'/'right' a partir de playerDirection — usado tanto por el
+        // update loop (para elegir la animación) como por playerAttack() (para fijar
+        // attackStartDirKey, ver ahí). Una sola función para no repetir el ternario.
+        function getPlayerDirKey() {
+            return playerDirection.y < 0 ? 'up' : playerDirection.y > 0 ? 'down' : (playerDirection.x < 0 ? 'left' : 'right');
+        }
+        // Animación del jugador (sprite Adventurer, ver preload/create): qué variante de
+        // ataque (1 o 2) toca reproducir AHORA (currentAttackVariant, fijada en
+        // playerAttack() cuando el golpe arranca) y cuál le toca al PRÓXIMO golpe
+        // (nextPlayerAttackVariant, alterna 1<->2 en cada trigger real de playerAttack()
+        // — no cada frame). currentPlayerAnimKey es el dirty-check (mismo patrón que
+        // hudLast) para no llamar a player.play() de nuevo si la animación no cambió.
+        let currentAttackVariant, nextPlayerAttackVariant;
+        let currentPlayerAnimKey;
+        // attackStartDirKey: hacia dónde miraba el jugador cuando el golpe actual
+        // arrancó (fijado en playerAttack()). Si mientras playerIsAttacking sigue
+        // activo el jugador gira (WASD cambia playerDirection a otro eje), el update
+        // loop compara contra esto y CANCELA el ataque en vez de dejar que
+        // desiredPlayerAnimKey pase a 'player_attack<N>_<nuevaDir>' — sin este chequeo,
+        // esa key distinta hacía que player.play() reiniciara la animación de golpe
+        // DE NUEVO desde el frame 0 ya con la nueva dirección, que se sentía/se veía
+        // como un ataque doble (reportado por el usuario: "giro rápido y hace un
+        // ataque doble"). Cancelar no deshace nada de lo que ya haya conectado
+        // checkPlayerAttackHit() en los frames previos al giro — eso ya quedó aplicado.
+        let attackStartDirKey = null;
+        // Timer pendiente que vuelve a poner playerIsAttacking en false al terminar la
+        // animación (ver playerAttack()) — guardado acá para poder cancelarlo si el
+        // ataque se corta antes por un giro, y así un timer viejo no le corte por
+        // accidente el PRÓXIMO ataque si este arranca antes de que el viejo dispare.
+        let playerAttackEndTimer = null;
         let playerAttackCooldown, playerIsAttacking;
         let playerDamageFlash, screenFlashAlpha;
         let playerKnockbackTimer;
@@ -4031,6 +4337,9 @@
             for (let i = 1; i <= 10; i++) {
                 this.load.image('loot_' + i, 'assets/loot/' + i + '.png');
             }
+            // Manual de hechizos (pickup con unlocksSpell) — mismo sprite de pergamino
+            // para los 3 hechizos, ver createLiveItem().
+            this.load.image('pergamino', 'assets/hechizos/pergamino.png');
             // Explosión al romperse: 6 cuadros de 64x64, sin transparencia real (fondo
             // gris oscuro en vez de alpha) — se dibuja con blend mode ADD para que el
             // fondo no pinte nada y solo se vean las chispas, ver spawnBreakableExplosion.
@@ -4054,14 +4363,14 @@
             // segundo plano DESPUÉS de que el juego ya es jugable, y la música entra sola
             // cuando termina de bajar.
 
-            // Tiles del "Basic Dungeon Pack" (piso, pared, cofre, barril, caja, moneda,
+            // Tiles del "Basic Dungeon Pack" (pared, cofre, barril, caja, moneda,
             // llave, puerta decorativa, tabla) — recortados a mano del sheet original y
             // reescalados a 32px nativos (CELL_SIZE) para no tener que escalar en
-            // tiempo de ejecución. Ver bakeFloorTexture() y las herramientas nuevas del
-            // Editor de Mapa (barrel/crate/chest/key/door_decor/plank).
-            for (let i = 1; i <= 9; i++) {
-                this.load.image('tile_floor_' + i, 'assets/tiles/floor_' + i + '.png');
-            }
+            // tiempo de ejecución. Ver las herramientas del Editor de Mapa
+            // (barrel/crate/chest/key/door_decor/plank).
+            // Nota: las 9 variantes de tile_floor_N (floor_1.png..floor_9.png) ya NO se
+            // cargan acá — el piso ahora es un color plano baked en bakeFloorTexture(),
+            // no una textura estampada. Los PNG siguen en assets/tiles/ sin usar.
             this.load.image('tile_wall', 'assets/tiles/wall.png');
 
             // Antorcha (reskin): 2 tamaños — chica y grande —, cada una 6 frames de
@@ -4106,6 +4415,22 @@
             for (let i = 1; i <= 4; i++) {
                 this.load.image('rotating_blades_' + i, 'assets/rotating_blades/' + i + '.png');
             }
+
+            // Personaje jugable (pack "Adventurer"): 4 acciones (idle/run/attack1/attack2)
+            // x 4 direcciones (down/left/right/up) = 16 animaciones. A diferencia del
+            // resto del bestiario (frames sueltos, uno por PNG) estos YA vienen
+            // empaquetados como spritesheet: cada PNG es una sola fila de 8 cuadros de
+            // 96x80px (768x80 total), así que se cargan con load.spritesheet en vez de
+            // recortarlos a mano — ver this.anims.create más abajo en create().
+            ['idle', 'run', 'attack1', 'attack2'].forEach(anim => {
+                ['down', 'left', 'right', 'up'].forEach(dir => {
+                    this.load.spritesheet(
+                        'player_' + anim + '_' + dir,
+                        'assets/player/' + anim + '_' + dir + '.png',
+                        { frameWidth: 96, frameHeight: 80 }
+                    );
+                });
+            });
         }
 
         // Phaser llama a init(data) antes de preload/create en CADA arranque de la
@@ -4130,6 +4455,9 @@
             maxHealth = PLAYER_MAX_HEALTH_BASE;
             moveKeyStack = [];
             playerDirection = { x: 1, y: 0 }; // Dirección inicial hacia la derecha
+            currentAttackVariant = 1;
+            nextPlayerAttackVariant = 1; // el primer golpe de cada partida/sala siempre es el ataque 1
+            currentPlayerAnimKey = null; // fuerza el primer player.play() del frame 1
             playerAttackCooldown = 0;
             playerIsAttacking = false;
             playerDamageFlash = 0;
@@ -4476,6 +4804,29 @@
                 });
             }
 
+            // Jugador (pack "Adventurer"): 16 animaciones (4 acciones x 4 direcciones),
+            // cada una con los 8 frames del spritesheet cargado en preload() (índices
+            // 0-7, generateFrameNumbers en vez de listar { key: ... } a mano como el
+            // resto del bestiario porque acá SÍ es un spritesheet real). idle/run
+            // loopean (repeat: -1); attack1/attack2 juegan una sola vez (repeat: 0) y
+            // duran PLAYER_ATTACK_ANIM_DURATION_MS en total — ver playerAttack(), que
+            // sincroniza la ventana de playerIsAttacking con esta misma duración.
+            const PLAYER_ANIM_FRAMERATES = { idle: 7, run: 11, attack1: PLAYER_ATTACK_ANIM_FRAMERATE, attack2: PLAYER_ATTACK_ANIM_FRAMERATE };
+            const PLAYER_ANIM_REPEATS = { idle: -1, run: -1, attack1: 0, attack2: 0 };
+            ['idle', 'run', 'attack1', 'attack2'].forEach(anim => {
+                ['down', 'left', 'right', 'up'].forEach(dir => {
+                    const key = 'player_' + anim + '_' + dir;
+                    if (!this.anims.exists(key)) {
+                        this.anims.create({
+                            key,
+                            frames: this.anims.generateFrameNumbers(key, { start: 0, end: PLAYER_ATTACK_ANIM_FRAME_COUNT - 1 }),
+                            frameRate: PLAYER_ANIM_FRAMERATES[anim],
+                            repeat: PLAYER_ANIM_REPEATS[anim]
+                        });
+                    }
+                });
+            });
+
             activeRoom = ROOMS[currentRoom];
             updateMapEditorRoomSwitchUI();
             // Si hay una edición guardada del Editor de Mapa para esta sala, se aplica
@@ -4537,8 +4888,20 @@
             // arranque por defecto de la sala (para no tener que recorrer el pasillo
             // de nuevo cada vez que volvés).
             const spawnPoint = pendingEntryPoint || activeRoom.playerStart;
-            player = this.add.rectangle(spawnPoint.x, spawnPoint.y, 40, 50, 0x00ff00);
-            this.physics.add.existing(player);
+            // Antes un Rectangle liso (0x00ff00); ahora un Sprite real con las 16
+            // animaciones cargadas en preload()/registradas arriba en create() —
+            // arranca en idle_down, el estado de animación del primer frame lo fija el
+            // propio updateGame() según playerDirection (empieza {x:1,y:0} = derecha).
+            player = this.physics.add.sprite(spawnPoint.x, spawnPoint.y, 'player_idle_down');
+            player.setDisplaySize(PLAYER_SPRITE_DISPLAY_WIDTH, PLAYER_SPRITE_DISPLAY_HEIGHT);
+            // Hitbox de física: 1 celda de ancho x 2 de alto (CELL_SIZE x CELL_SIZE*2 =
+            // 32x64, pedido explícito del usuario), alineado a la grilla igual que el
+            // resto de las entidades del juego — antes era un 40x50 arbitrario, sin
+            // relación con CELL_SIZE. Mismo gotcha que createEnemyInstance: body.setSize()
+            // recibe medidas en espacio LOCAL (antes de escalar), así que hay que dividir
+            // por la escala que acaba de aplicar setDisplaySize para que el hitbox final
+            // en el mundo dé 32x64 reales.
+            player.body.setSize(CELL_SIZE / player.scaleX, (CELL_SIZE * 2) / player.scaleY, true);
             player.body.setCollideWorldBounds(true);
             player.body.setBounce(0.1);
             player.setDepth(DEPTH_PLAYER);
@@ -4656,8 +5019,8 @@
                 return { conf, rect };
             });
 
-            // Piso con textura: pilares y bloques ya están armados en este punto, así
-            // que ya se sabe qué celdas son piso caminable. Ver bakeFloorTexture().
+            // Piso en color plano: pilares y bloques ya están armados en este punto (se
+            // dibujan por encima, no afectan el color del piso). Ver bakeFloorTexture().
             bakeFloorTexture();
 
             // Paredes con vida (bloquean + tienen HP) y paredes especiales (bloquean +
@@ -4945,7 +5308,14 @@
                     mapEditorPanStart = null;
                     return;
                 }
-                if (mapEditorDragging) mapEditorDragging = null;
+                // Guarda recién ACÁ, una sola vez al soltar (no en cada frame de
+                // handleMapEditorDrag) — sin esto, arrastrar algo con "Mover" nunca
+                // quedaba guardado por sí solo (solo lo tapaba el próximo Colocar/Borrar/
+                // Deshacer, que sí guardan): un mové-y-cerrá-el-navegador se perdía.
+                if (mapEditorDragging) {
+                    mapEditorDragging = null;
+                    saveMapEditorState();
+                }
                 if (mapEditorSelectStart) {
                     applyMapEditorRectSelection(mapEditorTool, mapEditorSelectStart.x, mapEditorSelectStart.y, pointer.worldX, pointer.worldY);
                     mapEditorSelectStart = null;
@@ -5471,6 +5841,45 @@
                 player.body.setVelocity(vx, vy);
             }
 
+            // Animación del jugador: 16 combinaciones posibles (4 acciones x 4
+            // direcciones, ver create()). Prioridad ataque > movimiento > quieto.
+            // "Movimiento" se lee de player.body.velocity (no de vx/vy locales de arriba)
+            // para que también se anime durante el knockback de una trampa azul, que
+            // mueve al jugador fuera del bloque if/else de WASD. La dirección en cambio
+            // sigue viniendo de playerDirection (el último eje de WASD), igual que ya
+            // hacían drawDirectionArrow/checkPlayerAttackHit — el knockback no la toca.
+            const playerDirKey = getPlayerDirKey();
+
+            // Si el jugador gira MIENTRAS ataca (playerDirKey ya no es el eje con el que
+            // arrancó el golpe, ver attackStartDirKey en playerAttack()), se cancela el
+            // ataque acá en vez de dejar que desiredPlayerAnimKey más abajo pase a
+            // 'player_attack<N>_<nuevaDir>' — eso hacía que player.play() reiniciara la
+            // animación de golpe DESDE CERO ya con la nueva dirección (ataque doble
+            // reportado por el usuario). Lo que ya haya conectado checkPlayerAttackHit()
+            // en los frames previos al giro queda como está, no se deshace nada — solo se
+            // corta lo que faltaba del swing.
+            if (playerIsAttacking && playerDirKey !== attackStartDirKey) {
+                playerIsAttacking = false;
+                clearTimeout(playerAttackEndTimer);
+                playerAttackEndTimer = null;
+            }
+
+            let desiredPlayerAnimKey;
+            if (playerIsAttacking) {
+                desiredPlayerAnimKey = 'player_attack' + currentAttackVariant + '_' + playerDirKey;
+            } else if (player.body.velocity.x !== 0 || player.body.velocity.y !== 0) {
+                desiredPlayerAnimKey = 'player_run_' + playerDirKey;
+            } else {
+                desiredPlayerAnimKey = 'player_idle_' + playerDirKey;
+            }
+            // Dirty-check (mismo patrón que hudLast): sprite.play() con la misma key no
+            // reinicia la animación en Phaser, pero igual evitamos la llamada de sobra en
+            // este loop por frame si no cambió nada.
+            if (currentPlayerAnimKey !== desiredPlayerAnimKey) {
+                currentPlayerAnimKey = desiredPlayerAnimKey;
+                player.play(desiredPlayerAnimKey);
+            }
+
             // El cooldown de ataque del jugador se cuenta acá. Esto se había perdido en
             // una reescritura anterior: playerAttackCooldown se ponía en 40 al atacar
             // pero nunca bajaba de nuevo, así que después del primer golpe quedaba
@@ -5484,10 +5893,17 @@
 
             // ---- Movimiento, ataque y dibujo de cada enemigo ----
             attackGraphics.clear();
-            drawDirectionArrow(attackGraphics, player.x, player.y, playerDirection, 0x00ff00);
+            // La flechita verde de dirección se sacó: el sprite del jugador (idle/run
+            // direccional, ver arriba) ya muestra hacia dónde mira sin necesitar un
+            // indicador aparte. drawDirectionArrow sigue en uso para los enemigos (línea
+            // más abajo, ver updateEnemyInstance), no se tocó esa función ni su llamada ahí.
 
             if (playerIsAttacking) {
-                drawAttackSlash(attackGraphics, player.x, player.y, playerDirection, 0x00ff00);
+                // El tajo dibujado a mano (drawAttackSlash) se sacó de acá: ahora el
+                // swing real lo muestra la animación attack1/attack2 del sprite (ver
+                // arriba), y dibujar el arco ENCIMA quedaba redundante/feo superpuesto.
+                // drawAttackSlash sigue existiendo y en uso para los enemigos sin sprite
+                // propio (ver updateEnemyInstance), así que la función no se tocó.
                 checkPlayerAttackHit();
             }
 
@@ -5550,9 +5966,13 @@
             screenFlashOverlay.setAlpha(screenFlashAlpha);
 
             if (playerDamageFlash > 0) {
-                player.setFillStyle(0xff4444);
+                // setFillStyle era de Rectangle; el jugador ahora es un Sprite (setTint/
+                // clearTint). "Volver a la normalidad" ya no es reaplicar PLAYER_COLOR
+                // (no tiene sentido en un sprite con su propio dibujo) sino sacar el
+                // tinte del todo.
+                player.setTint(0xff4444);
                 playerDamageFlash--;
-                if (playerDamageFlash === 0) player.setFillStyle(PLAYER_COLOR);
+                if (playerDamageFlash === 0) player.clearTint();
             }
 
             // Prompt de interacción con el objeto del centro
@@ -5612,24 +6032,24 @@
                 gameOver = true;
                 player.body.setVelocity(0, 0);
                 freezeAllEnemies();
-                player.setFillStyle(0xff0000);
+                player.setTint(0xff0000);
                 showGameOverOverlay('GAME OVER', 'Yamel ha caído en la cripta...', '#ff5555');
                 dom.status.textContent = 'Derrota. Presiona R para reiniciar.';
             }
 
-            // Actualizar barra de vida del HUD. Referencias cacheadas (dom.healthFill) y
-            // dirty-check (hudLast) para no tocar el DOM si el valor no cambió — escribir
-            // style.width/backgroundColor sin necesidad fuerza recálculos de estilo de más.
+            // Actualizar barra de vida del HUD (heart-bar). Referencias cacheadas
+            // (dom.healthFill) y dirty-check (hudLast) para no tocar el DOM si el valor
+            // no cambió. dom.healthFill es ahora el <img> "brillante" superpuesto sobre
+            // la copia oscurecida (.health-bar-empty, ver CSS) dentro de .health-bar-track
+            // — se recorta con clip-path desde la derecha según el % de vida, dejando ver
+            // la copia oscura debajo. El corazón (.health-bar-heart) vive FUERA de
+            // .health-bar-track así que nunca se recorta: siempre se ve completo, como en
+            // las referencias de arte (el corazón no se "vacía", solo los segmentos).
             const healthPercent = Math.max(0, playerHealth) / maxHealth;
-            const healthWidthStr = (healthPercent * 100) + '%';
-            if (hudLast.healthWidth !== healthWidthStr) {
-                dom.healthFill.style.width = healthWidthStr;
-                hudLast.healthWidth = healthWidthStr;
-            }
-            const healthColor = healthPercent > 0.5 ? '#00ff00' : healthPercent > 0.25 ? '#ffaa00' : '#ff0000';
-            if (hudLast.healthColor !== healthColor) {
-                dom.healthFill.style.backgroundColor = healthColor;
-                hudLast.healthColor = healthColor;
+            const healthClipStr = ((1 - healthPercent) * 100) + '%';
+            if (hudLast.healthClip !== healthClipStr) {
+                dom.healthFill.style.clipPath = `inset(0 ${healthClipStr} 0 0)`;
+                hudLast.healthClip = healthClipStr;
             }
 
             if (hudLast.lootCollected !== lootCollected) {
@@ -6414,12 +6834,31 @@
 
             playerIsAttacking = true;
             playerAttackCooldown = PLAYER_ATTACK_COOLDOWN;
+            // Ataque 1 y 2 alternan SIEMPRE, uno por cada golpe que realmente se dispara
+            // (no por frame): este golpe usa la variante que quedó pendiente de la vez
+            // anterior, y la que viene después queda para la próxima.
+            currentAttackVariant = nextPlayerAttackVariant;
+            nextPlayerAttackVariant = nextPlayerAttackVariant === 1 ? 2 : 1;
             enemies.forEach(inst => { inst.hitByPlayerSwing = false; });
             hpWallsState.forEach(w => { w.hitByPlayerSwing = false; });
 
-            setTimeout(() => {
+            // Dirección con la que arranca ESTE golpe — si el jugador gira antes de que
+            // termine, el update loop lo compara contra esto para cancelar el ataque en
+            // vez de reiniciar la animación en la nueva dirección (ver el chequeo junto a
+            // getPlayerDirKey() en updateGame()).
+            attackStartDirKey = getPlayerDirKey();
+
+            // Antes 200ms fijos, sin relación con ningún dibujo real (no había animación
+            // de ataque todavía). Ahora la ventana dura EXACTAMENTE lo que tarda en
+            // jugarse una vez la animación attack1/attack2 (ver PLAYER_ATTACK_ANIM_*),
+            // para que el golpe no se sienta "cortado" ni quede colgado después de que
+            // el sprite ya volvió a idle/run. clearTimeout previo por las dudas quede uno
+            // viejo pendiente (no debería pasar con el cooldown, pero es defensivo).
+            clearTimeout(playerAttackEndTimer);
+            playerAttackEndTimer = setTimeout(() => {
                 playerIsAttacking = false;
-            }, 200);
+                playerAttackEndTimer = null;
+            }, PLAYER_ATTACK_ANIM_DURATION_MS);
         }
 
         function getChargeColor() {
@@ -6874,6 +7313,21 @@
             return Math.abs(a.x - b.x) < (aHalfW + bHalfW) && Math.abs(a.y - b.y) < (aHalfH + bHalfH);
         }
 
+        // El jugador ahora es un Sprite (ver create()) cuyo displayWidth/Height (134x173,
+        // tamaño VISUAL del sprite Adventurer) es bastante más grande que su hitbox real
+        // de física (32x64, 1x2 celdas — ver player.body.setSize en create()). Las
+        // trampas que chequean overlap A MANO en vez de con un collider real de Arcade
+        // (sierra/pinches/fuego: rectsOverlap(algo, player) directo) usaban ese
+        // displayWidth/Height de arriba — el jugador "alcanzaba" a activarlas desde
+        // mucho más lejos de lo que se ve (reportado por el usuario con la Trampa de
+        // Pinches: daño estando lejos, fuera de su 1x2 real). Este helper arma un
+        // rectángulo SIN displayWidth (rectsOverlap cae al fallback .width/.height) con
+        // las medidas REALES del body — mismo criterio que ya usa updateEnemyInstance
+        // para los enemigos (el body, no el sprite, es la fuente de verdad del hitbox).
+        function getPlayerHitboxRect() {
+            return { x: player.body.center.x, y: player.body.center.y, width: player.body.width, height: player.body.height };
+        }
+
         // Crea UNA sierra en el extremo del riel que corresponda según orientación +
         // sawTrapReversed (el switch global — ver Editor de Parámetros), viajando hacia
         // el extremo opuesto. `remaining` es cuánto le falta recorrer (arranca en el
@@ -6955,7 +7409,7 @@
                 // Daño al jugador: una sola vez por PASADA de esta sierra puntual (no una
                 // vez por frame mientras siga solapada) — sin este flag, un jugador
                 // parado en el riel perdería vida en cada tick que dure el solapamiento.
-                if (!saw.hitPlayer && !gameOver && rectsOverlap(saw.obj, player)) {
+                if (!saw.hitPlayer && !gameOver && rectsOverlap(saw.obj, getPlayerHitboxRect())) {
                     playerHealth -= SAW_TRAP_DAMAGE;
                     lastDamageTime = now;
                     playSfx('playerDamage');
@@ -7095,7 +7549,7 @@
             spikeTrapState.forEach(trap => {
                 let changed = false;
 
-                changed = updateSpikeCharge(trap.charges, 'player', rectsOverlap(trap.hitbox, player), now, () => {
+                changed = updateSpikeCharge(trap.charges, 'player', rectsOverlap(trap.hitbox, getPlayerHitboxRect()), now, () => {
                     playerHealth -= SPIKE_TRAP_DAMAGE;
                     lastDamageTime = now;
                     playSfx('playerDamage');
@@ -7209,7 +7663,7 @@
                 trap.wasHot = true;
 
                 const hitbox = { x: trap.conf.x, y: trap.conf.y, displayWidth: CELL_SIZE, displayHeight: CELL_SIZE };
-                if (!gameOver && rectsOverlap(hitbox, player)) {
+                if (!gameOver && rectsOverlap(hitbox, getPlayerHitboxRect())) {
                     playerHealth -= FIRE_TRAP_DAMAGE;
                     lastDamageTime = scene.time.now;
                     playSfx('playerDamage');
@@ -7265,9 +7719,10 @@
         function createLiveItem(itemConf) {
             // Botín = la moneda del tileset (antes un cuadrado naranja) o, si viene de
             // romper un objeto rompible, el sprite de loot que matchea su tamaño (ver
-            // dropBreakableLoot/lootSpriteKey); el manual de hechizos se queda como
-            // estaba (no hay sprite de libro en este pack) — mismo mecanismo de
-            // recolección (pickupItem) para los tres, solo cambia el dibujo.
+            // dropBreakableLoot/lootSpriteKey); el manual de hechizos usa el mismo
+            // sprite de pergamino para los 3 hechizos (no hay uno distinto por hechizo
+            // en este pack) — mismo mecanismo de recolección (pickupItem) para los
+            // tres, solo cambia el dibujo.
             let rect;
             if (itemConf.lootValue) {
                 // "loot_1" de fallback para botín viejo guardado ANTES de este cambio
@@ -7275,17 +7730,17 @@
                 rect = scene.add.sprite(itemConf.x, itemConf.y, itemConf.lootSpriteKey || 'loot_1');
                 rect.setDisplaySize(itemConf.w, itemConf.h);
             } else {
-                rect = scene.add.rectangle(itemConf.x, itemConf.y, itemConf.w, itemConf.h, 0xe8d9b0);
-                rect.setStrokeStyle(2, 0x8a7a52);
+                rect = scene.add.sprite(itemConf.x, itemConf.y, 'pergamino');
+                rect.setDisplaySize(itemConf.w, itemConf.h);
             }
             rect.setDepth(4);
             scene.physics.add.existing(rect, true);
-            if (itemConf.lootValue) {
-                // Igual que la Trampa Giratoria/Pared con Vida: el body estático sale
-                // del tamaño NATIVO del frame, no de setDisplaySize — hay que re-sincronizar.
-                rect.body.setSize(itemConf.w, itemConf.h);
-                rect.body.updateFromGameObject();
-            }
+            // Igual que la Trampa Giratoria/Pared con Vida: el body estático sale del
+            // tamaño NATIVO del frame, no de setDisplaySize — hay que re-sincronizar.
+            // Aplica tanto al botín (sprite de loot) como al manual (sprite de
+            // pergamino), ambos son Sprite ahora (antes el manual era un Rectangle).
+            rect.body.setSize(itemConf.w, itemConf.h);
+            rect.body.updateFromGameObject();
             scene.physics.add.overlap(player, rect, () => pickupItem(itemConf, rect), null, scene);
             itemRects.push({ conf: itemConf, rect });
         }
@@ -7318,13 +7773,16 @@
         }
 
         // Habilita un hechizo en la barra de abajo: saca el candado y muestra su ícono
-        // real. spellIcons mapea key -> emoji (agregar acá si se suma un hechizo nuevo).
-        const spellIcons = { magic: '🔮', immobilize: '❄️', fireball: '🔥' };
+        // real (sprite del hechizo, ver assets/hechizos/). spellIcons mapea key -> ruta
+        // de imagen (agregar acá si se suma un hechizo nuevo). Se inyecta como <img>
+        // DENTRO del mismo span.spell-icon (innerHTML, no textContent) para que
+        // querySelector('.spell-icon') lo siga encontrando en el resto del código.
+        const spellIcons = { magic: 'assets/hechizos/magic.png', immobilize: 'assets/hechizos/ice.png', fireball: 'assets/hechizos/fireball.png' };
         function unlockSpell(spellKey) {
             spellsUnlocked[spellKey] = true;
             const slot = document.getElementById('slot-' + spellKey);
             slot.classList.remove('locked');
-            slot.querySelector('.spell-icon').textContent = spellIcons[spellKey];
+            slot.querySelector('.spell-icon').innerHTML = '<img class="spell-icon-img" src="' + spellIcons[spellKey] + '" alt="">';
         }
 
         // Sincroniza la barra de hechizos con spellsUnlocked — se llama en cacheDom()
@@ -8217,6 +8675,16 @@
             if (fogUnexploredImage) fogUnexploredImage.setVisible(!mapEditorActive);
             if (ambientShadowImage) ambientShadowImage.setVisible(!mapEditorActive);
 
+            // Mismo criterio: el efecto CRT (RGB split/scanlines/viñeta/pulsos de
+            // interferencia) se suspende mientras se edita el mapa, sin tocar
+            // CRT_ENABLED ni lo guardado — updateCrtEffect() ya sabe leer mapEditorActive
+            // y recalcula "effectivelyEnabled" sola; esta llamada solo dispara que lo
+            // aplique YA (entrar y salir), en vez de esperar a que se toque algún slider.
+            // Los overlays del CRT viven en el DOM (fuera de la escena de Phaser), así
+            // que sobreviven un scene.scene.restart() (ver mapEditorSwitchRoom) sin
+            // necesidad de recrearlos como fogUnexploredImage/ambientShadowImage.
+            updateCrtEffect();
+
             // La cámara se desacopla del jugador mientras se edita — WASD la mueve
             // directo (ver updateGame), no al jugador, que queda congelado donde estaba.
             // Al salir, vuelve a seguirlo exactamente como al principio (mismo
@@ -8228,6 +8696,16 @@
                 // — la partida real siempre arranca/vuelve a verse a escala normal.
                 scene.cameras.main.setZoom(1);
                 scene.cameras.main.startFollow(player, true, 1, 1);
+                // Si se entró a ESTA sesión de edición cambiando de sala con el selector
+                // (mapEditorSwitchRoom hace un restart), resetState() vio el panel
+                // #map-editor-panel todavía abierto y forzó isPaused=true para esa sala
+                // nueva — nada más lo despausaba después porque el flujo normal (abrir el
+                // editor SIN cambiar de sala, sin restart) nunca lo necesitaba. Sin este
+                // reset, salir del Editor de Mapa después de haber cambiado de sala
+                // dejaba el juego trabado en pausa para siempre (el gate de arriba del
+                // scene.update() corta TODO el loop mientras isPaused sea true).
+                editorPauseActive = false;
+                isPaused = false;
             }
 
             if (mapEditorActive) {
@@ -8597,10 +9075,20 @@
                 specialWallsState.push({ conf, rect, destroyed: false });
                 if (!mapEditorBatching) buildBlockedGrid();
             } else if (tool === 'trap') {
+                // createBlueTrapSprite: mismo camino que usa la carga de sala (ver
+                // blueTrapRects = activeRoom.blueTraps.map(...) en create()) — antes acá
+                // se armaba un Rectangle liso a mano, que quedaba SIN los métodos de
+                // Sprite (play/setTint/clearTint) que updateBlueTraps() da por sentado
+                // para todas las entradas de blueTrapRects; recién al recargar la
+                // página (donde SÍ se recrea todo vía createBlueTrapSprite) se
+                // "arreglaba" solo. Colocar una acá y frizarla con el hechizo de Hielo
+                // ANTES de recargar tiraba error de consola.
                 const conf = { x: sx, y: sy };
                 activeRoom.blueTraps.push(conf);
-                const rect = scene.add.rectangle(sx, sy, BLUE_TRAP_SIZE, BLUE_TRAP_SIZE, BLUE_TRAP_COLOR);
+                const rect = createBlueTrapSprite(scene, sx, sy);
                 blueTraps.add(rect);
+                rect.body.setSize(BLUE_TRAP_SIZE, BLUE_TRAP_SIZE);
+                rect.body.updateFromGameObject();
                 blueTrapRects.push({ conf, rect });
                 if (!mapEditorBatching) buildBlueTrapCostCells();
             } else if (LOOT_TOOL_LOOKUP[tool]) {
@@ -8624,7 +9112,7 @@
                     flashMapEditorError(`Ya hay un manual de "${SPELLS[spellKey].label}" puesto en otro punto de los 3 niveles — solo puede haber uno. Sacalo de ahí primero (Borrar) si lo querés mover.`);
                     return;
                 }
-                const conf = { id: 'spellbook_editor_' + uid, x: sx, y: sy, w: 34, h: 26, unlocksSpell: spellKey };
+                const conf = { id: 'spellbook_editor_' + uid, x: sx, y: sy, w: CELL_SIZE, h: CELL_SIZE, unlocksSpell: spellKey };
                 activeRoom.items.push(conf);
                 createLiveItem(conf);
             } else if (tool === 'normal' || tool === 'tanque' || tool === 'mago') {
@@ -8651,6 +9139,12 @@
         // son necesarias para la condición de victoria y borrarlas/moverlas podría
         // dejar la sala imposible de terminar.
         function findMapEditorEntityAt(x, y) {
+            // El jugador: un solo punto por sala (activeRoom.playerStart), no una lista —
+            // se prueba primero porque suele estar solo, sin nada más debajo para
+            // desambiguar. Movible con "Mover" (ver handleMapEditorDrag), nunca borrable
+            // (ver mapEditorEraseAt) — no tendría sentido "sacar" al jugador del mapa.
+            if (rectContainsPoint(player, x, y)) return { kind: 'player', entry: { rect: player } };
+
             const enemy = enemies.find(inst => !inst.defeated && rectContainsPoint(inst.obj, x, y));
             if (enemy) return { kind: 'enemy', entry: enemy };
 
@@ -8733,37 +9227,23 @@
                 return { conf: pos, rect };
             });
             buildBlockedGrid();
-            // Abrir/tapar un agujero en una pared cambia qué celdas son piso caminable
-            // — hay que rehornear la textura del piso para que el hueco nuevo (o el que
-            // se volvió a tapar) se vea bien, no quede en gris liso de fondo.
+            // Se rehornea igual aunque el piso ahora sea un color plano parejo (no
+            // depende de qué celda es piso caminable): bakeFloorTexture() reconstruye el
+            // canvas entero del tamaño del mundo, así que si worldWidth/worldHeight
+            // cambiaron con la sala hay que rehacerlo. El color sigue siendo SIEMPRE el
+            // mismo #4B4B4B, edite lo que edite el Editor de Mapa (paredes, pilares, etc.).
             bakeFloorTexture();
         }
 
-        // Pinta la textura de piso UNA sola vez (no por frame) sobre un RenderTexture
-        // del tamaño del mundo: para cada celda de CELL_SIZE que NO esté cubierta por
-        // un pilar/bloque, estampa una de las 9 variantes de piso al azar — así se ve
-        // "roto"/orgánico en vez de un mosaico perfectamente repetido. Se vuelve a
-        // llamar cada vez que create() arma la sala (o rebuildPillars() cambia qué es
-        // piso), nunca en el loop de juego — es carísimo hacerlo por frame, pero
-        // baratísimo una sola vez al entrar a la sala (mismo criterio que exploredRT).
+        // Pinta la textura de piso UNA sola vez (no por frame): un canvas 2D del tamaño
+        // del mundo relleno íntegro con el color plano #4B4B4B (ver bakeFloorTexture),
+        // sin depender de qué celda es piso caminable — las zonas no transitables quedan
+        // tapadas arriba por pilares/paredes/objetos (todos con depth >= 0, por encima
+        // del piso en depth -1). Se vuelve a llamar cada vez que create() arma la sala
+        // (o rebuildPillars() cambia el layout), nunca en el loop de juego — es carísimo
+        // hacerlo por frame, pero baratísimo una sola vez al entrar a la sala (mismo
+        // criterio que exploredRT).
         function bakeFloorTexture() {
-            const cols = Math.ceil(activeRoom.worldWidth / CELL_SIZE);
-            const rows = Math.ceil(activeRoom.worldHeight / CELL_SIZE);
-            // Cofre/caja/tabla no cuentan como bloque para esto: son puramente
-            // decorativos, apoyados SOBRE el piso, así que la baldosa se sigue pintando
-            // debajo (antes quedaba un hueco gris ahí, como si fueran pared real).
-            const blockers = activeRoom.pillars.concat((activeRoom.editorBlocks || []).filter(b => !isPassableDecoBlock(b)));
-
-            function cellIsFloor(cx, cy) {
-                for (let i = 0; i < blockers.length; i++) {
-                    const r = blockers[i];
-                    const halfW = (r.w !== undefined ? r.w : 80) / 2;
-                    const halfH = (r.h !== undefined ? r.h : 80) / 2;
-                    if (cx > r.x - halfW && cx < r.x + halfW && cy > r.y - halfH && cy < r.y + halfH) return false;
-                }
-                return true;
-            }
-
             // Se dibuja en un CANVAS 2D y recién al final se sube a la GPU como UNA sola
             // textura. Antes esto era un RenderTexture de Phaser y cada baldosa era un
             // .draw() propio: ~6400 draws, y cada uno obliga a la GPU a cambiar de
@@ -8778,27 +9258,16 @@
             const canvasTexture = scene.textures.createCanvas(FLOOR_TEXTURE_KEY, activeRoom.worldWidth, activeRoom.worldHeight);
             const ctx = canvasTexture.getContext();
 
-            // Relleno base gris (mismo tono que las baldosas, #4a4a4a) ANTES de estampar
-            // los tiles: así cualquier hueco entre estampados (por bordes/transparencia de
-            // algunas de las 9 variantes, más visible al editar el mapa) se ve gris como el
-            // piso en vez del negro de fondo — los "cuadraditos negros" reportados.
-            ctx.fillStyle = '#4a4a4a';
+            // Piso en color plano #4B4B4B — antes acá se estampaban 9 variantes de tile
+            // de textura (tile_floor_1..9) celda por celda, filtrando qué celdas eran piso
+            // caminable vs. bloqueadas (pilares/blocks); el usuario pidió reemplazar la
+            // textura por un solo color liso, sin patrón. El relleno cubre el canvas
+            // ENTERO (piso y no-piso por igual) en un solo fillRect: ya no hace falta
+            // distinguir celdas porque las no-piso quedan tapadas por otros objetos
+            // (paredes, pilares, etc., todos con depth >= 0, por encima de floorImage en
+            // depth -1) — mismo criterio que el fill base que este reemplaza.
+            ctx.fillStyle = '#4B4B4B';
             ctx.fillRect(0, 0, activeRoom.worldWidth, activeRoom.worldHeight);
-
-            // Las 9 imágenes fuente se resuelven UNA vez acá, no una por celda.
-            const tileImages = [];
-            for (let v = 1; v <= 9; v++) {
-                tileImages.push(scene.textures.get('tile_floor_' + v).getSourceImage());
-            }
-
-            for (let row = 0; row < rows; row++) {
-                for (let col = 0; col < cols; col++) {
-                    const cx = col * CELL_SIZE + CELL_SIZE / 2;
-                    const cy = row * CELL_SIZE + CELL_SIZE / 2;
-                    if (!cellIsFloor(cx, cy)) continue;
-                    ctx.drawImage(tileImages[Math.floor(Math.random() * 9)], col * CELL_SIZE, row * CELL_SIZE);
-                }
-            }
 
             canvasTexture.refresh(); // única subida del canvas entero a la GPU
             floorImage = scene.add.image(0, 0, FLOOR_TEXTURE_KEY).setOrigin(0, 0);
@@ -8808,9 +9277,9 @@
         function mapEditorEraseAt(x, y) {
             const found = findMapEditorEntityAt(x, y);
             if (!found) return;
-            // Puerta y fuente: exactamente una de cada una por nivel, nunca cero — se
+            // Puerta, fuente y jugador: exactamente uno de cada uno, nunca cero — se
             // pueden mover (ver handleMapEditorDrag) pero Borrar no hace nada acá.
-            if (found.kind === 'door' || found.kind === 'fountain') return;
+            if (found.kind === 'door' || found.kind === 'fountain' || found.kind === 'player') return;
             // Recién ACÁ, con algo realmente encontrado para borrar — un Borrar en el
             // aire (nada bajo el cursor) no cuenta como acción, no hay que poder
             // "deshacer" no haber hecho nada. Mismo criterio de batching que mapEditorPlace.
@@ -8912,7 +9381,15 @@
             const { kind, entry } = mapEditorDragging;
             const { x: sx, y: sy } = snapToGrid(x, y);
 
-            if (kind === 'enemy') {
+            if (kind === 'player') {
+                // El jugador queda congelado (mapEditorActive) en la posición donde esté
+                // parado — reposicionarlo acá alcanza, sin tocar physics/velocity. Se
+                // guarda en activeRoom.playerStart: la próxima vez que se entre/reinicie
+                // ESTA sala (jugando de verdad o desde el selector del Editor de Mapa),
+                // el jugador va a aparecer acá — así se controla el spawn por nivel.
+                player.setPosition(sx, sy);
+                activeRoom.playerStart = { x: sx, y: sy };
+            } else if (kind === 'enemy') {
                 entry.obj.setPosition(sx, sy);
                 if (entry.shadow) entry.shadow.setPosition(sx, sy + (ENEMY_TYPES[entry.typeKey].sprite ? ENEMY_TYPES[entry.typeKey].sprite.displayHeight / 2 : 0));
                 if (activeRoom.enemySpawns[entry.spawnIndex]) {
@@ -9015,7 +9492,8 @@
                 items: activeRoom.items,
                 enemySpawns: activeRoom.enemySpawns,
                 doors: activeRoom.doors,
-                fountain: activeRoom.fountain
+                fountain: activeRoom.fountain,
+                playerStart: activeRoom.playerStart
             }));
         }
 
@@ -9052,8 +9530,13 @@
         function restoreMapSnapshot(snapshot) {
             Object.assign(activeRoom, snapshot);
             saveMapEditorState();
+            // playerX/Y: normalmente la posición ACTUAL del jugador (deshacer una pared no
+            // tiene por qué teletransportarlo) — pero si lo que se deshace/rehace es
+            // justo un movimiento del jugador, hay que usar snapshot.playerStart para que
+            // el Ctrl+Z se vea al toque, no recién la próxima vez que se entre a la sala.
             pendingMapEditorRestore = {
-                playerX: player.x, playerY: player.y,
+                playerX: snapshot.playerStart ? snapshot.playerStart.x : player.x,
+                playerY: snapshot.playerStart ? snapshot.playerStart.y : player.y,
                 camScrollX: scene.cameras.main.scrollX, camScrollY: scene.cameras.main.scrollY
             };
             scene.scene.restart();
@@ -9089,11 +9572,12 @@
                 items: activeRoom.items,
                 enemySpawns: activeRoom.enemySpawns,
                 doors: activeRoom.doors,
-                fountain: activeRoom.fountain
+                fountain: activeRoom.fountain,
+                playerStart: activeRoom.playerStart
             };
             try {
                 localStorage.setItem(MAP_EDITOR_STORAGE_KEY, JSON.stringify(all));
-                scheduleServerSave();
+                scheduleServerSave(true); // inmediato — ver comentario junto a scheduleServerSave
                 return true;
             } catch (e) {
                 console.warn('No se pudo guardar el mapa en localStorage:', e.message);
@@ -9130,6 +9614,7 @@
             if (saved.enemySpawns) target.enemySpawns = saved.enemySpawns;
             if (saved.doors) target.doors = saved.doors;
             if (saved.fountain) target.fountain = saved.fountain;
+            if (saved.playerStart) target.playerStart = saved.playerStart;
         }
 
         // Borra la edición guardada de la sala ACTUAL y recarga desde cero: como
@@ -9168,7 +9653,8 @@
                 items: activeRoom.items,
                 enemySpawns: activeRoom.enemySpawns,
                 doors: activeRoom.doors,
-                fountain: activeRoom.fountain
+                fountain: activeRoom.fountain,
+                playerStart: activeRoom.playerStart
             };
             const json = JSON.stringify(snapshot, null, 2);
             navigator.clipboard.writeText(json).then(() => {
