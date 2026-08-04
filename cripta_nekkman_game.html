@@ -280,7 +280,6 @@
             position: fixed;
             inset: 0;
             z-index: 1500;
-            cursor: pointer;
             background: #000;
             opacity: 1;
             transition: opacity 0.5s ease;
@@ -291,24 +290,27 @@
         .cinematic-overlay.fading-out {
             opacity: 0;
         }
-        .cinematic-character {
+        .cinematic-bg {
             position: fixed;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -60%);
-            width: 60px;
-            height: 72px;
-            background: #00ff00;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
         }
-        .cinematic-hint-top {
+        .cinematic-skip-btn {
             position: fixed;
             top: 14px;
             right: 14px;
-            color: rgba(255, 255, 255, 0.75);
+            z-index: 1;
+            color: white;
             font-size: 13px;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 6px 12px;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid #777;
             border-radius: 4px;
+            padding: 7px 14px;
+            cursor: pointer;
+        }
+        .cinematic-skip-btn:hover {
+            background: rgba(40, 40, 40, 0.8);
         }
         .cinematic-dialogue-box {
             position: fixed;
@@ -326,14 +328,37 @@
         #cinematic-dialogue-text {
             margin: 0;
             font-size: 18px;
-            line-height: 1.4;
-            min-height: 1.4em;
+            line-height: 1.5;
+            min-height: 2.8em;
+            white-space: pre-line;
         }
-        #cinematic-continue-hint {
-            margin-top: 10px;
-            font-size: 12px;
+        .cinematic-nav-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .cinematic-nav-btn {
+            background: rgba(255, 255, 255, 0.12);
+            color: white;
+            border: 1px solid #888;
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .cinematic-nav-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.25);
+        }
+        .cinematic-nav-btn:disabled {
+            opacity: 0.35;
+            cursor: default;
+        }
+        .cinematic-slide-counter {
             color: #aaa;
-            text-align: right;
+            font-size: 13px;
+            font-variant-numeric: tabular-nums;
         }
         /* ---- Editor: pestaña desplegable desde la derecha, visible mientras
            se juega (el juego nunca se oculta ni se pausa al abrirla) ---- */
@@ -1614,21 +1639,25 @@
         <button id="btn-close-settings" class="menu-btn-secondary">Volver</button>
     </div>
 
-    <!-- Cinemática de intro (diálogo del personaje antes de arrancar a jugar).
-         INTRO_DIALOGUE (más abajo, en el bloque de script) es la lista de líneas —
-         agregar o cambiar el texto ahí solo, no hace falta tocar este markup. -->
+    <!-- Cinemática de intro (diapositivas con imagen de fondo + texto, antes de
+         arrancar a jugar). INTRO_SLIDES (más abajo, en el bloque de script) es la
+         lista de {image, text} — agregar/cambiar/sacar una diapositiva ahí solo, no
+         hace falta tocar este markup. -->
     <div id="cinematic-overlay" class="cinematic-overlay hidden">
-        <div class="cinematic-hint-top">ESC para saltar</div>
-        <!-- El cuadrado verde es el personaje (más adelante, un sprite/imagen acá
-             mismo). El fondo negro de .cinematic-overlay también se puede reemplazar
-             después por una imagen de fondo. -->
-        <div class="cinematic-character"></div>
+        <button id="cinematic-skip-btn" class="cinematic-skip-btn">Skip ⏭</button>
+        <!-- Imagen de fondo de la diapositiva actual — swapeada por JS (ver
+             showSlide), a pantalla completa detrás del cuadro de diálogo. -->
+        <div id="cinematic-bg" class="cinematic-bg"></div>
         <div class="cinematic-dialogue-box">
             <p id="cinematic-dialogue-text"></p>
-            <div id="cinematic-continue-hint">Click / Enter para continuar</div>
-            <!-- Solo visible si terminaste el diálogo ANTES de que el mundo termine de
-                 cargar: en vez de pasar a una pantalla vacía, la cinemática se queda
-                 acá esperando (ver endCinematic). -->
+            <div class="cinematic-nav-row">
+                <button id="cinematic-prev-btn" class="cinematic-nav-btn">◀ Previous</button>
+                <div id="cinematic-slide-counter" class="cinematic-slide-counter">1 / 2</div>
+                <button id="cinematic-next-btn" class="cinematic-nav-btn">Next ▶</button>
+            </div>
+            <!-- Solo visible si terminaste las diapositivas ANTES de que el mundo
+                 termine de cargar: en vez de pasar a una pantalla vacía, la cinemática
+                 se queda acá esperando (ver endCinematic). -->
             <div id="cinematic-waiting" class="menu-loading hidden">
                 <div class="menu-spinner"></div>
                 <p>Preparando la cripta…</p>
@@ -2642,11 +2671,19 @@
         }
 
         // ---- Menú principal + cinemática de intro ----
-        // Líneas del diálogo de la cinemática de intro: parametrizable acá nomás, se
-        // muestran una por una (click / Enter para avanzar) sobre el personaje (el
-        // cuadrado verde — más adelante se reemplaza por un sprite). ESC saltea todo.
-        const INTRO_DIALOGUE = [
-            'Hola mundo, ¿cómo están?'
+        // Diapositivas de la cinemática de intro: cada una es una imagen de fondo a
+        // pantalla completa + un párrafo de texto — parametrizable acá nomás (agregar/
+        // sacar/reordenar una diapositiva no necesita tocar el markup). Se avanza con
+        // los botones Next/Previous (o Enter para Next), y Skip/ESC saltea todo.
+        const INTRO_SLIDES = [
+            {
+                image: 'assets/cinematic/1.jpeg',
+                text: 'Hace muchos años existía un mago nigromante llamado Nekkman. Este contactó con una deidad y se convirtió en su heraldo.\n\nEsta deidad lo utilizó para poder construir a un ejército de no muertos y atacar el mundo.'
+            },
+            {
+                image: 'assets/cinematic/2.jpeg',
+                text: 'Así que fui enviado aquí, a esta Cripta de Nekkman, a ver si puedo encontrarlo, o a un paradero de él, para acabar con esta amenaza que ataca al mundo. Y de paso... hacerme con algunas monedas.'
+            }
         ];
 
         // true = la próxima vez que create() corra, arranca forzado en pausa (menú o
@@ -2654,7 +2691,7 @@
         // quien lo apaga cuando la cinemática realmente termina.
         let cinematicPending = true;
         let cinematicActive = false;
-        let dialogueIndex = 0;
+        let cinematicSlideIndex = 0;
         // false hasta que create() corre por primera vez de verdad (Phaser ya terminó
         // preload() y armó el mundo) — el menú principal usa esto para no dejar
         // clickear "Iniciar Partida" mientras todavía no hay nada armado atrás. Ver
@@ -2777,7 +2814,9 @@
             document.getElementById('btn-open-settings').addEventListener('click', showSettings);
             document.getElementById('btn-close-settings').addEventListener('click', hideSettings);
             document.getElementById('btn-exit-game').addEventListener('click', exitGame);
-            document.getElementById('cinematic-overlay').addEventListener('click', advanceDialogue);
+            document.getElementById('cinematic-skip-btn').addEventListener('click', endCinematic);
+            document.getElementById('cinematic-prev-btn').addEventListener('click', goToPrevSlide);
+            document.getElementById('cinematic-next-btn').addEventListener('click', goToNextSlide);
 
             const sfxInput = document.getElementById('ctrl-volume-sfx');
             sfxInput.addEventListener('input', () => {
@@ -2881,10 +2920,10 @@
             document.getElementById('main-menu-overlay').classList.add('hidden');
             cinematicActive = true;
             cinematicPending = true;
-            dialogueIndex = 0;
+            cinematicSlideIndex = 0;
             const el = document.getElementById('cinematic-overlay');
             el.classList.remove('fading-out', 'hidden');
-            showDialogueLine();
+            showSlide();
 
             // scene ya existe desde el primer arranque de la página (se crea sola en
             // pausa, ver create()); acá se reinicia para que quede una Sala 1 100% nueva
@@ -2895,18 +2934,35 @@
             }
         }
 
-        function showDialogueLine() {
-            document.getElementById('cinematic-dialogue-text').textContent = INTRO_DIALOGUE[dialogueIndex];
+        // Pinta la diapositiva actual (imagen de fondo + texto) y el estado del
+        // carrusel: contador "X / N", Previous deshabilitado en la primera, y Next pasa
+        // a decir "Comenzar" en la última (ahí, goToNextSlide termina la cinemática en
+        // vez de avanzar a una diapositiva que no existe).
+        function showSlide() {
+            const slide = INTRO_SLIDES[cinematicSlideIndex];
+            document.getElementById('cinematic-bg').style.backgroundImage = `url('${slide.image}')`;
+            document.getElementById('cinematic-dialogue-text').textContent = slide.text;
+            document.getElementById('cinematic-slide-counter').textContent =
+                (cinematicSlideIndex + 1) + ' / ' + INTRO_SLIDES.length;
+            document.getElementById('cinematic-prev-btn').disabled = cinematicSlideIndex === 0;
+            const isLast = cinematicSlideIndex === INTRO_SLIDES.length - 1;
+            document.getElementById('cinematic-next-btn').textContent = isLast ? 'Comenzar ▶' : 'Next ▶';
         }
 
-        function advanceDialogue() {
+        function goToPrevSlide() {
+            if (!cinematicActive || cinematicSlideIndex === 0) return;
+            cinematicSlideIndex--;
+            showSlide();
+        }
+
+        function goToNextSlide() {
             if (!cinematicActive) return;
-            dialogueIndex++;
-            if (dialogueIndex >= INTRO_DIALOGUE.length) {
+            if (cinematicSlideIndex >= INTRO_SLIDES.length - 1) {
                 endCinematic();
-            } else {
-                showDialogueLine();
+                return;
             }
+            cinematicSlideIndex++;
+            showSlide();
         }
 
         // Cierra la cinemática (por ESC o porque se acabó el diálogo) con un fundido
@@ -2917,11 +2973,11 @@
             cinematicActive = false;
             const el = document.getElementById('cinematic-overlay');
             const waiting = document.getElementById('cinematic-waiting');
-            const continueHint = document.getElementById('cinematic-continue-hint');
+            const navRow = document.querySelector('.cinematic-nav-row');
 
             const finish = () => {
                 waiting.classList.add('hidden');
-                continueHint.style.visibility = '';
+                navRow.style.visibility = '';
                 // Recién acá arrancan música y ambiente: ya hubo gesto del usuario (el
                 // click/Enter/ESC que cerró la cinemática, requisito de los navegadores
                 // para dejar sonar audio) Y `scene` ya existe, que es lo que
@@ -2948,7 +3004,7 @@
             // cinemática se queda en pantalla con un "Preparando la cripta…" en vez de
             // fundir a una pantalla vacía — que era exactamente el bug de la pantalla
             // en blanco al terminar los diálogos.
-            continueHint.style.visibility = 'hidden';
+            navRow.style.visibility = 'hidden';
             waiting.classList.remove('hidden');
             const poll = setInterval(() => {
                 if (gameReady && scene) {
@@ -3209,10 +3265,11 @@
                     }
                     return;
                 }
-                // Enter también avanza el diálogo de la cinemática (además del click,
-                // ver setupMainMenuAndCinematic).
+                // Enter también avanza a la próxima diapositiva de la cinemática (además
+                // del botón Next, ver setupMainMenuAndCinematic) — en la última, termina
+                // la cinemática igual que "Comenzar" (ver goToNextSlide).
                 if (key === 'enter' && cinematicActive) {
-                    advanceDialogue();
+                    goToNextSlide();
                     return;
                 }
 
