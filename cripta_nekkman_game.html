@@ -376,7 +376,7 @@
         #editor-toggle-btn {
             position: fixed;
             top: 14px;
-            right: 14px;
+            right: 62px;
             z-index: 60;
             background: rgba(30, 30, 30, 0.85);
             color: white;
@@ -387,6 +387,24 @@
             cursor: pointer;
         }
         #editor-toggle-btn:hover {
+            background: rgba(60, 60, 60, 0.9);
+        }
+        #mute-toggle-btn {
+            position: fixed;
+            top: 14px;
+            right: 14px;
+            z-index: 61;
+            background: rgba(30, 30, 30, 0.85);
+            color: white;
+            border: 1px solid #666;
+            border-radius: 6px;
+            width: 38px;
+            height: 38px;
+            font-size: 17px;
+            line-height: 1;
+            cursor: pointer;
+        }
+        #mute-toggle-btn:hover {
             background: rgba(60, 60, 60, 0.9);
         }
         #editor-panel {
@@ -894,6 +912,7 @@
         </div>
     </div>
 
+    <button id="mute-toggle-btn" title="Mutear audio" aria-label="Mutear audio">🔊</button>
     <button id="editor-toggle-btn">⚙️ Editor</button>
 
     <div id="editor-panel">
@@ -1861,6 +1880,7 @@
             // restarts una sola tecla (sobre todo ESC, por ser un toggle) se procesaba varias
             // veces en el mismo instante. Registrando en window una única vez se evita eso.
             setupInputHandlers();
+            setupMuteButton();
             setupEditorPanel();
             setupMapEditor();
             setupSpellBar();
@@ -1880,6 +1900,30 @@
             // markGameReady(), que recién corre al FINAL del primer create() real — ni
             // TDZ (mucho más abajo en el script) ni carrera contra Phaser.
         })();
+
+        // Botón de mute: silencia TODO el audio (música, ambiente y SFX) de una,
+        // usando el mute global de Phaser (game.sound.mute) en vez de bajar volúmenes
+        // uno por uno. Se acuerda de la preferencia entre sesiones via localStorage.
+        const MUTE_STORAGE_KEY = 'cripta_nekkman_muted_v1';
+        function setupMuteButton() {
+            const btn = document.getElementById('mute-toggle-btn');
+            let muted = false;
+            try { muted = localStorage.getItem(MUTE_STORAGE_KEY) === '1'; } catch (e) { /* ignorar */ }
+
+            const applyMute = () => {
+                if (game && game.sound) game.sound.mute = muted;
+                btn.textContent = muted ? '🔇' : '🔊';
+                btn.title = muted ? 'Activar audio' : 'Mutear audio';
+                btn.setAttribute('aria-label', btn.title);
+            };
+            applyMute();
+
+            btn.addEventListener('click', () => {
+                muted = !muted;
+                applyMute();
+                try { localStorage.setItem(MUTE_STORAGE_KEY, muted ? '1' : '0'); } catch (e) { /* ignorar */ }
+            });
+        }
 
         // Panel "Editor": pestaña desplegable desde la derecha (no oculta ni pausa
         // el juego, queda flotando encima mientras se sigue jugando).
@@ -5526,14 +5570,6 @@
             // El input se registra UNA sola vez fuera de create() (ver setupInputHandlers),
             // así que acá no hay que hacer nada más con el teclado.
 
-            // Texto de estado
-            this.statusText = this.add.text(512, 20, '', {
-                fontSize: '16px',
-                fill: '#000',
-                align: 'center'
-            });
-            this.statusText.setScrollFactor(0);
-
             // Los enemigos ya NO atacan por un timer aleatorio: la decisión de atacar
             // se evalúa cada frame en updateGame() según la distancia real al jugador.
 
@@ -6309,18 +6345,6 @@
             // Halo del jugador: lo sigue siempre, esté donde esté (niebla, editor de
             // mapa desactivado acá arriba, etc.) — ver PLAYER_GLOW_RADIUS.
             playerGlowImage.setPosition(player.x, player.y);
-
-            // Mostrar estado (contar sin allocar un array nuevo cada frame con filter())
-            let aliveCount = 0;
-            for (let i = 0; i < enemies.length; i++) {
-                if (!enemies[i].defeated) aliveCount++;
-            }
-            this.statusText.setText(
-                `${activeRoom.label} | ` +
-                `Klegar: ${Math.max(0, Math.round(playerHealth))}/100 | ` +
-                `Enemigos vivos: ${aliveCount}/${enemies.length} | ` +
-                `Cooldown Ataque: ${playerAttackCooldown > 0 ? playerAttackCooldown : 'Listo'}`
-            );
 
             // Verificar derrota
             if (playerHealth <= 0) {
