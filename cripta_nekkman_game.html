@@ -4472,6 +4472,7 @@
         let mapEditorActive = false;
         let mapEditorTool = null; // 'wall'|'hpwall'|'firewall'|'icewall'|'trap'|'loot'|'spellbook_magic'|'spellbook_immobilize'|'spellbook_fireball'|'normal'|'tanque'|'mago'|'move'|'erase'
         let mapEditorGraphics; // Graphics para la grilla + resaltado del cursor, se crea en create()
+        let hitboxOverlayGraphics; // Graphics de contorno de hitboxes reales (enemigos/trampas), solo Editor de Mapa, se crea en create()
         let mapEditorGhostSprite; // Sprite fantasma semitransparente (rompibles/botín/trampas), se crea perezoso en renderMapEditorOverlay y se resetea en cada create()
         // Timeout del mensaje de error temporal en #me-current-tool-hint (ver
         // flashMapEditorError) — se cancela si otro error pisa al anterior antes de
@@ -5437,6 +5438,10 @@
             // para quedar siempre arriba de todo lo demás mientras se edita.
             mapEditorGraphics = this.make.graphics({ x: 0, y: 0, add: true });
             mapEditorGraphics.setDepth(50);
+            // Overlay de hitboxes reales (enemigos/trampas) — depth apenas debajo de
+            // mapEditorGraphics (grilla/cursor) para que esos sigan viéndose encima.
+            hitboxOverlayGraphics = this.make.graphics({ x: 0, y: 0, add: true });
+            hitboxOverlayGraphics.setDepth(49);
             // La escena vieja (si había una, ej. venías de otra sala) ya se destruyó
             // sola con el restart — sin este reset, la primera llamada a
             // renderMapEditorOverlay() en la sala nueva intentaría reposicionar un
@@ -6141,6 +6146,7 @@
                 }
 
                 renderMapEditorOverlay();
+                renderHitboxOverlay();
                 return;
             }
 
@@ -9193,6 +9199,7 @@
                 }
             } else {
                 if (mapEditorGraphics) mapEditorGraphics.clear();
+                if (hitboxOverlayGraphics) hitboxOverlayGraphics.clear();
                 if (mapEditorGhostSprite) mapEditorGhostSprite.setVisible(false);
                 if (enemies) unfreezeAllEnemies();
             }
@@ -9213,6 +9220,50 @@
         // la optimización de pathfinding más arriba en este mismo archivo por la misma
         // razón) más el resaltado de la celda bajo el cursor, tintado según la
         // herramienta activa.
+        // Contorno de 1px de la hitbox REAL (no el sprite/textura) de cada enemigo y
+        // trampa — solo mientras se edita el mapa, para poder posicionar bloques sin
+        // superponerlos sin querer. Enemigos y Trampa Azul usan su .body de Arcade
+        // Physics (fuente de verdad ya establecida en updateEnemyInstance/
+        // getPlayerHitboxRect); Sierra/Pinches/Fuego no tienen body (ver comentarios de
+        // createSawTrapVisual/rectsOverlap) así que se usa la misma área que ya
+        // consultan sus propias funciones de daño (conf w/h, .hitbox, o CELL_SIZE fijo).
+        function renderHitboxOverlay() {
+            if (!hitboxOverlayGraphics) return;
+            hitboxOverlayGraphics.clear();
+            if (!mapEditorActive || !scene) return;
+
+            hitboxOverlayGraphics.lineStyle(1, 0xff3b3b, 0.9);
+            (enemies || []).forEach(inst => {
+                if (inst.defeated) return;
+                const b = inst.obj.body;
+                if (b) hitboxOverlayGraphics.strokeRect(b.x, b.y, b.width, b.height);
+            });
+
+            hitboxOverlayGraphics.lineStyle(1, 0xffa500, 0.9);
+            (sawTrapState || []).forEach(entry => {
+                const c = entry.conf;
+                hitboxOverlayGraphics.strokeRect(c.x - c.w / 2, c.y - c.h / 2, c.w, c.h);
+            });
+
+            hitboxOverlayGraphics.lineStyle(1, 0xffe14d, 0.9);
+            (spikeTrapState || []).forEach(trap => {
+                const h = trap.hitbox;
+                hitboxOverlayGraphics.strokeRect(h.x - h.displayWidth / 2, h.y - h.displayHeight / 2, h.displayWidth, h.displayHeight);
+            });
+
+            hitboxOverlayGraphics.lineStyle(1, 0xff6b1a, 0.9);
+            (fireTrapState || []).forEach(trap => {
+                const c = trap.conf;
+                hitboxOverlayGraphics.strokeRect(c.x - CELL_SIZE / 2, c.y - CELL_SIZE / 2, CELL_SIZE, CELL_SIZE);
+            });
+
+            hitboxOverlayGraphics.lineStyle(1, 0x00e5ff, 0.9);
+            (blueTrapRects || []).forEach(({ rect }) => {
+                const b = rect.body;
+                if (b) hitboxOverlayGraphics.strokeRect(b.x, b.y, b.width, b.height);
+            });
+        }
+
         function renderMapEditorOverlay() {
             mapEditorGraphics.clear();
             if (!scene) return;
