@@ -5774,7 +5774,11 @@
                 aggroUntil: 0,
                 lastKnownPlayerX: x,
                 lastKnownPlayerY: y,
-                lastWalkSoundTime: 0 // ver updateEnemyInstance / SOUNDS.skeletonWalk
+                lastWalkSoundTime: 0, // ver updateEnemyInstance / SOUNDS.skeletonWalk
+                // Lado fijo (-1/1) del rodeo cuando flanquea por congestión (ver
+                // computeFlankTarget): sorteado una sola vez, así no titubea entre
+                // izquierda/derecha de un recálculo de ruta al siguiente.
+                flankSide: Math.random() < 0.5 ? -1 : 1
             };
 
             obj.__enemyInstance = inst; // para resolver la instancia desde callbacks de colisión
@@ -8891,6 +8895,79 @@
         const AGGRO_MEMORY_MS = 4000;
         let pathCursor = 0;
 
+        // Umbral de congestión para que un esqueleto Normal deje de ir directo al
+        // jugador y rodee (ver computeFlankTarget): con 3 o más aliados propios ya
+        // amontonados en el cono hacia el jugador, sumarse en fila no aporta nada.
+        const FLANK_ALLY_THRESHOLD = 3;
+        const FLANK_CONE_RANGE = 220;
+        const FLANK_CONE_COS = Math.cos(Phaser.Math.DegToRad(35)); // medio-ángulo del cono
+        const FLANK_OFFSET = 140;
+
+        // Cuenta cuántos OTROS esqueletos Normal en aggro están agrupados delante de
+        // inst, dentro de un cono angosto apuntando de inst hacia el jugador (producto
+        // escalar de direcciones normalizadas, sin necesidad de otro A*).
+        function countAlliesInCone(inst, targetX, targetY) {
+            const dx = targetX - inst.obj.x, dy = targetY - inst.obj.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 1) return 0;
+            const dirX = dx / dist, dirY = dy / dist;
+
+            let count = 0;
+            for (const other of enemies) {
+                if (other === inst || other.defeated || other.typeKey !== 'normal') continue;
+                const odx = other.obj.x - inst.obj.x, ody = other.obj.y - inst.obj.y;
+                const odist = Math.sqrt(odx * odx + ody * ody);
+                if (odist < 1 || odist > FLANK_CONE_RANGE) continue;
+                const dot = (odx / odist) * dirX + (ody / odist) * dirY;
+                if (dot > FLANK_CONE_COS) count++;
+            }
+            return count;
+        }
+
+        // Si hay congestión de aliados entre inst y el jugador, devuelve un punto
+        // lateral (offset perpendicular a la línea inst→jugador, hacia el lado fijo
+        // de inst.flankSide) para que el A* de computeEnemyPath rodee el amontonamiento
+        // en vez de ir en fila directo al mismo punto. Sin congestión, devuelve el
+        // destino tal cual (persecución directa de siempre).
+        function computeFlankTarget(inst, targetX, targetY) {
+            if (countAlliesInCone(inst, targetX, targetY) < FLANK_ALLY_THRESHOLD) {
+                return { x: targetX, y: targetY };
+            }
+            const dx = targetX - inst.obj.x, dy = targetY - inst.obj.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            const perpX = -dy / dist, perpY = dx / dist;
+            return {
+                x: targetX + perpX * FLANK_OFFSET * inst.flankSide,
+                y: targetY + perpY * FLANK_OFFSET * inst.flankSide
+            };
+        }
+
+        // Rango ideal de distancia del Mago al jugador ("kiting"): más cerca que
+        // MAGE_MIN_RANGE huye en línea recta opuesta al jugador; más lejos que
+        // MAGE_MAX_RANGE se acerca con el pathfinding normal; en el medio (que
+        // incluye su attackRange de 420) se queda quieto y dispara.
+        const MAGE_MIN_RANGE = 260;
+        const MAGE_MAX_RANGE = 420;
+        const MAGE_RETREAT_DIST = 160;
+
+        // Punto de retirada del Mago: derecho en la dirección opuesta al jugador.
+        // Se apoya en computeEnemyPath/findPath (vía findNearestOpenCell) para no
+        // terminar pidiendo un punto metido en una pared — si el punto ideal cae
+        // bloqueado, el A* lo resuelve a la celda libre más cercana igual que hace
+        // hoy con cualquier otro destino.
+        function computeMageTarget(inst, targetX, targetY) {
+            const dx = inst.obj.x - targetX, dy = inst.obj.y - targetY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < MAGE_MIN_RANGE) {
+                const ux = dist < 1 ? 1 : dx / dist, uy = dist < 1 ? 0 : dy / dist;
+                return { x: inst.obj.x + ux * MAGE_RETREAT_DIST, y: inst.obj.y + uy * MAGE_RETREAT_DIST };
+            }
+            if (dist <= MAGE_MAX_RANGE) {
+                return { x: inst.obj.x, y: inst.obj.y };
+            }
+            return { x: targetX, y: targetY };
+        }
+
         // Detección por VISIÓN + recálculo escalonado de rutas (una vez por frame desde
         // updateGame). Antes el disparador era la pura distancia; ahora cada enemigo te
         // "ve" solo si estás dentro de su visionRange Y hay línea de visión libre (el
@@ -8939,8 +9016,16 @@
                 }
 
                 // En aggro: va hacia tu última posición conocida (que es la actual si
-                // todavía te está viendo).
-                computeEnemyPath(inst, inst.lastKnownPlayerX, inst.lastKnownPlayerY);
+                // todavía te está viendo) — salvo Normal (flanquea si hay congestión de
+                // aliados, ver computeFlankTarget) y Mago (kiting, ver computeMageTarget).
+                // Tanque no se toca: persecución directa de siempre.
+                let target = { x: inst.lastKnownPlayerX, y: inst.lastKnownPlayerY };
+                if (inst.typeKey === 'normal') {
+                    target = computeFlankTarget(inst, target.x, target.y);
+                } else if (inst.typeKey === 'mago') {
+                    target = computeMageTarget(inst, target.x, target.y);
+                }
+                computeEnemyPath(inst, target.x, target.y);
                 pathfound++;
             }
         }
