@@ -2984,6 +2984,7 @@
             enemyState = {};
             itemsPickedUp = {};
             lootCollected = 0;
+            enemiesDefeatedTotal = 0;
             wallsDestroyed = {};
             // Partida nueva de verdad: ningún checkpoint pisado todavía. Un restart
             // normal (morir, Reiniciar Nivel, "R") NO pasa por acá — el checkpoint
@@ -4030,21 +4031,29 @@
         // Las "fuentes" (fountains) son el mecanismo interactuable de cada sala: al
         // resolverlo correctamente se marca fountainsSolved[id] = true para siempre
         // (no se resetea al reiniciar una sala, solo al recargar la página), y eso es
-        // lo que determina qué puertas de la Sala 1 están destrabadas — incluso las que
-        // dependen de una fuente resuelta en OTRA sala (ej. la fuente del Nivel 2
-        // destraba la puerta derecha de la Sala 1, no una puerta del Nivel 2).
+        // lo que determina qué puertas están destrabadas. Progresión SIEMPRE
+        // consecutiva (Nivel 1 -> 2 -> 3, sin vuelta atrás): la fuente A de la Sala 1
+        // destraba la puerta 'left' de esa misma sala (-> Nivel 2), la fuente B del
+        // Nivel 2 destraba la única puerta de ESE nivel (-> Nivel 3), y la fuente C del
+        // Nivel 3 destraba la puerta final de ESE nivel (isFinalDoor, termina el
+        // juego). Las puertas 'right'/'central' que quedan en Sala 1 son el mecanismo
+        // viejo (pre-progresión-lineal): ya no son alcanzables jugando normal (no hay
+        // puerta de vuelta a Sala 1 en Nivel 2/3), se dejan sin tocar nomás por las
+        // dudas — no estorban.
         //
         // pillars/blueTraps: {x,y,w,h} — w/h son opcionales (default 80x80, como los
         // pozos originales); con w/h explícitos sirven para armar paredes de pasillo
         // (rectángulos largos y finos), no solo pilares cuadrados.
         //
         // doors: {id, x,y,w,h} es el rectángulo/collider de la puerta; triggerX/Y/W/H
-        // es la franja pegada al borde del mundo que, al pisarla con la puerta ya
-        // destrabada, dispara la transición. requires: lista de ids de fuente que
-        // tienen que estar resueltas para que la puerta esté destrabada ([] = siempre
-        // destrabada, como las puertas de "vuelta" del Nivel 2 y el Nivel 3).
-        // targetRoom/bannerText: null en la puerta central (no hay Nivel 4 todavía) —
-        // ahí onDoorTrigger() no transiciona, solo avisa por el HUD.
+        // es la zona que, al pisarla con la puerta ya destrabada, dispara la
+        // transición (en Sala 1 es una franja pegada al borde del mundo; en las
+        // puertas horizontales de Nivel 2/3 es el mismo rectángulo que el cuerpo de la
+        // puerta, igual convención que la herramienta 🚪 del Editor de Mapa). requires:
+        // lista de ids de fuente que tienen que estar resueltas para que la puerta
+        // esté destrabada ([] = siempre destrabada). targetRoom/bannerText: null en
+        // una puerta final (isFinalDoor) — ahí onDoorTrigger() no transiciona, dispara
+        // triggerGameWin() (pantalla de fin de juego con estadísticas).
         const ROOMS = {
             // Layout tomado del frame de Figma "Level Design" (node 85:2): piso/paredes
             // reconstruidos a partir de las formas blancas (caminable) y negras
@@ -4231,21 +4240,21 @@
                 // arrastrar con el Editor de Mapa (ver handleMapEditorDrag/snapToGrid).
                 fountain: { id: 'B', x: 48, y: 208, size: 100 }, // tamaño visual x2 (antes 50 por default)
                 doors: [
-                    // Vuelta a la Sala 1: siempre destrabada (requires: []), no hay nada que
-                    // cruzar, es directamente por dónde entraste. entryPoint: aparecés
-                    // justo al lado de la puerta izquierda de la Sala 1 (por la que
-                    // entraste a este nivel), no en el arranque del pasillo de esa sala.
-                    // x/y/triggerX/triggerY ajustados al múltiplo de CELL_SIZE más cercano
-                    // (1740,200 no caía en grilla) — mismo motivo que la fuente de arriba.
+                    // Progresión SIEMPRE consecutiva (pedido de Franco): ya no hay vuelta a
+                    // la Sala 1 — la única puerta del nivel es esta, la destraba la propia
+                    // fuente (B) y lleva derecho al Nivel 3. Variante horizontal chica
+                    // (orientation, ver PR de la herramienta 🚪 del Editor de Mapa) con
+                    // trigger = mismo rectángulo que el cuerpo (igual convención que
+                    // mapEditorPlace('door_h')): al destrabarse, el collider desaparece y
+                    // pisar ese mismo rectángulo dispara la transición, sin necesitar una
+                    // franja aparte pegada a un borde de mundo. Sin entryPoint: usa el
+                    // playerStart de default de nivel3 (ya pensado para entrar desde la
+                    // izquierda, ver ahí).
                     {
-                        id: 'return', x: 1744, y: 208, w: 30, h: 120,
-                        triggerX: 1784, triggerY: 208, triggerW: 40, triggerH: 120,
-                        requires: [], targetRoom: 'sala1', bannerText: null,
-                        // Coordenada vieja, de antes de duplicar el tamaño de la Sala 1
-                        // (x:110,y:200) — quedaba adentro de una pared en el mapa nuevo.
-                        // Recalculada: justo pasando la puerta izquierda de la Sala 1
-                        // (x:288,y:432 en la escala actual), del lado de adentro del cuarto.
-                        entryPoint: { x: 350, y: 432 }
+                        id: 'door_h_nivel2_exit', x: 700, y: 200, w: DOOR_H_TOOL_W, h: DOOR_H_TOOL_H,
+                        triggerX: 700, triggerY: 200, triggerW: DOOR_H_TOOL_W, triggerH: DOOR_H_TOOL_H,
+                        requires: ['B'], targetRoom: 'nivel3', bannerText: 'Entrando al nivel 3',
+                        orientation: 'horizontal'
                     }
                 ]
             },
@@ -4275,18 +4284,19 @@
                 // Ver comentario equivalente en nivel2: x/y ajustados a la grilla.
                 fountain: { id: 'C', x: 1744, y: 208, size: 100 }, // tamaño visual x2 (antes 50 por default)
                 doors: [
-                    // entryPoint: aparecés junto a la puerta derecha de la Sala 1.
-                    // Ver comentario equivalente en nivel2: x/y/triggerX/triggerY
-                    // ajustados a la grilla.
+                    // Última puerta del juego: ya no hay vuelta a la Sala 1 (progresión
+                    // consecutiva, ver comentario equivalente en nivel2). La destraba la
+                    // fuente C; targetRoom: null + isFinalDoor la deja en el mismo camino
+                    // que la puerta central de la Sala 1 (ver onDoorTrigger/triggerGameWin) —
+                    // cruzarla termina el juego con la pantalla de estadísticas (enemigos
+                    // derrotados + botín). lockedColor/unlockedColor iguales a los de la
+                    // puerta central para que se distinga a simple vista de una puerta común.
                     {
-                        id: 'return', x: 48, y: 208, w: 30, h: 120,
-                        triggerX: 8, triggerY: 208, triggerW: 40, triggerH: 120,
-                        requires: [], targetRoom: 'sala1', bannerText: null,
-                        // Mismo caso que el entryPoint de Nivel 2: coordenada vieja de
-                        // antes de duplicar la Sala 1. Recalculada: justo pasando la
-                        // puerta derecha (x:2176,y:432 en la escala actual), del lado de
-                        // adentro del cuarto.
-                        entryPoint: { x: 2110, y: 432 }
+                        id: 'door_h_nivel3_exit', x: 1000, y: 200, w: DOOR_H_TOOL_W, h: DOOR_H_TOOL_H,
+                        triggerX: 1000, triggerY: 200, triggerW: DOOR_H_TOOL_W, triggerH: DOOR_H_TOOL_H,
+                        requires: ['C'], targetRoom: null, bannerText: null,
+                        orientation: 'horizontal', isFinalDoor: true,
+                        lockedColor: 0x4b0082, unlockedColor: 0xffd700
                     }
                 ]
             }
@@ -4332,6 +4342,9 @@
         let spellsUnlocked = { magic: false, immobilize: false, fireball: false };
         // Puntos de botín juntados (persiste igual que fountainsSolved/itemsPickedUp).
         let lootCollected = 0;
+        // Enemigos derrotados en total, cuenta todas las salas — persiste igual que
+        // lootCollected, solo para mostrar la estadística final en triggerGameWin().
+        let enemiesDefeatedTotal = 0;
         // Paredes con vida y paredes especiales (fuego/hielo) ya destruidas — persiste
         // entre salidas/reentradas a la sala, no se revive con R (a diferencia de los
         // enemigos): una vez que abriste una bóveda, queda abierta.
@@ -6663,6 +6676,7 @@
             // puede seguir jugando. Reiniciar el nivel entero está en el menú de pausa (ESC).
             if (inst.health <= 0 && !inst.defeated) {
                 inst.defeated = true;
+                enemiesDefeatedTotal++;
                 inst.obj.body.setVelocity(0, 0);
                 if (type.sprite && type.sprite.deathAnimKey) {
                     inst.obj.clearTint(); // por si quedó el flash rojo de daño justo al morir
@@ -6737,7 +6751,7 @@
             player.body.setVelocity(0, 0);
             freezeAllEnemies();
             onGameWon();
-            showGameOverOverlay('¡GANASTE!', `Has obtenido la información que estabas buscando. Botín recolectado: ${lootCollected}.`, '#ffd700');
+            showGameOverOverlay('¡GANASTE!', `Has obtenido la información que estabas buscando. Enemigos derrotados: ${enemiesDefeatedTotal}. Botín recolectado: ${lootCollected}.`, '#ffd700');
             // Un ratito para que se lea el cartel de victoria y recién ahí de vuelta al
             // menú principal (Iniciar Partida / Configuración / Salir). scene.time sigue
             // corriendo aunque gameOver ya haya congelado el update() de juego.

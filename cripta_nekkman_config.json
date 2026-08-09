@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "savedAt": "2026-08-08T00:50:18.015Z",
+  "savedAt": "2026-08-09T18:54:13.000Z",
   "editorSettings": {
     "ctrl-player-cooldown": "40",
     "ctrl-player-damage": "15",
@@ -89,22 +89,24 @@
       ],
       "doors": [
         {
-          "id": "return",
-          "x": 48,
-          "y": 208,
-          "w": 30,
-          "h": 120,
-          "triggerX": 8,
-          "triggerY": 208,
-          "triggerW": 40,
-          "triggerH": 120,
-          "requires": [],
-          "targetRoom": "sala1",
+          "id": "door_h_nivel3_exit",
+          "x": 1000,
+          "y": 200,
+          "w": 220,
+          "h": 64,
+          "triggerX": 1000,
+          "triggerY": 200,
+          "triggerW": 220,
+          "triggerH": 64,
+          "requires": [
+            "C"
+          ],
+          "targetRoom": null,
           "bannerText": null,
-          "entryPoint": {
-            "x": 2110,
-            "y": 432
-          }
+          "orientation": "horizontal",
+          "isFinalDoor": true,
+          "lockedColor": 4915330,
+          "unlockedColor": 16766720
         }
       ],
       "fountain": {
@@ -11963,22 +11965,21 @@
       ],
       "doors": [
         {
-          "id": "return",
-          "x": 2544,
-          "y": 176,
-          "w": 30,
-          "h": 120,
-          "triggerX": 2584,
-          "triggerY": 176,
-          "triggerW": 40,
-          "triggerH": 120,
-          "requires": [],
-          "targetRoom": "sala1",
-          "bannerText": null,
-          "entryPoint": {
-            "x": 350,
-            "y": 432
-          }
+          "id": "door_h_nivel2_exit",
+          "x": 700,
+          "y": 200,
+          "w": 220,
+          "h": 64,
+          "triggerX": 700,
+          "triggerY": 200,
+          "triggerW": 220,
+          "triggerH": 64,
+          "requires": [
+            "B"
+          ],
+          "targetRoom": "nivel3",
+          "bannerText": "Entrando al nivel 3",
+          "orientation": "horizontal"
         }
       ],
       "fountain": {
