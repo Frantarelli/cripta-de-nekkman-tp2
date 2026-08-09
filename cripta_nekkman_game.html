@@ -7571,15 +7571,12 @@
             }
         }
 
-        // Mismo comportamiento que el jugador: daño (con reducción de armadura) + empujón
+        // A diferencia del jugador: a los enemigos la Trampa Giratoria NO les hace daño,
+        // solo los empuja (para usarla como herramienta táctica sin que "farmee" solita).
         function hitBlueTrapEnemy(enemyObj, trap) {
             const inst = enemyObj.__enemyInstance;
             if (gameOver || mapEditorActive || !inst || inst.defeated) return;
-            if (scene.time.now < trap.frozenUntil) return; // frizada por Inmovilizar: no hace daño
-
-            const type = ENEMY_TYPES[inst.typeKey];
-            const dmg = Math.max(0, BLUE_TRAP_DAMAGE - type.armor);
-            inst.health -= dmg;
+            if (scene.time.now < trap.frozenUntil) return; // frizada por Inmovilizar: no empuja
 
             // Mismo criterio que hitBlueTrapPlayer: el sonido va adentro del gate del
             // empujón para no repetirse en cada physics step mientras siga en contacto.
@@ -7934,22 +7931,23 @@
             spikeTrapState.forEach(trap => {
                 let changed = false;
 
+                // Solo el jugador carga/activa la trampa — los enemigos nunca la disparan
+                // solos. Cuando el jugador la activa, cualquier enemigo parado encima EN
+                // ESE INSTANTE recibe daño también (así sirve para matar perseguidores).
                 changed = updateSpikeCharge(trap.charges, 'player', rectsOverlap(trap.hitbox, getPlayerHitboxRect()), now, () => {
                     playerHealth -= SPIKE_TRAP_DAMAGE;
                     lastDamageTime = now;
                     playSfx('playerDamage');
                     playSfx('spikeTrapActivate', trap.hitbox.x, trap.hitbox.y); // solo cuando la trampa efectivamente daña al jugador
-                }) || changed;
 
-                enemies.forEach(inst => {
-                    if (inst.defeated) return;
-                    const on = rectsOverlap(trap.hitbox, inst.obj);
-                    changed = updateSpikeCharge(trap.charges, inst, on, now, () => {
+                    enemies.forEach(inst => {
+                        if (inst.defeated) return;
+                        if (!rectsOverlap(trap.hitbox, inst.obj)) return;
                         const type = ENEMY_TYPES[inst.typeKey];
                         inst.health -= Math.max(0, SPIKE_TRAP_DAMAGE - type.armor);
                         playSfx('creatureDamage', trap.hitbox.x, trap.hitbox.y);
-                    }) || changed;
-                });
+                    });
+                }) || changed;
 
                 if (changed) drawSpikeTrapVisual(trap, pickSpikeVisualState(trap.charges));
             });
