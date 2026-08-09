@@ -1520,6 +1520,7 @@
                 <button class="me-tool-btn" data-tool="icewall">🟦 Pared de hielo</button>
                 <button class="me-tool-btn" data-tool="magicwall">🟪 Pared mágica</button>
                 <button class="me-tool-btn" data-tool="checkpoint">🚩 Checkpoint</button>
+                <button class="me-tool-btn" data-tool="door_h">🚪 Puerta horizontal</button>
             </div>
             <p class="editor-subhint">
                 🚩 Checkpoint: invisible durante el juego real — solo se ve (celeste)
@@ -1527,6 +1528,12 @@
                 pasa a reaparecer ahí (centro de la celda) si muere en esta sala, en vez
                 de en el punto de inicio de siempre. Click para una celda, arrastrá para
                 pintar varias de una.
+            </p>
+            <p class="editor-subhint">
+                🚪 Puerta horizontal: mismo tamaño que una puerta chica normal, pero
+                acostada. Se coloca/mueve/borra como cualquier otro objeto de esta
+                lista. Arranca cerrada (bloquea el paso) — todavía no tiene asignada
+                ninguna fuente que la destrabe.
             </p>
         </div>
 
@@ -3637,6 +3644,10 @@
         // Cartel de la puerta de nivel (la "verde") trabada — ver doorState.lockedPrompt.
         let DOOR_LOCKED_TEXT = 'La puerta está cerrada';
         const SPECIAL_WALL_HINT_RANGE = 90; // px — mismo radio que el cartel de puerta cerrada
+        // Tamaño de la 🚪 Puerta horizontal del Editor de Mapa: mismo footprint que las
+        // puertas chicas normales de ROOMS.sala1.doors (w:64,h:220) pero con los lados
+        // invertidos, así queda acostada en vez de parada.
+        const DOOR_H_TOOL_W = 220, DOOR_H_TOOL_H = 64;
 
         function getSpecialWallHintText(breaksWith) {
             if (breaksWith === 'fireball') return SPECIAL_WALL_HINT_TEXT_FIRE;
@@ -5513,42 +5524,7 @@
             // (triggerX/Y/W/H) pegada al borde del mundo, ya destrabada, dispara la
             // transición a targetRoom (o el aviso de "puerta central" si no hay una).
             levelTransitioning = false;
-            doors = activeRoom.doors.map(conf => {
-                const unlocked = isDoorUnlocked(conf);
-                // lockedColor/unlockedColor son opcionales por puerta (la central los usa
-                // para distinguirse de las demás); sin eso, el rojo/verde de siempre.
-                const lockedColor = conf.lockedColor !== undefined ? conf.lockedColor : 0x8b1a1a;
-                const unlockedColor = conf.unlockedColor !== undefined ? conf.unlockedColor : 0x2ecc71;
-                const rect = this.add.rectangle(conf.x, conf.y, conf.w, conf.h, unlocked ? unlockedColor : lockedColor);
-                rect.setStrokeStyle(3, 0xffffff);
-                rect.setDepth(6);
-                this.physics.add.existing(rect, true);
-
-                // Cartel de "puerta cerrada": aparece solo por acercarse (ver el chequeo
-                // de proximidad en updateGame), no hace falta apretar E.
-                const lockedPrompt = this.add.text(conf.x, conf.y - conf.h / 2 - 16, DOOR_LOCKED_TEXT, {
-                    fontSize: '13px',
-                    fill: '#ffffff',
-                    backgroundColor: '#000000',
-                    padding: { x: 4, y: 2 }
-                }).setOrigin(0.5).setDepth(DEPTH_WORLD_PROMPT).setVisible(false);
-
-                const doorState = { conf, rect, collider: null, lockedPrompt };
-                if (!unlocked) {
-                    doorState.collider = this.physics.add.collider(player, rect);
-                }
-
-                const triggerZone = this.add.zone(conf.triggerX, conf.triggerY, conf.triggerW, conf.triggerH);
-                this.physics.add.existing(triggerZone, true);
-                this.physics.add.overlap(player, triggerZone, () => onDoorTrigger(doorState), null, this);
-                // Guardado acá para que el Editor de Mapa (Nivel 2/3, ver
-                // findMapEditorEntityAt/handleMapEditorDrag) pueda arrastrar la franja de
-                // disparo junto con el rect visual de la puerta, sin esto quedaría en su
-                // posición original al mover la puerta.
-                doorState.triggerZone = triggerZone;
-
-                return doorState;
-            });
+            doors = activeRoom.doors.map(conf => createDoorState(this, conf));
 
             // Ítems tirados en el piso (ej. el manual que desbloquea la Bola Mágica):
             // rectángulo beige, se levantan solos con solo caminarles por encima (overlap,
@@ -8623,6 +8599,50 @@
             return { conf, rect };
         }
 
+        // Factorizada de create() para que mapEditorPlace() (herramienta 🚪 Puerta
+        // horizontal) pueda armar una puerta nueva con exactamente el mismo camino que
+        // las de ROOMS.*.doors — collider, franja de disparo y cartel de "cerrada"
+        // inclusive. conf.orientation ('horizontal' | undefined = vertical de siempre)
+        // es solo informativo acá: el bloqueo lo da el rectángulo real (w/h), no un eje
+        // hardcodeado, así que una puerta horizontal ya bloquea el paso vertical sin
+        // ningún caso especial.
+        function createDoorState(sceneRef, conf) {
+            const unlocked = isDoorUnlocked(conf);
+            // lockedColor/unlockedColor son opcionales por puerta (la central los usa
+            // para distinguirse de las demás); sin eso, el rojo/verde de siempre.
+            const lockedColor = conf.lockedColor !== undefined ? conf.lockedColor : 0x8b1a1a;
+            const unlockedColor = conf.unlockedColor !== undefined ? conf.unlockedColor : 0x2ecc71;
+            const rect = sceneRef.add.rectangle(conf.x, conf.y, conf.w, conf.h, unlocked ? unlockedColor : lockedColor);
+            rect.setStrokeStyle(3, 0xffffff);
+            rect.setDepth(6);
+            sceneRef.physics.add.existing(rect, true);
+
+            // Cartel de "puerta cerrada": aparece solo por acercarse (ver el chequeo
+            // de proximidad en updateGame), no hace falta apretar E.
+            const lockedPrompt = sceneRef.add.text(conf.x, conf.y - conf.h / 2 - 16, DOOR_LOCKED_TEXT, {
+                fontSize: '13px',
+                fill: '#ffffff',
+                backgroundColor: '#000000',
+                padding: { x: 4, y: 2 }
+            }).setOrigin(0.5).setDepth(DEPTH_WORLD_PROMPT).setVisible(false);
+
+            const doorState = { conf, rect, collider: null, lockedPrompt };
+            if (!unlocked) {
+                doorState.collider = sceneRef.physics.add.collider(player, rect);
+            }
+
+            const triggerZone = sceneRef.add.zone(conf.triggerX, conf.triggerY, conf.triggerW, conf.triggerH);
+            sceneRef.physics.add.existing(triggerZone, true);
+            sceneRef.physics.add.overlap(player, triggerZone, () => onDoorTrigger(doorState), null, sceneRef);
+            // Guardado acá para que el Editor de Mapa (Nivel 2/3, ver
+            // findMapEditorEntityAt/handleMapEditorDrag) pueda arrastrar la franja de
+            // disparo junto con el rect visual de la puerta, sin esto quedaría en su
+            // posición original al mover la puerta.
+            doorState.triggerZone = triggerZone;
+
+            return doorState;
+        }
+
         // Chico aviso en el HUD (reusa #status, mismo elemento que "Usa WASD para
         // moverte...") + un sonido prestado (fountainCorrect: mismo tono de "algo bueno
         // pasó" que ya usa el juego) — sin ESTO el checkpoint es 100% invisible/mudo y
@@ -8984,6 +9004,7 @@
             tanque: '🛡️ Esqueleto Tanque — cuerpo a cuerpo, lento y resistente.',
             mago: '🔮 Esqueleto Mago — ataca a distancia.',
             checkpoint: '🚩 Checkpoint — invisible en el juego real (solo se ve acá, editando). Cuando el jugador lo pisa por primera vez, ahí reaparece si muere en esta sala, en vez de en el punto de inicio de siempre. Click o arrastrá para pintar varias celdas de una.',
+            door_h: '🚪 Puerta horizontal — mismo tamaño que una puerta chica normal (rotado 90°), bloquea el paso mientras esté cerrada. La lógica de qué la abre todavía no está implementada, así que arranca cerrada y se queda así.',
             move: '✋ Mover — click y arrastrá cualquier bloque/entidad existente.',
             erase: '🗑️ Borrar — click (o arrastrar) sobre lo que quieras sacar del mapa.',
             select: '🖱️ Seleccionar — click sobre una Trampa de Sierra para abrir su panel de velocidad y dirección (a la derecha). Por ahora no funciona con otros objetos.'
@@ -9314,7 +9335,7 @@
             wall: 0x634d4d, firewall: 0xf96c14, icewall: 0x0355a1, magicwall: 0x9b30ff,
             spellbook_magic: 0xe8d9b0, spellbook_immobilize: 0xe8d9b0, spellbook_fireball: 0xe8d9b0,
             normal: 0x8b4513, tanque: 0x5c5c66, mago: 0x7d3c98,
-            checkpoint: 0x00e5ff, select: 0x9b59b6
+            checkpoint: 0x00e5ff, select: 0x9b59b6, door_h: 0x8b1a1a
         };
 
         // La decoración puramente cosmética (barril/caja/cofre/llave/etc.) se eliminó
@@ -9697,6 +9718,24 @@
                 const conf = { id: 'checkpoint_' + uid, x: sx, y: sy };
                 activeRoom.checkpoints.push(conf);
                 checkpointState.push(createCheckpointVisual(scene, conf));
+            } else if (tool === 'door_h') {
+                // orientation: 'horizontal' distingue esta variante de las puertas
+                // verticales fijas de ROOMS.*.doors (que no tienen ese campo). editorPlaced
+                // marca que ESTA puerta sí es libre de mover/borrar (ver
+                // findMapEditorEntityAt/mapEditorEraseAt) — a diferencia de las puertas
+                // fijas de sala1/nivel2/nivel3, necesarias para poder ganar el juego.
+                // triggerX/Y/W/H apuntan al mismo rectángulo que el cuerpo de la puerta
+                // (no hay borde de mundo/sala de por medio como en las puertas de nivel):
+                // sirve para que la puerta exista y bloquee, la lógica real de qué la
+                // destraba y a dónde dispara la agrega otro agente más adelante.
+                const conf = {
+                    id: 'door_h_' + uid, x: sx, y: sy, w: DOOR_H_TOOL_W, h: DOOR_H_TOOL_H,
+                    triggerX: sx, triggerY: sy, triggerW: DOOR_H_TOOL_W, triggerH: DOOR_H_TOOL_H,
+                    requires: ['pending'], targetRoom: null, bannerText: null,
+                    orientation: 'horizontal', editorPlaced: true
+                };
+                activeRoom.doors.push(conf);
+                doors.push(createDoorState(scene, conf));
             }
 
             if (!mapEditorBatching) saveMapEditorState();
@@ -9761,14 +9800,15 @@
             // Puerta y fuente mágica: movibles SOLO en Nivel 2/3 (exactamente una de cada
             // una por nivel, ver el comentario en handleMapEditorDrag/mapEditorEraseAt) —
             // en la Sala 1 (3 puertas + la fuente final, con lógica de victoria/hechizos
-            // de por medio) se dejan intactas, ni siquiera se buscan acá.
-            if (currentRoom !== 'sala1') {
-                const door = doors.find(d => rectContainsPoint(d.rect, x, y));
-                if (door) return { kind: 'door', entry: door };
+            // de por medio) se dejan intactas, ni siquiera se buscan acá. Excepción:
+            // conf.editorPlaced (la 🚪 Puerta horizontal puesta a mano) SÍ se busca en
+            // cualquier sala, incluida sala1 — no es una de las puertas fijas del diseño
+            // original, es un objeto libre más como cualquier otro del Editor de Mapa.
+            const door = doors.find(d => (currentRoom !== 'sala1' || d.conf.editorPlaced) && rectContainsPoint(d.rect, x, y));
+            if (door) return { kind: 'door', entry: door };
 
-                if (rectContainsPoint(interactObject, x, y)) {
-                    return { kind: 'fountain', entry: { rect: interactObject, prompt: interactPrompt, conf: activeRoom.fountain } };
-                }
+            if (currentRoom !== 'sala1' && rectContainsPoint(interactObject, x, y)) {
+                return { kind: 'fountain', entry: { rect: interactObject, prompt: interactPrompt, conf: activeRoom.fountain } };
             }
 
             // Pilares del diseño original (Figma) — SOLO en salas con floorZones (Sala 1).
@@ -9853,7 +9893,9 @@
             if (!found) return;
             // Puerta, fuente y jugador: exactamente uno de cada uno, nunca cero — se
             // pueden mover (ver handleMapEditorDrag) pero Borrar no hace nada acá.
-            if (found.kind === 'door' || found.kind === 'fountain' || found.kind === 'player') return;
+            // Excepción: una puerta editorPlaced (🚪 Puerta horizontal) SÍ se puede
+            // borrar, no es una de las puertas fijas necesarias para ganar.
+            if ((found.kind === 'door' && !found.entry.conf.editorPlaced) || found.kind === 'fountain' || found.kind === 'player') return;
             // Recién ACÁ, con algo realmente encontrado para borrar — un Borrar en el
             // aire (nada bajo el cursor) no cuenta como acción, no hay que poder
             // "deshacer" no haber hecho nada. Mismo criterio de batching que mapEditorPlace.
@@ -9933,6 +9975,16 @@
                 checkpointState.splice(checkpointState.indexOf(entry), 1);
                 const ciCheckpoint = activeRoom.checkpoints.indexOf(entry.conf);
                 if (ciCheckpoint !== -1) activeRoom.checkpoints.splice(ciCheckpoint, 1);
+            } else if (kind === 'door') {
+                // Solo llega acá una puerta editorPlaced (ver el chequeo más arriba en
+                // esta función) — las fijas de sala1/nivel2/nivel3 nunca matchean 'door'
+                // como kind borrable.
+                entry.rect.destroy();
+                entry.triggerZone.destroy();
+                entry.lockedPrompt.destroy();
+                doors.splice(doors.indexOf(entry), 1);
+                const ciDoor = activeRoom.doors.indexOf(entry.conf);
+                if (ciDoor !== -1) activeRoom.doors.splice(ciDoor, 1);
             } else if (kind === 'firetrap') {
                 entry.sprite.destroy();
                 fireTrapState.splice(fireTrapState.indexOf(entry), 1);
