@@ -1178,10 +1178,17 @@
                 </p>
                 <div class="control-row">
                     <label for="ctrl-sawtrap-damage">
-                        Daño de la sierra
+                        Daño de la sierra (jugador)
                         <span class="control-value" id="val-sawtrap-damage">15</span> HP
                     </label>
                     <input type="range" id="ctrl-sawtrap-damage" min="0" max="50" value="15">
+                </div>
+                <div class="control-row">
+                    <label for="ctrl-sawtrap-enemy-damage-pct">
+                        Daño a enemigos (% del daño al jugador)
+                        <span class="control-value" id="val-sawtrap-enemy-damage-pct">20</span> %
+                    </label>
+                    <input type="range" id="ctrl-sawtrap-enemy-damage-pct" min="0" max="100" step="5" value="20">
                 </div>
                 <div class="control-row">
                     <label for="ctrl-sawtrap-interval">
@@ -1968,6 +1975,7 @@
             bindSlider('ctrl-trap-freeze-duration', 'val-trap-freeze-duration', v => { BLUE_TRAP_FREEZE_DURATION = v * 1000; });
 
             bindSlider('ctrl-sawtrap-damage', 'val-sawtrap-damage', v => { SAW_TRAP_DAMAGE = v; });
+            bindSlider('ctrl-sawtrap-enemy-damage-pct', 'val-sawtrap-enemy-damage-pct', v => { SAW_TRAP_ENEMY_DAMAGE_PCT = v; });
             // El slider muestra segundos (más legible); SAW_TRAP_INTERVAL se guarda en ms.
             bindSlider('ctrl-sawtrap-interval', 'val-sawtrap-interval', v => { SAW_TRAP_INTERVAL = v * 1000; });
             bindCheckbox('ctrl-sawtrap-reverse', v => { sawTrapReversed = v; });
@@ -3443,7 +3451,8 @@
         let BLUE_TRAP_DAMAGE = 4; // daño de las trampas azules (jugador y enemigos por igual)
         let BLUE_TRAP_SIZE = 70; // tamaño (px) de las trampas azules
         let BLUE_TRAP_FREEZE_DURATION = 3000; // ms que dura el freeze del hechizo de Inmovilizar sobre una trampa
-        let SAW_TRAP_DAMAGE = 15; // daño de la sierra (jugador y enemigos por igual)
+        let SAW_TRAP_DAMAGE = 15; // daño de la sierra al jugador
+        let SAW_TRAP_ENEMY_DAMAGE_PCT = 20; // % de SAW_TRAP_DAMAGE que reciben los enemigos
         let SAW_TRAP_INTERVAL = 3000; // ms entre una sierra y la siguiente, por riel
         const SAW_TRAP_SPEED = 220; // px/s a la que viaja la sierra a lo largo del riel
         const SAW_SIZE = 26; // tamaño (px) del cuadrado de la sierra en movimiento
@@ -7805,7 +7814,8 @@
                     if (inst.defeated || saw.hitEnemies.has(inst)) return;
                     if (rectsOverlap(saw.obj, inst.obj)) {
                         const type = ENEMY_TYPES[inst.typeKey];
-                        inst.health -= Math.max(0, SAW_TRAP_DAMAGE - type.armor);
+                        const sawEnemyDamage = SAW_TRAP_DAMAGE * (SAW_TRAP_ENEMY_DAMAGE_PCT / 100);
+                        inst.health -= Math.max(0, sawEnemyDamage - type.armor);
                         playSfx('creatureDamage', saw.obj.x, saw.obj.y);
                         saw.hitEnemies.add(inst);
                     }
