@@ -708,6 +708,71 @@
             border-color: #9b59b6;
             font-weight: bold;
         }
+        #fountain-select-panel {
+            display: none;
+            position: fixed;
+            top: 80px;
+            right: 14px;
+            width: 280px;
+            background: rgba(18, 18, 18, 0.97);
+            color: white;
+            border: 1px solid #3498db;
+            border-radius: 8px;
+            padding: 16px;
+            box-sizing: border-box;
+            z-index: 57;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        #fountain-select-panel h3 {
+            margin: 0 0 10px;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        #fountain-select-panel-close {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 16px;
+            cursor: pointer;
+            line-height: 1;
+            padding: 2px 4px;
+        }
+        #fountain-select-panel-close:hover {
+            color: white;
+        }
+        .fountain-select-option-row {
+            display: flex;
+            gap: 6px;
+            margin: 6px 0;
+            font-size: 12px;
+        }
+        .fountain-select-option-row input[type="text"] {
+            flex: 1;
+            padding: 6px;
+            background: #262626;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 4px;
+        }
+        .fountain-select-option-row input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+        .fountain-select-option-remove {
+            padding: 4px 8px;
+            background: #8b0000;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        .fountain-select-option-remove:hover {
+            background: #a00000;
+        }
         /* Miniaturas (rompibles/botín/trampas): un botón por sprite EXACTO, con la
            imagen real — para elegir a ojo cuál poner, no solo "una caja cualquiera". */
         .me-thumb-grid {
@@ -1650,6 +1715,24 @@
             <label>Dirección</label>
             <div class="saw-select-direction-row" id="saw-select-direction-row"></div>
         </div>
+    </div>
+
+    <div id="fountain-select-panel">
+        <h3>⛲ Fuente seleccionada <button id="fountain-select-panel-close" title="Cerrar">✕</button></h3>
+        <div class="control-row">
+            <label>ID</label>
+            <input type="text" id="fountain-select-id" readonly>
+        </div>
+        <div class="control-row">
+            <label>Pregunta</label>
+            <textarea id="fountain-select-question" style="width: 100%; min-height: 60px; font-size: 12px; font-family: monospace; resize: vertical;"></textarea>
+        </div>
+        <div class="control-row">
+            <label>Respuestas (texto|correcto)</label>
+            <div id="fountain-select-options"></div>
+            <button id="fountain-select-add-option" type="button" style="width: 100%; padding: 6px; margin-top: 8px;">+ Agregar opción</button>
+        </div>
+        <button id="fountain-select-save" type="button" style="width: 100%; padding: 8px; margin-top: 12px; background: #9b59b6; color: white; border: none; border-radius: 4px; cursor: pointer;">Guardar</button>
     </div>
 
     <!-- Menú principal: visible desde que carga la página (aunque Phaser todavía
@@ -4192,7 +4275,15 @@
                     { id: 'wall_magic_2', x: 732, y: 250, w: 32, h: 32, breaksWith: 'magic', color: 0x9b30ff },
                     { id: 'wall_magic_3', x: 764, y: 250, w: 32, h: 32, breaksWith: 'magic', color: 0x9b30ff }
                 ],
-                fountain: { id: 'A', x: 1232, y: 640, size: 250 }, // posición y tamaño visual x2.5 (la fuente central es más grande que las otras 2)
+                fountain: {
+                    id: 'A', x: 1232, y: 640, size: 250,
+                    question: 'Elegí cómo activar el mecanismo:',
+                    options: [
+                        { text: 'Girar la piedra en sentido horario', isCorrect: false },
+                        { text: 'Girar la piedra en sentido antihorario', isCorrect: true },
+                        { text: 'Empujar la piedra hacia adentro', isCorrect: false }
+                    ]
+                }, // posición y tamaño visual x2.5 (la fuente central es más grande que las otras 2)
                 doors: [
                     // Izquierda: la destraba la fuente de esta misma sala -> Nivel 2.
                     {
@@ -4247,7 +4338,15 @@
                 // x/y ajustados al múltiplo de CELL_SIZE más cercano (60,200 no caía en
                 // grilla) — para que arranque ya alineada, ahora que la fuente se puede
                 // arrastrar con el Editor de Mapa (ver handleMapEditorDrag/snapToGrid).
-                fountain: { id: 'B', x: 48, y: 208, size: 100 }, // tamaño visual x2 (antes 50 por default)
+                fountain: {
+                    id: 'B', x: 48, y: 208, size: 100,
+                    question: '¿Qué gesto despierta a la fuente?',
+                    options: [
+                        { text: 'Verter agua sobre el borde', isCorrect: false },
+                        { text: 'Tocar el centro con la palma abierta', isCorrect: true },
+                        { text: 'Susurrarle una palabra antigua', isCorrect: false }
+                    ]
+                }, // tamaño visual x2 (antes 50 por default)
                 doors: [
                     // Progresión SIEMPRE consecutiva (pedido de Franco): ya no hay vuelta a
                     // la Sala 1 — la única puerta del nivel es esta, la destraba la propia
@@ -4291,7 +4390,15 @@
                 ],
                 items: [],
                 // Ver comentario equivalente en nivel2: x/y ajustados a la grilla.
-                fountain: { id: 'C', x: 1744, y: 208, size: 100 }, // tamaño visual x2 (antes 50 por default)
+                fountain: {
+                    id: 'C', x: 1744, y: 208, size: 100,
+                    question: 'La fuente espera una ofrenda:',
+                    options: [
+                        { text: 'Dejar caer una moneda', isCorrect: false },
+                        { text: 'Encender la llama a su lado', isCorrect: false },
+                        { text: 'Trazar un círculo en el agua', isCorrect: true }
+                    ]
+                }, // tamaño visual x2 (antes 50 por default)
                 doors: [
                     // Última puerta del juego: ya no hay vuelta a la Sala 1 (progresión
                     // consecutiva, ver comentario equivalente en nivel2). La destraba la
@@ -6940,21 +7047,35 @@
             player.body.setVelocity(0, 0);
             freezeAllEnemies();
 
-            // Cada sala tiene su propio acertijo (FOUNTAIN_RIDDLES[id]); la opción
-            // correcta se sortea la primera vez y de ahí en más es siempre la misma
-            // para esa fuente (ver fountainCorrectIndex).
-            const riddle = FOUNTAIN_RIDDLES[activeRoom.fountain.id];
+            // Cada sala tiene su propio acertijo: datos en activeRoom.fountain
+            // (editables desde el editor de mapa), con fallback a FOUNTAIN_RIDDLES para
+            // compatibilidad con configuraciones viejas.
             const fountainId = activeRoom.fountain.id;
+            const fountainConf = activeRoom.fountain;
+
+            // Si la fuente editable tiene options, usarlas; si no, fallback a FOUNTAIN_RIDDLES.
+            let question, options;
+            if (fountainConf.question && fountainConf.options && fountainConf.options.length > 0) {
+                question = fountainConf.question;
+                options = fountainConf.options;
+            } else {
+                const riddle = FOUNTAIN_RIDDLES[fountainId];
+                question = riddle.prompt;
+                options = riddle.options.map(text => ({ text, isCorrect: false }));
+            }
+
             if (fountainCorrectIndex[fountainId] === undefined) {
-                fountainCorrectIndex[fountainId] = Math.floor(Math.random() * riddle.options.length);
+                // Si hay un isCorrect marcado, usarlo; si no, sortear como antes.
+                const correctIdx = options.findIndex(o => o.isCorrect);
+                fountainCorrectIndex[fountainId] = correctIdx >= 0 ? correctIdx : Math.floor(Math.random() * options.length);
             }
             const correctIndex = fountainCorrectIndex[fountainId];
 
             showModal(
-                riddle.title,
-                riddle.prompt,
-                riddle.options.map((label, i) => ({
-                    label: label,
+                fountainConf.id || 'Fuente',
+                question,
+                options.map((opt, i) => ({
+                    label: opt.text || opt,  // opt puede ser string (viejo) u objeto {text, isCorrect}
                     onClick: () => showInteractResult(i === correctIndex)
                 }))
             );
@@ -9141,6 +9262,7 @@
             setupMapEditorTabs();
             setupMapEditorRoomSwitch();
             setupSawSelectPanel();
+            setupFountainSelectPanel();
             document.getElementById('me-collapse-toggle').addEventListener('click', toggleMapEditorPanelCollapse);
             document.getElementById('map-editor-toggle-btn').addEventListener('click', toggleMapEditor);
             document.getElementById('btn-copy-map-json').addEventListener('click', copyMapEditorStateToClipboard);
@@ -9517,13 +9639,18 @@
                 return;
             }
             if (mapEditorTool === 'select') {
-                // Por ahora solo entiende trampas de Sierra (ver pedido del usuario) —
-                // clickear cualquier otra cosa, o vacío, cierra el panel si había uno abierto.
+                // Entiende trampas de Sierra y Fuentes — clickear cualquier otra cosa,
+                // o vacío, cierra los paneles si había uno abierto.
                 const found = findMapEditorEntityAt(x, y);
                 if (found && found.kind === 'sawtrap') {
                     openSawSelectPanel(found.entry);
+                    closeFountainSelectPanel();
+                } else if (found && found.kind === 'fountain') {
+                    openFountainSelectPanel(found.entry);
+                    closeSawSelectPanel();
                 } else {
                     closeSawSelectPanel();
+                    closeFountainSelectPanel();
                 }
                 return;
             }
@@ -9556,6 +9683,10 @@
         // que se abre para una sierra), no uno por cada tick del slider — mismo criterio
         // que "Mover" (ver pushMapEditorUndoSnapshot en handleMapEditorClick).
         let sawSelectUndoPushed = false;
+
+        // Ídem para fuentes (fountains): panel flotante de edición de pregunta/respuestas.
+        let fountainSelectPanelEntry = null;
+        let fountainSelectUndoPushed = false;
 
         function openSawSelectPanel(entry) {
             sawSelectPanelEntry = entry;
@@ -9620,6 +9751,95 @@
                 sawSelectPanelEntry.conf.speed = value;
                 document.getElementById('saw-select-speed-value').textContent = value;
                 saveMapEditorState();
+            });
+        }
+
+        function openFountainSelectPanel(entry) {
+            fountainSelectPanelEntry = entry;
+            fountainSelectUndoPushed = false;
+            populateFountainSelectPanel();
+            document.getElementById('fountain-select-panel').style.display = 'block';
+        }
+
+        function closeFountainSelectPanel() {
+            fountainSelectPanelEntry = null;
+            const panel = document.getElementById('fountain-select-panel');
+            if (panel) panel.style.display = 'none';
+        }
+
+        function populateFountainSelectPanel() {
+            if (!fountainSelectPanelEntry) return;
+            const conf = fountainSelectPanelEntry.conf;
+
+            document.getElementById('fountain-select-id').value = conf.id || '';
+            document.getElementById('fountain-select-question').value = conf.question || '';
+
+            const optionsContainer = document.getElementById('fountain-select-options');
+            optionsContainer.innerHTML = '';
+            const options = conf.options || [{ text: '', isCorrect: false }];
+            options.forEach((opt, i) => {
+                const row = document.createElement('div');
+                row.className = 'fountain-select-option-row';
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = 'Opción ' + (i + 1);
+                input.value = opt.text || '';
+                input.addEventListener('change', () => {
+                    if (!fountainSelectPanelEntry) return;
+                    fountainSelectPanelEntry.conf.options[i].text = input.value;
+                });
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = opt.isCorrect || false;
+                checkbox.title = 'Marcar como respuesta correcta';
+                checkbox.addEventListener('change', () => {
+                    if (!fountainSelectPanelEntry) return;
+                    fountainSelectPanelEntry.conf.options.forEach((o, idx) => {
+                        o.isCorrect = (idx === i) && checkbox.checked;
+                    });
+                    populateFountainSelectPanel();
+                });
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'fountain-select-option-remove';
+                removeBtn.textContent = 'Quitar';
+                removeBtn.addEventListener('click', () => {
+                    if (!fountainSelectPanelEntry) return;
+                    if (fountainSelectPanelEntry.conf.options.length > 2) {
+                        fountainSelectPanelEntry.conf.options.splice(i, 1);
+                        populateFountainSelectPanel();
+                    }
+                });
+
+                row.appendChild(input);
+                row.appendChild(checkbox);
+                row.appendChild(removeBtn);
+                optionsContainer.appendChild(row);
+            });
+        }
+
+        function setupFountainSelectPanel() {
+            document.getElementById('fountain-select-panel-close').addEventListener('click', closeFountainSelectPanel);
+            document.getElementById('fountain-select-add-option').addEventListener('click', () => {
+                if (!fountainSelectPanelEntry) return;
+                if (!fountainSelectUndoPushed) { pushMapEditorUndoSnapshot(); fountainSelectUndoPushed = true; }
+                fountainSelectPanelEntry.conf.options.push({ text: '', isCorrect: false });
+                populateFountainSelectPanel();
+            });
+
+            document.getElementById('fountain-select-question').addEventListener('change', () => {
+                if (!fountainSelectPanelEntry) return;
+                if (!fountainSelectUndoPushed) { pushMapEditorUndoSnapshot(); fountainSelectUndoPushed = true; }
+                fountainSelectPanelEntry.conf.question = document.getElementById('fountain-select-question').value;
+            });
+
+            document.getElementById('fountain-select-save').addEventListener('click', () => {
+                if (fountainSelectPanelEntry) {
+                    saveMapEditorState();
+                    closeFountainSelectPanel();
+                }
             });
         }
 
@@ -10407,7 +10627,15 @@
             if (saved.items) target.items = saved.items;
             if (saved.enemySpawns) target.enemySpawns = saved.enemySpawns;
             if (saved.doors) target.doors = saved.doors;
-            if (saved.fountain) target.fountain = saved.fountain;
+            if (saved.fountain) {
+                target.fountain = saved.fountain;
+                // Asegurar estructura mínima de fountain: si no tiene options, inicializarlas
+                if (!target.fountain.options) {
+                    const riddle = FOUNTAIN_RIDDLES[target.fountain.id] || {};
+                    target.fountain.question = target.fountain.question || riddle.prompt || '';
+                    target.fountain.options = (riddle.options || []).map(text => ({ text, isCorrect: false })) || [];
+                }
+            }
             if (saved.playerStart) target.playerStart = saved.playerStart;
         }
 
