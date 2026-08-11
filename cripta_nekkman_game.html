@@ -1615,10 +1615,12 @@
                 <button class="me-tool-btn" data-tool="spellbook_magic">📖🔮 Manual (Bola Mágica)</button>
                 <button class="me-tool-btn" data-tool="spellbook_immobilize">📖❄️ Manual (Inmovilizar)</button>
                 <button class="me-tool-btn" data-tool="spellbook_fireball">📖🔥 Manual (Bola de Fuego)</button>
+                <button class="me-tool-btn" data-tool="spell_map">📜 Mapa de Hechizo</button>
             </div>
             <p class="editor-subhint">
                 Cada manual solo puede existir en UN punto de UN nivel a la vez — si ya lo
                 usaste en otro mapa, hay que sacarlo de ahí primero para poder ponerlo acá.
+                Los mapas de hechizo se pueden colocar libremente.
             </p>
 
             <h4 style="margin-top:10px;color:#aad4ff;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">🔥 Antorchas</h4>
@@ -4413,6 +4415,8 @@
                     { id: 'loot_5', x: 1858, y: 1822, w: 44, h: 42, lootValue: 1 }, // dentro de la bóveda de hielo
                     { id: 'loot_6', x: 2494, y: 2386, w: 44, h: 42, lootValue: 1 }
                 ],
+                // Mapas de hechizo: pergaminos informativos colocables con el Editor de Mapa
+                spellMaps: [],
                 // Paredes con vida: bloquean el paso y se pueden romper a golpes (cuerpo
                 // a cuerpo) o con cualquier hechizo de daño — maxHealth editable acá.
                 // Posición y tamaño x2; maxHealth queda igual (es balance, no tamaño).
@@ -4488,6 +4492,7 @@
                     { type: 'mago', x: 500, y: 200 }
                 ],
                 items: [],
+                spellMaps: [],
                 // x/y ajustados al múltiplo de CELL_SIZE más cercano (60,200 no caía en
                 // grilla) — para que arranque ya alineada, ahora que la fuente se puede
                 // arrastrar con el Editor de Mapa (ver handleMapEditorDrag/snapToGrid).
@@ -4534,6 +4539,7 @@
                     { type: 'mago', x: 1500, y: 200 }
                 ],
                 items: [],
+                spellMaps: [],
                 // Ver comentario equivalente en nivel2: x/y ajustados a la grilla.
                 fountain: { id: 'C', x: 1744, y: 208, size: 100 }, // tamaño visual x2 (antes 50 por default)
                 doors: [
@@ -4610,7 +4616,8 @@
         // trampas azules. editorBlockRects: [{ conf, rect }] para los bloques sólidos
         // que puso el Editor de Mapa. Los tres existen para que el Editor de Mapa pueda
         // encontrar y borrar/mover una entidad puntual bajo el cursor.
-        let itemRects, blueTrapRects, editorBlockRects, pillarRects;
+        // spellMapRects: [{ conf, rect }] para los mapas de hechizo (mapas informativos).
+        let itemRects, blueTrapRects, editorBlockRects, pillarRects, spellMapRects;
         // sawTrapState: [{ conf, bg, groove, nextSpawnAt }] — un riel por entrada, igual
         // criterio que arriba (encontrar/borrar/mover bajo el cursor). activeSaws:
         // [{ obj, dirX, dirY, remaining, hitPlayer, hitEnemies }] — las sierras EN
@@ -5809,6 +5816,13 @@
             activeRoom.items.forEach(itemConf => {
                 if (itemsPickedUp[itemConf.id]) return;
                 createLiveItem(itemConf);
+            });
+
+            // Mapas de hechizo: pergaminos informativos que se pueden colocar con el Editor
+            // de Mapa pero NO se recogen ni disparan efectos — son solo referencias visuales.
+            spellMapRects = [];
+            (activeRoom.spellMaps || []).forEach(conf => {
+                createSpellMapVisual(this, conf);
             });
 
             // Los pozos grises son puros obstáculos sólidos (pilares/paredes): bloquean
@@ -8403,6 +8417,19 @@
             itemRects.push({ conf: itemConf, rect });
         }
 
+        function createSpellMapVisual(sceneRef, conf) {
+            // Mapa de hechizo: pergamino informativos que se pueden mover/borrar en el
+            // Editor pero no se recogen (no hay overlap con el jugador). Usa el mismo
+            // sprite de pergamino que los manuales de hechizo pero sin lógica de pickup.
+            const rect = sceneRef.add.sprite(conf.x, conf.y, 'pergamino');
+            rect.setDisplaySize(conf.w, conf.h);
+            rect.setDepth(4);
+            sceneRef.physics.add.existing(rect, true);
+            rect.body.setSize(conf.w, conf.h);
+            rect.body.updateFromGameObject();
+            spellMapRects.push({ conf, rect });
+        }
+
         // Botín al romper un objeto rompible (barril/caja/jarrón) — el tamaño del loot
         // matchea el tamaño (en celdas) del objeto roto, ver LOOT_POOLS/pickLootFor.
         let lootDropCounter = 0;
@@ -10185,6 +10212,10 @@
                 const conf = { id: 'spellbook_editor_' + uid, x: sx, y: sy, w: CELL_SIZE, h: CELL_SIZE, unlocksSpell: spellKey };
                 activeRoom.items.push(conf);
                 createLiveItem(conf);
+            } else if (tool === 'spell_map') {
+                const conf = { id: 'spell_map_' + uid, x: sx, y: sy, w: CELL_SIZE, h: CELL_SIZE };
+                activeRoom.spellMaps.push(conf);
+                createSpellMapVisual(scene, conf);
             } else if (tool === 'normal' || tool === 'tanque' || tool === 'mago') {
                 const idx = activeRoom.enemySpawns.length;
                 activeRoom.enemySpawns.push({ type: tool, x: sx, y: sy });
@@ -10266,6 +10297,9 @@
 
             const item = itemRects.find(i => rectContainsPoint(i.rect, x, y));
             if (item) return { kind: 'item', entry: item };
+
+            const spellMap = spellMapRects.find(m => rectContainsPoint(m.rect, x, y));
+            if (spellMap) return { kind: 'spell_map', entry: spellMap };
 
             const torch = torchVisuals.find(t => rectContainsPoint(t.sprite, x, y));
             if (torch) return { kind: 'torch', entry: torch };
@@ -10476,6 +10510,11 @@
                 fireTrapState.splice(fireTrapState.indexOf(entry), 1);
                 const ciFire = activeRoom.fireTraps.indexOf(entry.conf);
                 if (ciFire !== -1) activeRoom.fireTraps.splice(ciFire, 1);
+            } else if (kind === 'spell_map') {
+                entry.rect.destroy();
+                spellMapRects.splice(spellMapRects.indexOf(entry), 1);
+                const ciSpellMap = activeRoom.spellMaps.indexOf(entry.conf);
+                if (ciSpellMap !== -1) activeRoom.spellMaps.splice(ciSpellMap, 1);
             } else if (kind === 'pillar') {
                 // No se borra el pilar entero (podría ser una franja de varios metros):
                 // se marca SOLO la celda de 32px bajo el click como "sacada". En batch
@@ -10574,6 +10613,11 @@
                 entry.conf.x = centerX;
                 entry.conf.y = centerY;
                 if (entry.rect.body) entry.rect.body.updateFromGameObject();
+            } else if (kind === 'spell_map') {
+                entry.rect.setPosition(sx, sy);
+                entry.conf.x = sx;
+                entry.conf.y = sy;
+                if (entry.rect.body) entry.rect.body.updateFromGameObject();
             } else {
                 entry.rect.setPosition(sx, sy);
                 entry.conf.x = sx;
@@ -10610,6 +10654,7 @@
                 wallSkins: activeRoom.wallSkins,
                 fireTraps: activeRoom.fireTraps,
                 items: activeRoom.items,
+                spellMaps: activeRoom.spellMaps,
                 enemySpawns: activeRoom.enemySpawns,
                 doors: activeRoom.doors,
                 fountain: activeRoom.fountain,
@@ -10691,6 +10736,7 @@
                 wallSkins: activeRoom.wallSkins,
                 fireTraps: activeRoom.fireTraps,
                 items: activeRoom.items,
+                spellMaps: activeRoom.spellMaps,
                 enemySpawns: activeRoom.enemySpawns,
                 doors: activeRoom.doors,
                 fountain: activeRoom.fountain,
@@ -10739,6 +10785,7 @@
             if (saved.wallSkins) target.wallSkins = saved.wallSkins;
             if (saved.fireTraps) target.fireTraps = saved.fireTraps;
             if (saved.items) target.items = saved.items;
+            if (saved.spellMaps) target.spellMaps = saved.spellMaps;
             if (saved.enemySpawns) target.enemySpawns = saved.enemySpawns;
             if (saved.doors) target.doors = saved.doors;
             if (saved.fountain) target.fountain = saved.fountain;
@@ -10780,6 +10827,7 @@
                 wallSkins: activeRoom.wallSkins,
                 fireTraps: activeRoom.fireTraps,
                 items: activeRoom.items,
+                spellMaps: activeRoom.spellMaps,
                 enemySpawns: activeRoom.enemySpawns,
                 doors: activeRoom.doors,
                 fountain: activeRoom.fountain,
