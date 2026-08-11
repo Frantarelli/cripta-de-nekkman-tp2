@@ -692,6 +692,58 @@
         }
         .saw-select-dir-btn {
             flex: 1 1 auto;
+        }
+        #checkpoint-select-panel {
+            display: none;
+            position: fixed;
+            top: 80px;
+            right: 14px;
+            width: 260px;
+            background: rgba(18, 18, 18, 0.97);
+            color: white;
+            border: 1px solid #00e5ff;
+            border-radius: 8px;
+            padding: 16px;
+            box-sizing: border-box;
+            z-index: 57;
+        }
+        #checkpoint-select-panel h3 {
+            margin: 0 0 10px;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        #checkpoint-select-panel-close {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 16px;
+            cursor: pointer;
+            line-height: 1;
+            padding: 2px 4px;
+        }
+        #checkpoint-select-panel-close:hover {
+            color: white;
+        }
+        #checkpoint-select-number {
+            width: 100%;
+            padding: 6px 8px;
+            box-sizing: border-box;
+            background: #2a2a2a;
+            color: white;
+            border: 1px solid #00e5ff;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-top: 6px;
+        }
+        #checkpoint-select-number:focus {
+            outline: none;
+            border-color: #00ffff;
+            box-shadow: 0 0 4px rgba(0, 229, 255, 0.3);
+        }
+        .saw-select-dir-btn {
+            flex: 1 1 auto;
             padding: 8px 4px;
             font-size: 13px;
             background: #262626;
@@ -1649,6 +1701,14 @@
         <div class="control-row">
             <label>Dirección</label>
             <div class="saw-select-direction-row" id="saw-select-direction-row"></div>
+        </div>
+    </div>
+
+    <div id="checkpoint-select-panel">
+        <h3>🚩 Checkpoint seleccionado <button id="checkpoint-select-panel-close" title="Cerrar">✕</button></h3>
+        <div class="control-row">
+            <label for="checkpoint-select-number">Número:</label>
+            <input type="number" id="checkpoint-select-number" min="1" max="99" value="1">
         </div>
     </div>
 
@@ -2998,6 +3058,7 @@
             // normal (morir, Reiniciar Nivel, "R") NO pasa por acá — el checkpoint
             // tiene que sobrevivir exactamente eso, es su razón de ser.
             activeCheckpoint = null;
+            unlockedCheckpoints.clear();
             // Niebla de guerra: qué celdas de cada sala ya viste alguna vez. A
             // diferencia de wallsDestroyed/fountainsSolved (que tampoco se tocan acá),
             // esto SÍ se resetea con cada partida nueva a pedido — dentro de la misma
@@ -4539,7 +4600,7 @@
         let torchVisuals; // [{ conf, sprite, glow }] — ver createTorchVisual
         let checkpointState; // [{ conf, rect }] — ver createCheckpointVisual
         let wallSkinVisuals; // [{ conf, image }] — ver createWallSkinVisual
-        // Último checkpoint pisado en la sala ACTUAL — { room, x, y } o null si todavía
+        // Último checkpoint pisado en la sala ACTUAL — { room, x, y, number } o null si todavía
         // no se pisó ninguno en esta sala esta partida. Se usa en vez de
         // activeRoom.playerStart al reaparecer (ver el cálculo de spawnPoint en create())
         // — SOLO si activeCheckpoint.room === currentRoom, así un checkpoint de otra
@@ -4547,6 +4608,9 @@
         // un restart normal (morir/Reiniciar Nivel) — tiene que sobrevivir eso, es la
         // razón de ser del checkpoint.
         let activeCheckpoint = null;
+        // Map { checkpointId -> number } — trackea todos los checkpoints desbloqueados en la partida actual.
+        // Se usa para encontrar el de número más alto cuando se respawnea.
+        const unlockedCheckpoints = new Map();
         let playerGlowImage; // halo sutil que sigue al jugador, ver PLAYER_GLOW_RADIUS
         let fountainGlow; // halo de la fuente de esta sala, ver FOUNTAIN_LIGHT_RADIUS
         let scene;
@@ -5229,13 +5293,13 @@
             // 1) pendingEntryPoint: venimos de cruzar una puerta con entryPoint propio
             //    (ej. las puertas de "vuelta" a la Sala 1) — aparece ahí, no hay
             //    checkpoint ni playerStart que valga en este caso.
-            // 2) activeCheckpoint: si ya pisó un 🚩 Checkpoint EN ESTA MISMA SALA en
-            //    algún momento de la partida (sobrevive morir/Reiniciar Nivel, se
-            //    resetea solo en resetGameProgress — partida nueva de verdad), aparece
-            //    en el centro de esa celda en vez del arranque de siempre.
+            // 2) El checkpoint desbloqueado de NÚMERO MÁS ALTO en esta sala (si hay varios,
+            //    el que tiene el número más grande gana; sobrevive morir/Reiniciar Nivel, se
+            //    resetea solo en resetGameProgress — partida nueva de verdad).
             // 3) activeRoom.playerStart: el default de toda la vida.
+            const highestCheckpoint = getHighestUnlockedCheckpoint();
             const spawnPoint = pendingEntryPoint
-                || (activeCheckpoint && activeCheckpoint.room === currentRoom ? { x: activeCheckpoint.x, y: activeCheckpoint.y } : null)
+                || (highestCheckpoint ? { x: highestCheckpoint.x, y: highestCheckpoint.y } : null)
                 || activeRoom.playerStart;
             // Antes un Rectangle liso (0x00ff00); ahora un Sprite real con las 16
             // animaciones cargadas en preload()/registradas arriba en create() —
@@ -8682,13 +8746,32 @@
         function activateCheckpoint(conf) {
             const alreadyActive = activeCheckpoint && activeCheckpoint.room === currentRoom
                 && activeCheckpoint.x === conf.x && activeCheckpoint.y === conf.y;
-            activeCheckpoint = { room: currentRoom, x: conf.x, y: conf.y };
             if (alreadyActive) return; // ya era el checkpoint activo, no repetir el aviso
-            playSfx('fountainCorrect');
-            if (dom.status) dom.status.textContent = '🚩 Checkpoint alcanzado.';
-            spawnFloatingText(player.x, player.y - PLAYER_SPRITE_DISPLAY_HEIGHT / 2 - 12, 'Checkpoint alcanzado', {
-                color: '#00e5ff', duration: 1300, rise: 45
-            });
+            activeCheckpoint = { room: currentRoom, x: conf.x, y: conf.y, number: conf.number || 1 };
+            if (!unlockedCheckpoints.has(conf.id)) {
+                unlockedCheckpoints.set(conf.id, conf.number || 1);
+                playSfx('fountainCorrect');
+                if (dom.status) dom.status.textContent = '🚩 Checkpoint alcanzado.';
+                spawnFloatingText(player.x, player.y - PLAYER_SPRITE_DISPLAY_HEIGHT / 2 - 12, 'Checkpoint alcanzado', {
+                    color: '#00e5ff', duration: 1300, rise: 45
+                });
+            }
+        }
+
+        // Retorna el checkpoint desbloqueado de esta sala con el número más alto.
+        // Si no hay ninguno, retorna null.
+        function getHighestUnlockedCheckpoint() {
+            if (!activeRoom.checkpoints || activeRoom.checkpoints.length === 0) return null;
+            let highest = null;
+            for (const checkpoint of activeRoom.checkpoints) {
+                if (unlockedCheckpoints.has(checkpoint.id)) {
+                    const num = checkpoint.number || 1;
+                    if (!highest || num > highest.number) {
+                        highest = checkpoint;
+                    }
+                }
+            }
+            return highest;
         }
 
         // "Paredes" del Editor de Mapa: un sprite de 1 celda pintado ARRIBA de lo que
@@ -9141,6 +9224,7 @@
             setupMapEditorTabs();
             setupMapEditorRoomSwitch();
             setupSawSelectPanel();
+            setupCheckpointSelectPanel();
             document.getElementById('me-collapse-toggle').addEventListener('click', toggleMapEditorPanelCollapse);
             document.getElementById('map-editor-toggle-btn').addEventListener('click', toggleMapEditor);
             document.getElementById('btn-copy-map-json').addEventListener('click', copyMapEditorStateToClipboard);
@@ -9517,13 +9601,18 @@
                 return;
             }
             if (mapEditorTool === 'select') {
-                // Por ahora solo entiende trampas de Sierra (ver pedido del usuario) —
-                // clickear cualquier otra cosa, o vacío, cierra el panel si había uno abierto.
+                // Soporta Trampas de Sierra y Checkpoints — clickear cualquier otra cosa,
+                // o vacío, cierra los paneles si había alguno abierto.
                 const found = findMapEditorEntityAt(x, y);
                 if (found && found.kind === 'sawtrap') {
                     openSawSelectPanel(found.entry);
+                    closeCheckpointSelectPanel();
+                } else if (found && found.kind === 'checkpoint') {
+                    openCheckpointSelectPanel(found.entry);
+                    closeSawSelectPanel();
                 } else {
                     closeSawSelectPanel();
+                    closeCheckpointSelectPanel();
                 }
                 return;
             }
@@ -9619,6 +9708,43 @@
                 const value = Number(speedInput.value);
                 sawSelectPanelEntry.conf.speed = value;
                 document.getElementById('saw-select-speed-value').textContent = value;
+                saveMapEditorState();
+            });
+        }
+
+        // ---- Panel de la herramienta 🖱️ Seleccionar para Checkpoints ----
+        let checkpointSelectPanelEntry = null;
+        let checkpointSelectUndoPushed = false;
+
+        function openCheckpointSelectPanel(entry) {
+            checkpointSelectPanelEntry = entry;
+            checkpointSelectUndoPushed = false;
+            populateCheckpointSelectPanel();
+            document.getElementById('checkpoint-select-panel').style.display = 'block';
+        }
+
+        function closeCheckpointSelectPanel() {
+            checkpointSelectPanelEntry = null;
+            const panel = document.getElementById('checkpoint-select-panel');
+            if (panel) panel.style.display = 'none';
+        }
+
+        function populateCheckpointSelectPanel() {
+            if (!checkpointSelectPanelEntry) return;
+            const conf = checkpointSelectPanelEntry.conf;
+            const numberInput = document.getElementById('checkpoint-select-number');
+            numberInput.value = conf.number !== undefined ? conf.number : 1;
+        }
+
+        function setupCheckpointSelectPanel() {
+            document.getElementById('checkpoint-select-panel-close').addEventListener('click', closeCheckpointSelectPanel);
+            const numberInput = document.getElementById('checkpoint-select-number');
+            numberInput.addEventListener('input', () => {
+                if (!checkpointSelectPanelEntry) return;
+                if (!checkpointSelectUndoPushed) { pushMapEditorUndoSnapshot(); checkpointSelectUndoPushed = true; }
+                const value = Math.max(1, Math.min(99, Number(numberInput.value)));
+                checkpointSelectPanelEntry.conf.number = value;
+                numberInput.value = value;
                 saveMapEditorState();
             });
         }
@@ -9873,7 +9999,7 @@
                 activeRoom.torches.push(conf);
                 torchVisuals.push(createTorchVisual(scene, conf));
             } else if (tool === 'checkpoint') {
-                const conf = { id: 'checkpoint_' + uid, x: sx, y: sy };
+                const conf = { id: 'checkpoint_' + uid, x: sx, y: sy, number: activeRoom.checkpoints.length + 1 };
                 activeRoom.checkpoints.push(conf);
                 checkpointState.push(createCheckpointVisual(scene, conf));
             } else if (tool === 'door_h') {
@@ -10133,6 +10259,7 @@
                 checkpointState.splice(checkpointState.indexOf(entry), 1);
                 const ciCheckpoint = activeRoom.checkpoints.indexOf(entry.conf);
                 if (ciCheckpoint !== -1) activeRoom.checkpoints.splice(ciCheckpoint, 1);
+                if (checkpointSelectPanelEntry === entry) closeCheckpointSelectPanel();
             } else if (kind === 'door') {
                 // Solo llega acá una puerta editorPlaced (ver el chequeo más arriba en
                 // esta función) — las fijas de sala1/nivel2/nivel3 nunca matchean 'door'
@@ -10401,7 +10528,13 @@
             if (saved.sawTraps) target.sawTraps = saved.sawTraps;
             if (saved.spikeTraps) target.spikeTraps = saved.spikeTraps;
             if (saved.torches) target.torches = saved.torches;
-            if (saved.checkpoints) target.checkpoints = saved.checkpoints;
+            if (saved.checkpoints) {
+                target.checkpoints = saved.checkpoints;
+                // Compatibilidad: checkpoints viejos sin campo `number` reciben uno automático
+                target.checkpoints.forEach((cp, idx) => {
+                    if (cp.number === undefined) cp.number = idx + 1;
+                });
+            }
             if (saved.wallSkins) target.wallSkins = saved.wallSkins;
             if (saved.fireTraps) target.fireTraps = saved.fireTraps;
             if (saved.items) target.items = saved.items;
