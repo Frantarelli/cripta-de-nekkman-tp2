@@ -10597,17 +10597,17 @@
             const fireTrap = fireTrapState.find(f => Math.abs(f.conf.x - x) < CELL_SIZE / 2 && Math.abs(f.conf.y - y) < CELL_SIZE / 2);
             if (fireTrap) return { kind: 'firetrap', entry: fireTrap };
 
-            // Puerta y fuente mágica: movibles SOLO en Nivel 2/3 (exactamente una de cada
-            // una por nivel, ver el comentario en handleMapEditorDrag/mapEditorEraseAt) —
-            // en la Sala 1 (3 puertas + la fuente final, con lógica de victoria/hechizos
-            // de por medio) se dejan intactas, ni siquiera se buscan acá. Excepción:
-            // conf.editorPlaced (la 🚪 Puerta horizontal puesta a mano) SÍ se busca en
-            // cualquier sala, incluida sala1 — no es una de las puertas fijas del diseño
-            // original, es un objeto libre más como cualquier otro del Editor de Mapa.
+            // Puertas fijas de la Sala 1 (3 puertas + lógica de victoria/hechizos de por
+            // medio) se dejan intactas, ni siquiera se buscan acá. Excepción: conf.editorPlaced
+            // (la 🚪 Puerta horizontal puesta a mano) SÍ se busca en cualquier sala, incluida
+            // sala1 — no es una de las puertas fijas del diseño original, es un objeto libre
+            // más como cualquier otro del Editor de Mapa.
             const door = doors.find(d => (currentRoom !== 'sala1' || d.conf.editorPlaced) && rectContainsPoint(d.rect, x, y));
             if (door) return { kind: 'door', entry: door };
 
-            if (currentRoom !== 'sala1' && rectContainsPoint(interactObject, x, y)) {
+            // La fuente SÍ es movible/seleccionable en cualquier sala, incluida sala1 —
+            // a diferencia de las puertas fijas, no tiene lógica de victoria hardcodeada.
+            if (rectContainsPoint(interactObject, x, y)) {
                 return { kind: 'fountain', entry: { rect: interactObject, prompt: interactPrompt, conf: activeRoom.fountain } };
             }
 

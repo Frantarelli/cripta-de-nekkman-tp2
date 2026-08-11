@@ -45522,7 +45522,18 @@
         "id": "A",
         "x": 1232,
         "y": 640,
-        "size": 100
+        "size": 100,
+        "question": "¿Cuál es tu nombre?",
+        "options": [
+          {
+            "text": "Klegar",
+            "isCorrect": true
+          },
+          {
+            "text": "Otro",
+            "isCorrect": false
+          }
+        ]
       },
       "playerStart": {
         "x": 112,
