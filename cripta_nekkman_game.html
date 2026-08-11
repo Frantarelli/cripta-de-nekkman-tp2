@@ -2340,7 +2340,89 @@
             let editorSettings = {}, mapEdits = {};
             try { editorSettings = JSON.parse(localStorage.getItem('cripta_nekkman_editor_settings_v1') || '{}'); } catch (e) { /* vacío si está corrupto */ }
             try { mapEdits = JSON.parse(localStorage.getItem('cripta_nekkman_map_edits_v1') || '{}'); } catch (e) { /* vacío si está corrupto */ }
-            return { version: 1, savedAt: new Date().toISOString(), editorSettings, mapEdits };
+
+            // Captura todos los parámetros editables del juego
+            const parameters = {
+                player: {
+                    maxHealth: PLAYER_MAX_HEALTH_BASE,
+                    meleeDamage: PLAYER_MELEE_DAMAGE,
+                    speed: PLAYER_SPEED,
+                    attackCooldown: PLAYER_ATTACK_COOLDOWN,
+                    regenDelay: PLAYER_REGEN_DELAY,
+                    regenRate: PLAYER_REGEN_RATE,
+                    visionRadius: PLAYER_VISION_RADIUS,
+                    glowRadius: PLAYER_GLOW_RADIUS,
+                    glowColor: PLAYER_GLOW_COLOR
+                },
+                traps: {
+                    saw: {
+                        damage: SAW_TRAP_DAMAGE,
+                        enemyDamagePct: SAW_TRAP_ENEMY_DAMAGE_PCT,
+                        interval: SAW_TRAP_INTERVAL,
+                        speed: SAW_TRAP_SPEED,
+                        reversed: sawTrapReversed
+                    },
+                    spike: {
+                        damage: SPIKE_TRAP_DAMAGE,
+                        delay: SPIKE_TRAP_DELAY
+                    },
+                    blue: {
+                        damage: BLUE_TRAP_DAMAGE,
+                        size: BLUE_TRAP_SIZE,
+                        freezeDuration: BLUE_TRAP_FREEZE_DURATION
+                    },
+                    fire: {
+                        damage: FIRE_TRAP_DAMAGE
+                    }
+                },
+                enemies: {
+                    normal: {
+                        maxHealth: ENEMY_TYPES.normal.maxHealth,
+                        armor: ENEMY_TYPES.normal.armor,
+                        speed: ENEMY_TYPES.normal.speed,
+                        chargeTime: ENEMY_TYPES.normal.chargeTime,
+                        attackDamage: ENEMY_TYPES.normal.attackDamage
+                    },
+                    tanque: {
+                        maxHealth: ENEMY_TYPES.tanque.maxHealth,
+                        armor: ENEMY_TYPES.tanque.armor,
+                        speed: ENEMY_TYPES.tanque.speed,
+                        chargeTime: ENEMY_TYPES.tanque.chargeTime,
+                        attackDamage: ENEMY_TYPES.tanque.attackDamage
+                    },
+                    mago: {
+                        maxHealth: ENEMY_TYPES.mago.maxHealth,
+                        armor: ENEMY_TYPES.mago.armor,
+                        speed: ENEMY_TYPES.mago.speed,
+                        chargeTime: ENEMY_TYPES.mago.chargeTime,
+                        projectileSpeed: ENEMY_TYPES.mago.projectileSpeed,
+                        projectileDamage: ENEMY_TYPES.mago.projectileDamage
+                    }
+                },
+                hpWall: {
+                    maxHealth: HP_WALL_MAX_HEALTH
+                },
+                torch: {
+                    lightRadius: TORCH_LIGHT_RADIUS,
+                    lightColor: TORCH_LIGHT_COLOR,
+                    useGeneratedGlow: TORCH_USE_GENERATED_GLOW
+                },
+                fountain: {
+                    lightRadius: FOUNTAIN_LIGHT_RADIUS,
+                    lightColor: FOUNTAIN_LIGHT_COLOR
+                },
+                ambient: {
+                    shadowOpacity: AMBIENT_SHADOW_OPACITY
+                },
+                texts: {
+                    specialWallFireHint: SPECIAL_WALL_HINT_TEXT_FIRE,
+                    specialWallIceHint: SPECIAL_WALL_HINT_TEXT_ICE,
+                    specialWallMagicHint: SPECIAL_WALL_HINT_TEXT_MAGIC,
+                    doorLockedText: DOOR_LOCKED_TEXT
+                }
+            };
+
+            return { version: 1, savedAt: new Date().toISOString(), editorSettings, mapEdits, parameters };
         }
 
         // ---- Guardado automático en disco (game_server.py, POST /save-config) ----
@@ -2484,11 +2566,102 @@
         // loadMapEditorState() (ya existentes, sin tocar) son quienes de verdad aplican
         // estos valores al juego, leyendo de acá — así el archivo es una fuente más
         // para las mismas dos claves de siempre, no un camino paralelo nuevo.
+        function applyParametersFromExport(params) {
+            if (!params || typeof params !== 'object') return;
+
+            // Parámetros del jugador
+            if (params.player) {
+                if (params.player.maxHealth !== undefined) PLAYER_MAX_HEALTH_BASE = params.player.maxHealth;
+                if (params.player.meleeDamage !== undefined) PLAYER_MELEE_DAMAGE = params.player.meleeDamage;
+                if (params.player.speed !== undefined) PLAYER_SPEED = params.player.speed;
+                if (params.player.attackCooldown !== undefined) PLAYER_ATTACK_COOLDOWN = params.player.attackCooldown;
+                if (params.player.visionRadius !== undefined) PLAYER_VISION_RADIUS = params.player.visionRadius;
+                if (params.player.glowRadius !== undefined) PLAYER_GLOW_RADIUS = params.player.glowRadius;
+                if (params.player.glowColor !== undefined) PLAYER_GLOW_COLOR = params.player.glowColor;
+            }
+
+            // Parámetros de trampas
+            if (params.traps) {
+                if (params.traps.saw) {
+                    if (params.traps.saw.damage !== undefined) SAW_TRAP_DAMAGE = params.traps.saw.damage;
+                    if (params.traps.saw.enemyDamagePct !== undefined) SAW_TRAP_ENEMY_DAMAGE_PCT = params.traps.saw.enemyDamagePct;
+                    if (params.traps.saw.interval !== undefined) SAW_TRAP_INTERVAL = params.traps.saw.interval;
+                    if (params.traps.saw.reversed !== undefined) sawTrapReversed = params.traps.saw.reversed;
+                }
+                if (params.traps.spike) {
+                    if (params.traps.spike.damage !== undefined) SPIKE_TRAP_DAMAGE = params.traps.spike.damage;
+                    if (params.traps.spike.delay !== undefined) SPIKE_TRAP_DELAY = params.traps.spike.delay;
+                }
+                if (params.traps.blue) {
+                    if (params.traps.blue.damage !== undefined) BLUE_TRAP_DAMAGE = params.traps.blue.damage;
+                    if (params.traps.blue.size !== undefined) BLUE_TRAP_SIZE = params.traps.blue.size;
+                    if (params.traps.blue.freezeDuration !== undefined) BLUE_TRAP_FREEZE_DURATION = params.traps.blue.freezeDuration;
+                }
+                if (params.traps.fire) {
+                    if (params.traps.fire.damage !== undefined) FIRE_TRAP_DAMAGE = params.traps.fire.damage;
+                }
+            }
+
+            // Parámetros de enemigos
+            if (params.enemies) {
+                if (params.enemies.normal) {
+                    if (params.enemies.normal.maxHealth !== undefined) ENEMY_TYPES.normal.maxHealth = params.enemies.normal.maxHealth;
+                    if (params.enemies.normal.armor !== undefined) ENEMY_TYPES.normal.armor = params.enemies.normal.armor;
+                    if (params.enemies.normal.speed !== undefined) ENEMY_TYPES.normal.speed = params.enemies.normal.speed;
+                    if (params.enemies.normal.chargeTime !== undefined) ENEMY_TYPES.normal.chargeTime = params.enemies.normal.chargeTime;
+                    if (params.enemies.normal.attackDamage !== undefined) ENEMY_TYPES.normal.attackDamage = params.enemies.normal.attackDamage;
+                }
+                if (params.enemies.tanque) {
+                    if (params.enemies.tanque.maxHealth !== undefined) ENEMY_TYPES.tanque.maxHealth = params.enemies.tanque.maxHealth;
+                    if (params.enemies.tanque.armor !== undefined) ENEMY_TYPES.tanque.armor = params.enemies.tanque.armor;
+                    if (params.enemies.tanque.speed !== undefined) ENEMY_TYPES.tanque.speed = params.enemies.tanque.speed;
+                    if (params.enemies.tanque.chargeTime !== undefined) ENEMY_TYPES.tanque.chargeTime = params.enemies.tanque.chargeTime;
+                    if (params.enemies.tanque.attackDamage !== undefined) ENEMY_TYPES.tanque.attackDamage = params.enemies.tanque.attackDamage;
+                }
+                if (params.enemies.mago) {
+                    if (params.enemies.mago.maxHealth !== undefined) ENEMY_TYPES.mago.maxHealth = params.enemies.mago.maxHealth;
+                    if (params.enemies.mago.armor !== undefined) ENEMY_TYPES.mago.armor = params.enemies.mago.armor;
+                    if (params.enemies.mago.speed !== undefined) ENEMY_TYPES.mago.speed = params.enemies.mago.speed;
+                    if (params.enemies.mago.chargeTime !== undefined) ENEMY_TYPES.mago.chargeTime = params.enemies.mago.chargeTime;
+                    if (params.enemies.mago.projectileSpeed !== undefined) ENEMY_TYPES.mago.projectileSpeed = params.enemies.mago.projectileSpeed;
+                    if (params.enemies.mago.projectileDamage !== undefined) ENEMY_TYPES.mago.projectileDamage = params.enemies.mago.projectileDamage;
+                }
+            }
+
+            // HP Wall
+            if (params.hpWall) {
+                if (params.hpWall.maxHealth !== undefined) HP_WALL_MAX_HEALTH = params.hpWall.maxHealth;
+            }
+
+            // Iluminación y visuales
+            if (params.torch) {
+                if (params.torch.lightRadius !== undefined) TORCH_LIGHT_RADIUS = params.torch.lightRadius;
+                if (params.torch.lightColor !== undefined) TORCH_LIGHT_COLOR = params.torch.lightColor;
+                if (params.torch.useGeneratedGlow !== undefined) TORCH_USE_GENERATED_GLOW = params.torch.useGeneratedGlow;
+            }
+            if (params.fountain) {
+                if (params.fountain.lightRadius !== undefined) FOUNTAIN_LIGHT_RADIUS = params.fountain.lightRadius;
+                if (params.fountain.lightColor !== undefined) FOUNTAIN_LIGHT_COLOR = params.fountain.lightColor;
+            }
+            if (params.ambient) {
+                if (params.ambient.shadowOpacity !== undefined) AMBIENT_SHADOW_OPACITY = params.ambient.shadowOpacity;
+            }
+
+            // Textos especiales
+            if (params.texts) {
+                if (params.texts.specialWallFireHint !== undefined) SPECIAL_WALL_HINT_TEXT_FIRE = params.texts.specialWallFireHint;
+                if (params.texts.specialWallIceHint !== undefined) SPECIAL_WALL_HINT_TEXT_ICE = params.texts.specialWallIceHint;
+                if (params.texts.specialWallMagicHint !== undefined) SPECIAL_WALL_HINT_TEXT_MAGIC = params.texts.specialWallMagicHint;
+                if (params.texts.doorLockedText !== undefined) DOOR_LOCKED_TEXT = params.texts.doorLockedText;
+            }
+        }
+
         function applyCombinedConfigData(data) {
             if (!data || typeof data !== 'object') return;
             try {
                 if (data.editorSettings) localStorage.setItem('cripta_nekkman_editor_settings_v1', JSON.stringify(data.editorSettings));
                 if (data.mapEdits) localStorage.setItem('cripta_nekkman_map_edits_v1', JSON.stringify(data.mapEdits));
+                if (data.parameters) applyParametersFromExport(data.parameters);
             } catch (e) { /* localStorage lleno/bloqueado — no crítico */ }
         }
 
