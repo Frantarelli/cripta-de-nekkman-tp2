@@ -3684,6 +3684,7 @@
         // empieza a curarse solo hasta la vida máxima (no editable por ahora).
         const PLAYER_REGEN_DELAY = 5000; // ms sin recibir daño antes de empezar a curar
         const PLAYER_REGEN_RATE = 5; // HP por segundo mientras regenera
+        const HEALING_SPEED_MULTIPLIER = 2.0; // Multiplicador de velocidad de curación (2.0 = 2x más rápida)
 
         // ---- Hechizos: se seleccionan desde la barra de abajo y se aplican con un
         // click sobre un enemigo. Cada uno tiene su propio cooldown independiente. ----
@@ -6294,7 +6295,7 @@
             // Regeneración pasiva: si pasaron 5+ segundos sin recibir daño, cura de a
             // poco (por segundo real, no por frame, para que no dependa de los FPS).
             if (!gameOver && playerHealth > 0 && playerHealth < maxHealth && (this.time.now - lastDamageTime) > PLAYER_REGEN_DELAY) {
-                playerHealth = Math.min(maxHealth, playerHealth + PLAYER_REGEN_RATE * (delta / 1000));
+                playerHealth = Math.min(maxHealth, playerHealth + PLAYER_REGEN_RATE * HEALING_SPEED_MULTIPLIER * (delta / 1000));
             }
 
             updateSpellBarUI.call(this);
