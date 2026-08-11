@@ -3222,6 +3222,11 @@
             const trapTarget = (!target && !wallTarget && spellKey === 'immobilize')
                 ? blueTrapRects.find(t => rectContainsPoint(t.rect, worldX, worldY))
                 : null;
+            // Sierra: también solo Inmovilizar la puede frizar. Se chequea junto con trapTarget
+            // (misma prioridad de área, pero diferente estructura de datos).
+            const sawTarget = (!target && !wallTarget && !trapTarget && spellKey === 'immobilize')
+                ? activeSaws.find(s => rectContainsPoint(s.obj, worldX, worldY))
+                : null;
 
             if (target) {
                 castSpellOnTarget(spellKey, target); // aplica daño/inmovilizar + fija el cooldown
@@ -3232,6 +3237,10 @@
             } else if (trapTarget) {
                 trapTarget.rect.frozenUntil = scene.time.now + BLUE_TRAP_FREEZE_DURATION;
                 spawnSpellImpact(spellKey, trapTarget.rect.x, trapTarget.rect.y, true);
+                spellCooldownEndsAt[spellKey] = scene.time.now + spell.cooldown;
+            } else if (sawTarget) {
+                sawTarget.frozenUntil = scene.time.now + BLUE_TRAP_FREEZE_DURATION;
+                spawnSpellImpact(spellKey, sawTarget.obj.x, sawTarget.obj.y, true);
                 spellCooldownEndsAt[spellKey] = scene.time.now + spell.cooldown;
             } else {
                 spawnSpellImpact(spellKey, worldX, worldY, false);
@@ -7837,7 +7846,7 @@
             } else {
                 obj.setDisplaySize(CELL_SIZE, CELL_SIZE * 2);
             }
-            activeSaws.push({ obj, visual, dirX, dirY, speed, remaining: travelLength, hitPlayer: false, hitEnemies: new Set() });
+            activeSaws.push({ obj, visual, dirX, dirY, speed, remaining: travelLength, hitPlayer: false, hitEnemies: new Set(), frozenUntil: 0 });
         }
 
         // Se llama una vez por frame desde updateGame(). Primero revisa si algún riel
@@ -7855,7 +7864,24 @@
 
             for (let i = activeSaws.length - 1; i >= 0; i--) {
                 const saw = activeSaws[i];
-                const step = (saw.speed * delta) / 1000;
+                const now = scene.time.now;
+                const frozen = now < saw.frozenUntil;
+
+                // Aplicar tint celeste y ralentizar si está congelada, o revertir si se descongela
+                if (frozen !== (saw.__wasFrozen === true)) {
+                    saw.__wasFrozen = frozen;
+                    if (frozen) {
+                        saw.obj.setTint(BLUE_TRAP_FROZEN_TINT);
+                        if (saw.visual) saw.visual.setTint(BLUE_TRAP_FROZEN_TINT);
+                    } else {
+                        saw.obj.clearTint();
+                        if (saw.visual) saw.visual.clearTint();
+                    }
+                }
+
+                // Calcular speed efectiva: ralentizada si congelada
+                const effectiveSpeed = frozen ? saw.speed * BLUE_TRAP_FROZEN_TIME_SCALE : saw.speed;
+                const step = (effectiveSpeed * delta) / 1000;
                 saw.obj.x += saw.dirX * step;
                 saw.obj.y += saw.dirY * step;
                 // `visual` (solo existe para el riel horizontal, ver spawnSaw) sigue a
