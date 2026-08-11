@@ -7911,8 +7911,9 @@
             const charge = charges.get(key);
             if (!isOn) {
                 if (!charge) return false;
-                charges.delete(key); // se bajó antes de tiempo: sin daño, vuelve a "sin cargar"
-                return true;
+                // Jugador se fue pero trampa sigue cargando si ya estaba en estado 'charging'.
+                // No reseteamos ni borramos — continúa hasta activarse completamente.
+                return false;
             }
             if (!charge) {
                 charges.set(key, { phase: 'charging', since: now });
