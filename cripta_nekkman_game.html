@@ -4261,6 +4261,7 @@
         // un tanque (ver computeEnemyPath) — el tanque cruza las trampas de pinches
         // derecho, sin rodearlas; magos y esqueletos normales sí las evitan.
         const SPIKE_TRAP_COST_PENALTY = 60;
+        const SAW_TRAP_COST_PENALTY = 120; // alto costo para que los magos rodeen las sierras
         const KNOCKBACK_SPEED = 260; // impulso del "saltito" hacia atrás al tocar una trampa azul
         const KNOCKBACK_DURATION = 14; // frames durante los que no se controla el movimiento (jugador o enemigo)
         const PLAYER_COLOR = 0x00ff00;
@@ -4787,6 +4788,7 @@
         let allWallRectsCache = []; // pilares+bloques+hpWalls+specialWalls vivos combinados — ver buildBlockedGrid/getNearbyWalls
         let blueTrapCells;
         let spikeTrapCells; // ver buildSpikeTrapCostCells — mismo mecanismo, pero opcional según el tipo de enemigo
+        let sawTrapCells; // celdas de sierras — los magos las evitan con costo extra
         let torchVisuals; // [{ conf, sprite, glow }] — ver createTorchVisual
         let checkpointState; // [{ conf, rect }] — ver createCheckpointVisual
         let wallSkinVisuals; // [{ conf, image }] — ver createWallSkinVisual
@@ -5672,6 +5674,7 @@
             // Arcade, porque nace y muere todo el tiempo (spawn periódico).
             activeRoom.sawTraps = activeRoom.sawTraps || [];
             sawTrapState = activeRoom.sawTraps.map(conf => createSawTrapVisual(this, conf));
+            buildSawTrapCostCells();
             activeSaws = [];
 
             // Trampa de Pinches: un bloque por entrada, tampoco entra a ningún grupo
@@ -6038,11 +6041,13 @@
                 aggroUntil: 0,
                 lastKnownPlayerX: x,
                 lastKnownPlayerY: y,
+                lastKnownPlayerPos: null, // última posición vista antes de perder LOS, para perseguir incluso oculto
                 lastWalkSoundTime: 0, // ver updateEnemyInstance / SOUNDS.skeletonWalk
                 // Lado fijo (-1/1) del rodeo cuando flanquea por congestión (ver
                 // computeFlankTarget): sorteado una sola vez, así no titubea entre
                 // izquierda/derecha de un recálculo de ruta al siguiente.
-                flankSide: Math.random() < 0.5 ? -1 : 1
+                flankSide: Math.random() < 0.5 ? -1 : 1,
+                stuckFrameCounter: 0 // detecta si está congelado N frames sin moverse para recalcular ruta
             };
 
             obj.__enemyInstance = inst; // para resolver la instancia desde callbacks de colisión
@@ -6778,6 +6783,20 @@
                 }
             } else {
                 inst.obj.body.setVelocity(0, 0);
+            }
+
+            // Destrabado mejorado: si el enemigo está persiguiendo pero no se puede mover
+            // (congelado N frames), fuerza un recálculo de ruta para escapar obstáculos.
+            const isMoving = inst.obj.body.velocity.x !== 0 || inst.obj.body.velocity.y !== 0;
+            if (inst.aggro && inst.path.length > 0 && !isMoving && !isImmobilized && !inst.isCharging && !inst.isAttacking) {
+                inst.stuckFrameCounter++;
+                if (inst.stuckFrameCounter > 15) { // ~15 frames = 0.25s a 60 FPS
+                    inst.path = [];
+                    inst.pathIndex = 0;
+                    inst.stuckFrameCounter = 0;
+                }
+            } else {
+                inst.stuckFrameCounter = 0;
             }
 
             // Sprite animado: caminar solo mientras realmente se está moviendo (si está
@@ -8788,6 +8807,33 @@
             });
         }
 
+        function buildSawTrapCostCells() {
+            sawTrapCells = new Set();
+            const margin = 12;
+
+            if (!sawTrapState) return;
+            sawTrapState.forEach(entry => {
+                const conf = entry.conf;
+                const halfW = conf.w / 2;
+                const halfH = conf.h / 2;
+                const left = conf.x - halfW - margin;
+                const right = conf.x + halfW + margin;
+                const top = conf.y - halfH - margin;
+                const bottom = conf.y + halfH + margin;
+
+                const colStart = Math.max(0, Math.floor(left / CELL_SIZE));
+                const colEnd = Math.min(GRID_COLS - 1, Math.floor(right / CELL_SIZE));
+                const rowStart = Math.max(0, Math.floor(top / CELL_SIZE));
+                const rowEnd = Math.min(GRID_ROWS - 1, Math.floor(bottom / CELL_SIZE));
+
+                for (let col = colStart; col <= colEnd; col++) {
+                    for (let row = rowStart; row <= rowEnd; row++) {
+                        sawTrapCells.add(col + ',' + row);
+                    }
+                }
+            });
+        }
+
         // Repinta TODA la niebla ya explorada de la sala activa a partir de su memoria
         // permanente (atenuada) — usado al armar la sala. Las antorchas NO participan acá
         // a propósito: solo iluminan (glow + sombra ambiente), nunca revelan ni alteran la
@@ -9098,7 +9144,7 @@
         // para que los enemigos caminen igual que el jugador (4 direcciones).
         // avoidSpikes: false para el Tanque (cruza las trampas de pinches derecho, sin
         // rodearlas) — ver computeEnemyPath, que es quien decide esto según el tipo.
-        function getNeighbors(col, row, avoidSpikes) {
+        function getNeighbors(col, row, avoidSpikes, avoidSaws) {
             const dirs = [
                 { dc: 1, dr: 0, cost: 1 },
                 { dc: -1, dr: 0, cost: 1 },
@@ -9117,12 +9163,16 @@
                 // el pathfinding preferirá rodearlas salvo que cruzarlas sea claramente
                 // más corto para seguir alcanzando al jugador. Pinches: mismo criterio,
                 // pero solo para quien avoidSpikes=true (el Tanque las cruza gratis).
+                // Sierras: mismo criterio, solo para Magos (avoidSaws=true).
                 let cost = dir.cost;
                 if (blueTrapCells.has(newCol + ',' + newRow)) {
                     cost += BLUE_TRAP_COST_PENALTY;
                 }
                 if (avoidSpikes && spikeTrapCells && spikeTrapCells.has(newCol + ',' + newRow)) {
                     cost += SPIKE_TRAP_COST_PENALTY;
+                }
+                if (avoidSaws && sawTrapCells && sawTrapCells.has(newCol + ',' + newRow)) {
+                    cost += SAW_TRAP_COST_PENALTY;
                 }
 
                 neighbors.push({ col: newCol, row: newRow, cost });
@@ -9163,7 +9213,7 @@
             return { col, row };
         }
 
-        function findPath(startCol, startRow, endCol, endRow, avoidSpikes) {
+        function findPath(startCol, startRow, endCol, endRow, avoidSpikes, avoidSaws) {
             const target = findNearestOpenCell(endCol, endRow);
             endCol = target.col;
             endRow = target.row;
@@ -9204,7 +9254,7 @@
                 closedSet.add(curKey);
                 if (++expansions > MAX_EXPANSIONS) break;
 
-                const neighbors = getNeighbors(current[1], current[2], avoidSpikes);
+                const neighbors = getNeighbors(current[1], current[2], avoidSpikes, avoidSaws);
 
                 for (const neighbor of neighbors) {
                     const neighborKey = neighbor.col + ',' + neighbor.row;
@@ -9238,8 +9288,10 @@
 
             // El Tanque cruza las trampas de pinches derecho (no las rodea); Mago y
             // Normal sí las evitan, mismo criterio que la trampa azul/giratoria.
+            // Los Magos también evitan las sierras.
             const avoidSpikes = inst.typeKey !== 'tanque';
-            const path = findPath(start.col, start.row, end.col, end.row, avoidSpikes);
+            const avoidSaws = inst.typeKey === 'mago';
+            const path = findPath(start.col, start.row, end.col, end.row, avoidSpikes, avoidSaws);
 
             inst.path = path.map(cell => cellToWorld(cell.col, cell.row));
             inst.pathIndex = 0;
@@ -9366,8 +9418,10 @@
                     inst.aggroUntil = now + AGGRO_MEMORY_MS;
                     inst.lastKnownPlayerX = player.x;
                     inst.lastKnownPlayerY = player.y;
+                    inst.lastKnownPlayerPos = { x: player.x, y: player.y };
                 } else if (inst.aggro && now > inst.aggroUntil) {
                     inst.aggro = false;
+                    inst.lastKnownPlayerPos = null; // olvidar posición al rendirse
                 }
 
                 if (!inst.aggro) {
@@ -9377,10 +9431,14 @@
                 }
 
                 // En aggro: va hacia tu última posición conocida (que es la actual si
-                // todavía te está viendo) — salvo Normal (flanquea si hay congestión de
+                // todavía te está viendo); si pierdes LOS pero tiene lastKnownPlayerPos,
+                // va a esa posición. Salvo Normal (flanquea si hay congestión de
                 // aliados, ver computeFlankTarget) y Mago (kiting, ver computeMageTarget).
                 // Tanque no se toca: persecución directa de siempre.
-                let target = { x: inst.lastKnownPlayerX, y: inst.lastKnownPlayerY };
+                let targetPos = inst.lastKnownPlayerPos
+                    ? inst.lastKnownPlayerPos
+                    : { x: inst.lastKnownPlayerX, y: inst.lastKnownPlayerY };
+                let target = { x: targetPos.x, y: targetPos.y };
                 if (inst.typeKey === 'normal') {
                     target = computeFlankTarget(inst, target.x, target.y);
                 } else if (inst.typeKey === 'mago') {
@@ -10095,6 +10153,7 @@
             activeRoom.sawTraps = activeRoom.sawTraps || [];
             activeRoom.sawTraps.push(conf);
             sawTrapState.push(createSawTrapVisual(scene, conf));
+            buildSawTrapCostCells();
             saveMapEditorState();
         }
 
@@ -10456,15 +10515,15 @@
                 if (ci !== -1) activeRoom.blueTraps.splice(ci, 1);
                 if (!mapEditorBatching) buildBlueTrapCostCells();
             } else if (kind === 'sawtrap') {
-                // No hace falta rebuild de blockedGrid/costo: el riel no bloquea nada ni
-                // pesa distinto para el pathfinding. Las sierras YA en vuelo de este riel
-                // (si había alguna) se dejan terminar solas su recorrido.
+                // Los Magos rodean las sierras, así que deben recalcularse los costos
+                // cuando se borran (ver buildSawTrapCostCells).
                 entry.bg.destroy();
                 entry.railTiles.forEach(spr => spr.destroy());
                 entry.maskTiles.forEach(m => m.sprite.destroy());
                 sawTrapState.splice(sawTrapState.indexOf(entry), 1);
                 const ciSaw = activeRoom.sawTraps.indexOf(entry.conf);
                 if (ciSaw !== -1) activeRoom.sawTraps.splice(ciSaw, 1);
+                if (!mapEditorBatching) buildSawTrapCostCells();
                 if (sawSelectPanelEntry === entry) closeSawSelectPanel();
             } else if (kind === 'spiketrap') {
                 entry.sprite.destroy();
@@ -10556,10 +10615,11 @@
             } else if (kind === 'sawtrap') {
                 // Varios sprites (tapas + tramos + máscaras), no uno solo — se mueven
                 // todos juntos vía layoutSawTrapVisual. Solo reposiciona, no cambia
-                // largo/orientación/cantidad de tramos.
+                // largo/orientación/cantidad de tramos. Recalcular costo para magos.
                 entry.conf.x = sx;
                 entry.conf.y = sy;
                 layoutSawTrapVisual(entry);
+                if (!mapEditorBatching) buildSawTrapCostCells();
             } else if (kind === 'spiketrap') {
                 entry.conf.x = sx;
                 entry.conf.y = sy;
