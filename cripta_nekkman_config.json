@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "savedAt": "2026-08-10T23:02:15.106Z",
+  "savedAt": "2026-08-12T11:40:33.368Z",
   "editorSettings": {
     "ctrl-player-cooldown": "40",
     "ctrl-player-damage": "15",
@@ -2714,90 +2714,6 @@
           "textureKey": null
         },
         {
-          "x": 1840,
-          "y": 1360,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1904,
-          "y": 1328,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1872,
-          "y": 1328,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1936,
-          "y": 1328,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1968,
-          "y": 1296,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 2000,
-          "y": 1296,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 2064,
-          "y": 1296,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 2032,
-          "y": 1296,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 2128,
-          "y": 1328,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 2096,
-          "y": 1328,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 2160,
-          "y": 1328,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 2192,
-          "y": 1360,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
           "x": 2224,
           "y": 1392,
           "w": 32,
@@ -4739,13 +4655,6 @@
         {
           "x": 48,
           "y": 1424,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 48,
-          "y": 1456,
           "w": 32,
           "h": 32,
           "textureKey": null
@@ -12501,13 +12410,6 @@
         },
         {
           "x": 1872,
-          "y": 1360,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1872,
           "y": 1392,
           "w": 32,
           "h": 32,
@@ -12522,13 +12424,6 @@
         },
         {
           "x": 1904,
-          "y": 1360,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1904,
           "y": 1392,
           "w": 32,
           "h": 32,
@@ -12543,13 +12438,6 @@
         },
         {
           "x": 1936,
-          "y": 1360,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1936,
           "y": 1392,
           "w": 32,
           "h": 32,
@@ -12564,13 +12452,6 @@
         },
         {
           "x": 1968,
-          "y": 1360,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1968,
           "y": 1392,
           "w": 32,
           "h": 32,
@@ -12585,13 +12466,6 @@
         },
         {
           "x": 2000,
-          "y": 1360,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 2000,
           "y": 1392,
           "w": 32,
           "h": 32,
@@ -12606,13 +12480,6 @@
         },
         {
           "x": 2032,
-          "y": 1360,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 2032,
           "y": 1392,
           "w": 32,
           "h": 32,
@@ -12627,13 +12494,6 @@
         },
         {
           "x": 2064,
-          "y": 1360,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 2064,
           "y": 1392,
           "w": 32,
           "h": 32,
@@ -12648,13 +12508,6 @@
         },
         {
           "x": 2096,
-          "y": 1360,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 2096,
           "y": 1392,
           "w": 32,
           "h": 32,
@@ -12669,13 +12522,6 @@
         },
         {
           "x": 2128,
-          "y": 1360,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 2128,
           "y": 1392,
           "w": 32,
           "h": 32,
@@ -12684,13 +12530,6 @@
         {
           "x": 2128,
           "y": 1424,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 2160,
-          "y": 1360,
           "w": 32,
           "h": 32,
           "textureKey": null
@@ -12719,34 +12558,6 @@
         {
           "x": 1808,
           "y": 1392,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1968,
-          "y": 1328,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 2000,
-          "y": 1328,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 2032,
-          "y": 1328,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 2064,
-          "y": 1328,
           "w": 32,
           "h": 32,
           "textureKey": null
@@ -20251,6 +20062,300 @@
         {
           "x": 816,
           "y": 1712,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 464,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 464,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 496,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 496,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 528,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 528,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 560,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 560,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 304,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 304,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 336,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 336,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 368,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 368,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 400,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 400,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 432,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 432,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 464,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 464,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 80,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 112,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 112,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 144,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 144,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 176,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 176,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 208,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 208,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 240,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 240,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 272,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 272,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 304,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 304,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 336,
+          "y": 1424,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 336,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 48,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 80,
+          "y": 1456,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 560,
+          "y": 1168,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 592,
+          "y": 1168,
+          "w": 32,
+          "h": 32,
+          "textureKey": null
+        },
+        {
+          "x": 624,
+          "y": 1168,
           "w": 32,
           "h": 32,
           "textureKey": null
@@ -20789,42 +20894,6 @@
           "variantKey": "breakable_caja_8"
         },
         {
-          "id": "wall_hp_editor_1786314546017_93533",
-          "x": 2240,
-          "y": 960,
-          "w": 64,
-          "h": 64,
-          "maxHealth": 100,
-          "variantKey": "breakable_cajagrande_2"
-        },
-        {
-          "id": "wall_hp_editor_1786314552342_10119",
-          "x": 2304,
-          "y": 960,
-          "w": 64,
-          "h": 64,
-          "maxHealth": 100,
-          "variantKey": "breakable_cajagrande_1"
-        },
-        {
-          "id": "wall_hp_editor_1786314570821_89640",
-          "x": 2016,
-          "y": 1248,
-          "w": 64,
-          "h": 64,
-          "maxHealth": 100,
-          "variantKey": "breakable_jarron_7"
-        },
-        {
-          "id": "wall_hp_editor_1786314572433_77881",
-          "x": 2016,
-          "y": 1056,
-          "w": 64,
-          "h": 64,
-          "maxHealth": 100,
-          "variantKey": "breakable_jarron_7"
-        },
-        {
           "id": "wall_hp_editor_1786314646152_35705",
           "x": 192,
           "y": 2176,
@@ -20917,7 +20986,7 @@
         {
           "id": "wall_hp_editor_1786400095439_53903",
           "x": 96,
-          "y": 1152,
+          "y": 1120,
           "w": 64,
           "h": 64,
           "maxHealth": 100,
@@ -20926,7 +20995,7 @@
         {
           "id": "wall_hp_editor_1786400099789_74804",
           "x": 160,
-          "y": 1152,
+          "y": 1120,
           "w": 64,
           "h": 64,
           "maxHealth": 100,
@@ -20994,6 +21063,33 @@
           "h": 64,
           "maxHealth": 15,
           "variantKey": "breakable_caja_1"
+        },
+        {
+          "id": "wall_hp_editor_1786534117060_87747",
+          "x": 2016,
+          "y": 1344,
+          "w": 64,
+          "h": 64,
+          "maxHealth": 30,
+          "variantKey": "breakable_cajagrande_2"
+        },
+        {
+          "id": "wall_hp_editor_1786534140984_76485",
+          "x": 2304,
+          "y": 960,
+          "w": 64,
+          "h": 64,
+          "maxHealth": 30,
+          "variantKey": "breakable_caja_8"
+        },
+        {
+          "id": "wall_hp_editor_1786534211367_22217",
+          "x": 2240,
+          "y": 960,
+          "w": 64,
+          "h": 64,
+          "maxHealth": 30,
+          "variantKey": "breakable_caja_7"
         }
       ],
       "specialWalls": [
@@ -21268,24 +21364,6 @@
           "color": 10170623
         },
         {
-          "id": "wall_special_editor_1786401304384_53601",
-          "x": 656,
-          "y": 1424,
-          "w": 32,
-          "h": 32,
-          "breaksWith": "magic",
-          "color": 10170623
-        },
-        {
-          "id": "wall_special_editor_1786401304384_78900",
-          "x": 656,
-          "y": 1456,
-          "w": 32,
-          "h": 32,
-          "breaksWith": "magic",
-          "color": 10170623
-        },
-        {
           "id": "wall_special_editor_1786401486291_36550",
           "x": 80,
           "y": 1168,
@@ -21362,10 +21440,6 @@
         {
           "x": 2256,
           "y": 1168
-        },
-        {
-          "x": 1808,
-          "y": 1296
         },
         {
           "x": 1808,
@@ -21890,18 +21964,6 @@
           "size": "small"
         },
         {
-          "id": "torch_1786314978196_55753",
-          "x": 2224,
-          "y": 816,
-          "size": "small"
-        },
-        {
-          "id": "torch_1786314978614_91901",
-          "x": 2320,
-          "y": 816,
-          "size": "small"
-        },
-        {
           "id": "torch_1786315360834_70774",
           "x": 80,
           "y": 592,
@@ -21944,12 +22006,6 @@
           "size": "large"
         },
         {
-          "id": "torch_1786400269373_92202",
-          "x": 80,
-          "y": 1456,
-          "size": "large"
-        },
-        {
           "id": "torch_1786401389004_64977",
           "x": 1040,
           "y": 1456,
@@ -21964,159 +22020,118 @@
       ],
       "checkpoints": [
         {
-          "id": "checkpoint_1786315917821_96923",
-          "x": 2224,
-          "y": 848
-        },
-        {
-          "id": "checkpoint_1786315917821_5988",
-          "x": 2224,
-          "y": 880
-        },
-        {
-          "id": "checkpoint_1786315917821_29975",
-          "x": 2224,
-          "y": 912
-        },
-        {
-          "id": "checkpoint_1786315917821_86824",
-          "x": 2224,
-          "y": 944
-        },
-        {
-          "id": "checkpoint_1786315917821_58913",
-          "x": 2256,
-          "y": 848
-        },
-        {
-          "id": "checkpoint_1786315917821_96920",
-          "x": 2256,
-          "y": 880
-        },
-        {
-          "id": "checkpoint_1786315917821_73759",
-          "x": 2256,
-          "y": 912
-        },
-        {
-          "id": "checkpoint_1786315917822_76669",
-          "x": 2256,
-          "y": 944
-        },
-        {
-          "id": "checkpoint_1786315917822_48364",
-          "x": 2288,
-          "y": 848
-        },
-        {
-          "id": "checkpoint_1786315917822_86631",
-          "x": 2288,
-          "y": 880
-        },
-        {
-          "id": "checkpoint_1786315917822_85145",
-          "x": 2288,
-          "y": 912
-        },
-        {
-          "id": "checkpoint_1786315917822_47209",
-          "x": 2288,
-          "y": 944
-        },
-        {
-          "id": "checkpoint_1786315917822_4592",
-          "x": 2320,
-          "y": 848
-        },
-        {
-          "id": "checkpoint_1786315917822_92755",
-          "x": 2320,
-          "y": 880
-        },
-        {
-          "id": "checkpoint_1786315917822_20453",
-          "x": 2320,
-          "y": 912
-        },
-        {
-          "id": "checkpoint_1786315917822_37376",
-          "x": 2320,
-          "y": 944
-        },
-        {
           "id": "checkpoint_1786401597608_51288",
           "x": 1040,
-          "y": 1936
+          "y": 1936,
+          "number": 3
         },
         {
           "id": "checkpoint_1786401597609_35876",
           "x": 1040,
-          "y": 1968
+          "y": 1968,
+          "number": 3
         },
         {
           "id": "checkpoint_1786401597609_5484",
           "x": 1040,
-          "y": 2000
+          "y": 2000,
+          "number": 3
         },
         {
           "id": "checkpoint_1786401603301_88528",
           "x": 1584,
-          "y": 1488
+          "y": 1488,
+          "number": 4
         },
         {
           "id": "checkpoint_1786401603301_30979",
           "x": 1616,
-          "y": 1488
+          "y": 1488,
+          "number": 4
         },
         {
           "id": "checkpoint_1786401603301_75200",
           "x": 1648,
-          "y": 1488
+          "y": 1488,
+          "number": 4
         },
         {
           "id": "checkpoint_1786401603302_67818",
           "x": 1680,
-          "y": 1488
+          "y": 1488,
+          "number": 4
         },
         {
           "id": "checkpoint_1786401608567_35790",
           "x": 1232,
-          "y": 496
+          "y": 496,
+          "number": 6
         },
         {
           "id": "checkpoint_1786401608567_58599",
           "x": 1232,
-          "y": 528
+          "y": 528,
+          "number": 6
         },
         {
           "id": "checkpoint_1786401608567_51518",
           "x": 1232,
-          "y": 560
+          "y": 560,
+          "number": 6
         },
         {
           "id": "checkpoint_1786401608567_66037",
           "x": 1232,
-          "y": 592
+          "y": 592,
+          "number": 6
         },
         {
           "id": "checkpoint_1786401611956_28735",
           "x": 80,
-          "y": 720
+          "y": 720,
+          "number": 7
         },
         {
           "id": "checkpoint_1786401611956_90396",
           "x": 112,
-          "y": 720
+          "y": 720,
+          "number": 7
         },
         {
           "id": "checkpoint_1786401611956_74993",
           "x": 144,
-          "y": 720
+          "y": 720,
+          "number": 7
         },
         {
           "id": "checkpoint_1786401611956_77532",
           "x": 176,
-          "y": 720
+          "y": 720,
+          "number": 7
+        },
+        {
+          "id": "checkpoint_1786534620738_93948",
+          "x": 2224,
+          "y": 880,
+          "number": 5
+        },
+        {
+          "id": "checkpoint_1786534620738_16193",
+          "x": 2256,
+          "y": 880,
+          "number": 5
+        },
+        {
+          "id": "checkpoint_1786534620738_66833",
+          "x": 2288,
+          "y": 880,
+          "number": 5
+        },
+        {
+          "id": "checkpoint_1786534620738_77903",
+          "x": 2320,
+          "y": 880,
+          "number": 5
         }
       ],
       "wallSkins": [],
@@ -22168,13 +22183,14 @@
         },
         {
           "id": "spellbook_editor_1786315423582_5621",
-          "x": 208,
-          "y": 2288,
+          "x": 560,
+          "y": 2480,
           "w": 32,
           "h": 32,
           "unlocksSpell": "magic"
         }
       ],
+      "spellMaps": [],
       "enemySpawns": [
         {
           "type": "normal",
@@ -22353,8 +22369,8 @@
         },
         {
           "type": "tanque",
-          "x": 1200,
-          "y": 560
+          "x": 368,
+          "y": 624
         },
         {
           "type": "normal",
@@ -22419,22 +22435,22 @@
         {
           "type": "normal",
           "x": 656,
-          "y": 1072
+          "y": 1040
         },
         {
           "type": "normal",
-          "x": 496,
-          "y": 1424
+          "x": 464,
+          "y": 1328
         },
         {
           "type": "mago",
-          "x": 624,
-          "y": 1168
+          "x": 656,
+          "y": 1232
         },
         {
           "type": "mago",
           "x": 560,
-          "y": 1136
+          "y": 1104
         }
       ],
       "doors": [
@@ -22459,11 +22475,26 @@
       "fountain": {
         "id": "B",
         "x": 976,
-        "y": 1552
+        "y": 1552,
+        "question": "¿Qué gesto despierta a la fuente?",
+        "options": [
+          {
+            "text": "Verter agua sobre el borde",
+            "isCorrect": false
+          },
+          {
+            "text": "Tocar el centro con la palma abierta",
+            "isCorrect": false
+          },
+          {
+            "text": "Susurrarle una palabra antigua",
+            "isCorrect": false
+          }
+        ]
       },
       "playerStart": {
-        "x": 272,
-        "y": 2320
+        "x": 240,
+        "y": 656
       }
     },
     "sala1": {
@@ -41335,27 +41366,6 @@
         },
         {
           "x": 1168,
-          "y": 624,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1168,
-          "y": 656,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1168,
-          "y": 688,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1168,
           "y": 720,
           "w": 32,
           "h": 32,
@@ -41370,63 +41380,14 @@
         },
         {
           "x": 1200,
-          "y": 624,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1200,
-          "y": 656,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1200,
-          "y": 688,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1200,
-          "y": 720,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1200,
           "y": 752,
           "w": 32,
           "h": 32,
           "textureKey": null
         },
         {
-          "x": 1232,
-          "y": 624,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1232,
-          "y": 656,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1232,
-          "y": 688,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1232,
-          "y": 720,
+          "x": 1040,
+          "y": 496,
           "w": 32,
           "h": 32,
           "textureKey": null
@@ -41440,63 +41401,7 @@
         },
         {
           "x": 1264,
-          "y": 624,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1264,
-          "y": 656,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1264,
-          "y": 688,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1264,
-          "y": 720,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1264,
           "y": 752,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1296,
-          "y": 624,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1296,
-          "y": 656,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1296,
-          "y": 688,
-          "w": 32,
-          "h": 32,
-          "textureKey": null
-        },
-        {
-          "x": 1296,
-          "y": 720,
           "w": 32,
           "h": 32,
           "textureKey": null
@@ -44662,24 +44567,6 @@
           "variantKey": "breakable_caja_6"
         },
         {
-          "id": "wall_hp_editor_1786149340785_84626",
-          "x": 896,
-          "y": 1408,
-          "w": 64,
-          "h": 64,
-          "maxHealth": 30,
-          "variantKey": "breakable_caja_8"
-        },
-        {
-          "id": "wall_hp_editor_1786149343584_2137",
-          "x": 944,
-          "y": 1408,
-          "w": 32,
-          "h": 64,
-          "maxHealth": 15,
-          "variantKey": "breakable_jarron_8"
-        },
-        {
           "id": "wall_hp_editor_1786149627347_69894",
           "x": 1120,
           "y": 1568,
@@ -44712,7 +44599,7 @@
           "y": 1024,
           "w": 64,
           "h": 64,
-          "maxHealth": 100,
+          "maxHealth": 30,
           "variantKey": "breakable_caja_5"
         },
         {
@@ -44721,7 +44608,7 @@
           "y": 608,
           "w": 64,
           "h": 64,
-          "maxHealth": 100,
+          "maxHealth": 30,
           "variantKey": "breakable_caja_7"
         },
         {
@@ -44730,7 +44617,7 @@
           "y": 1248,
           "w": 64,
           "h": 64,
-          "maxHealth": 100,
+          "maxHealth": 30,
           "variantKey": "breakable_cajagrande_1"
         },
         {
@@ -44788,15 +44675,6 @@
           "variantKey": "breakable_caja_8"
         },
         {
-          "id": "wall_hp_editor_1786402663963_32624",
-          "x": 928,
-          "y": 1408,
-          "w": 64,
-          "h": 64,
-          "maxHealth": 30,
-          "variantKey": "breakable_caja_8"
-        },
-        {
           "id": "wall_hp_editor_1786402696753_59796",
           "x": 1360,
           "y": 1184,
@@ -44840,6 +44718,24 @@
           "h": 64,
           "maxHealth": 15,
           "variantKey": "breakable_jarron_9"
+        },
+        {
+          "id": "wall_hp_editor_1786534176145_70391",
+          "x": 896,
+          "y": 1408,
+          "w": 64,
+          "h": 64,
+          "maxHealth": 30,
+          "variantKey": "breakable_cajagrande_2"
+        },
+        {
+          "id": "wall_hp_editor_1786534178051_44517",
+          "x": 944,
+          "y": 1408,
+          "w": 32,
+          "h": 64,
+          "maxHealth": 15,
+          "variantKey": "breakable_caja_1"
         }
       ],
       "specialWalls": [
@@ -45235,47 +45131,56 @@
         {
           "id": "checkpoint_1786402780192_75087",
           "x": 1648,
-          "y": 1456
+          "y": 1456,
+          "number": 1
         },
         {
           "id": "checkpoint_1786402780192_52465",
           "x": 1680,
-          "y": 1456
+          "y": 1456,
+          "number": 1
         },
         {
           "id": "checkpoint_1786402780193_65912",
           "x": 1712,
-          "y": 1456
+          "y": 1456,
+          "number": 1
         },
         {
           "id": "checkpoint_1786402792979_59271",
           "x": 336,
-          "y": 1424
+          "y": 1424,
+          "number": 2
         },
         {
           "id": "checkpoint_1786402792979_66558",
           "x": 368,
-          "y": 1424
+          "y": 1424,
+          "number": 2
         },
         {
           "id": "checkpoint_1786402792979_18385",
           "x": 400,
-          "y": 1424
+          "y": 1424,
+          "number": 2
         },
         {
           "id": "checkpoint_1786402792979_89492",
           "x": 432,
-          "y": 1424
+          "y": 1424,
+          "number": 2
         },
         {
           "id": "checkpoint_1786402792979_31523",
           "x": 464,
-          "y": 1424
+          "y": 1424,
+          "number": 2
         },
         {
           "id": "checkpoint_1786402792979_32086",
           "x": 496,
-          "y": 1424
+          "y": 1424,
+          "number": 2
         }
       ],
       "wallSkins": [],
@@ -45291,6 +45196,7 @@
           "lootSpriteKey": "loot_1"
         }
       ],
+      "spellMaps": [],
       "enemySpawns": [
         {
           "type": "normal",
@@ -45479,66 +45385,112 @@
           ],
           "targetRoom": "nivel2",
           "bannerText": "Entrando al nivel 2"
-        },
-        {
-          "id": "right",
-          "x": 2176,
-          "y": 432,
-          "w": 64,
-          "h": 220,
-          "triggerX": 2528,
-          "triggerY": 432,
-          "triggerW": 64,
-          "triggerH": 220,
-          "requires": [
-            "B"
-          ],
-          "targetRoom": "nivel3",
-          "bannerText": "Entrando al nivel 3"
-        },
-        {
-          "id": "central",
-          "x": 1232,
-          "y": 64,
-          "w": 480,
-          "h": 120,
-          "triggerX": 1232,
-          "triggerY": 30,
-          "triggerW": 480,
-          "triggerH": 60,
-          "requires": [
-            "A",
-            "B",
-            "C"
-          ],
-          "targetRoom": null,
-          "bannerText": null,
-          "isFinalDoor": true,
-          "lockedColor": 4915330,
-          "unlockedColor": 16766720
         }
       ],
       "fountain": {
         "id": "A",
-        "x": 1232,
-        "y": 640,
+        "x": 464,
+        "y": 432,
         "size": 100,
-        "question": "¿Cuál es tu nombre?",
+        "question": "Elegí cómo activar el mecanismo:",
         "options": [
           {
-            "text": "Klegar",
-            "isCorrect": true
+            "text": "Girar la piedra en sentido horario",
+            "isCorrect": false
           },
           {
-            "text": "Otro",
+            "text": "Girar la piedra en sentido antihorario",
+            "isCorrect": false
+          },
+          {
+            "text": "Empujar la piedra hacia adentro",
             "isCorrect": false
           }
         ]
       },
       "playerStart": {
-        "x": 112,
-        "y": 2320
+        "x": 368,
+        "y": 1488
       }
+    }
+  },
+  "parameters": {
+    "player": {
+      "maxHealth": 100,
+      "meleeDamage": 15,
+      "speed": 200,
+      "attackCooldown": 40,
+      "regenDelay": 5000,
+      "regenRate": 5,
+      "visionRadius": 350,
+      "glowRadius": 35,
+      "glowColor": "#fff4d6"
+    },
+    "traps": {
+      "saw": {
+        "damage": 30,
+        "enemyDamagePct": 20,
+        "interval": 2000,
+        "speed": 220,
+        "reversed": false
+      },
+      "spike": {
+        "damage": 15,
+        "delay": 500
+      },
+      "blue": {
+        "damage": 10,
+        "size": 70,
+        "freezeDuration": 3000
+      },
+      "fire": {
+        "damage": 15
+      }
+    },
+    "enemies": {
+      "normal": {
+        "maxHealth": 30,
+        "armor": 0,
+        "speed": 90,
+        "chargeTime": 300,
+        "attackDamage": 20
+      },
+      "tanque": {
+        "maxHealth": 80,
+        "armor": 6,
+        "speed": 55,
+        "chargeTime": 450,
+        "attackDamage": 25
+      },
+      "mago": {
+        "maxHealth": 16,
+        "armor": 0,
+        "speed": 55,
+        "chargeTime": 500,
+        "projectileSpeed": 260,
+        "projectileDamage": 12
+      }
+    },
+    "hpWall": {
+      "maxHealth": 15
+    },
+    "torch": {
+      "lightRadius": 100,
+      "lightColor": "#ff9c1a",
+      "useGeneratedGlow": false
+    },
+    "fountain": {
+      "lightRadius": 90,
+      "lightColor": "#9b6bff"
+    },
+    "ambient": {
+      "shadowOpacity": 0.7
+    },
+    "texts": {
+      "specialWallFireHint": "Esta puerta no puede ser abierta a menos que se use fuego.",
+      "specialWallIceHint": "Esta puerta no puede ser abierta a menos que se use hielo.",
+      "specialWallMagicHint": "Esta puerta no puede ser abierta a menos que se use magia.",
+      "doorLockedText": "La puerta está cerrada"
     }
   }
 }

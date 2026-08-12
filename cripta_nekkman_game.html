@@ -4375,10 +4375,9 @@
         // destraba la puerta 'left' de esa misma sala (-> Nivel 2), la fuente B del
         // Nivel 2 destraba la única puerta de ESE nivel (-> Nivel 3), y la fuente C del
         // Nivel 3 destraba la puerta final de ESE nivel (isFinalDoor, termina el
-        // juego). Las puertas 'right'/'central' que quedan en Sala 1 son el mecanismo
-        // viejo (pre-progresión-lineal): ya no son alcanzables jugando normal (no hay
-        // puerta de vuelta a Sala 1 en Nivel 2/3), se dejan sin tocar nomás por las
-        // dudas — no estorban.
+        // juego). Sala 1 tiene una única puerta ('left') a propósito — las viejas
+        // 'right'/'central' (mecanismo A+B+C pre-progresión-lineal) se sacaron del
+        // todo porque generaban confusión con cuál puerta era la de verdad.
         //
         // pillars/blueTraps: {x,y,w,h} — w/h son opcionales (default 80x80, como los
         // pozos originales); con w/h explícitos sirven para armar paredes de pasillo
@@ -4533,27 +4532,17 @@
                         { text: 'Empujar la piedra hacia adentro', isCorrect: false }
                     ]
                 }, // posición y tamaño visual x2.5 (la fuente central es más grande que las otras 2)
+                // Única puerta de Sala 1: la destraba la fuente de esta misma sala ->
+                // Nivel 2. Progresión lineal 1->2->3 (ver [[project-cripta-nekkman-tp2]]):
+                // las viejas puertas 'right'/'central' (mecanismo A+B+C, volver a elegir
+                // nivel) se sacaron a pedido de Franco — generaban confusión con cuál
+                // puerta era la de verdad. El final del juego ahora es la puerta propia
+                // de Nivel 3 (isFinalDoor, requires ['C']), no esta sala.
                 doors: [
-                    // Izquierda: la destraba la fuente de esta misma sala -> Nivel 2.
                     {
                         id: 'left', x: 288, y: 432, w: 64, h: 220,
                         triggerX: 32, triggerY: 432, triggerW: 64, triggerH: 220,
                         requires: ['A'], targetRoom: 'nivel2', bannerText: 'Entrando al nivel 2'
-                    },
-                    // Derecha: la destraba la fuente del Nivel 2 -> Nivel 3.
-                    {
-                        id: 'right', x: 2176, y: 432, w: 64, h: 220,
-                        triggerX: 2528, triggerY: 432, triggerW: 64, triggerH: 220,
-                        requires: ['B'], targetRoom: 'nivel3', bannerText: 'Entrando al nivel 3'
-                    },
-                    // Central: la puerta final — destraban las 3 fuentes, y cruzarla
-                    // GANA el juego (ver onDoorTrigger/triggerGameWin). isFinalDoor +
-                    // los colores propios la distinguen a simple vista de las otras 3.
-                    {
-                        id: 'central', x: 1232, y: 64, w: 480, h: 120,
-                        triggerX: 1232, triggerY: 30, triggerW: 480, triggerH: 60,
-                        requires: ['A', 'B', 'C'], targetRoom: null, bannerText: null,
-                        isFinalDoor: true, lockedColor: 0x4b0082, unlockedColor: 0xffd700
                     }
                 ]
             },
@@ -8327,16 +8316,13 @@
         // hay que redibujar el bloque).
         function updateSpikeCharge(charges, key, isOn, now, dealDamage) {
             const charge = charges.get(key);
-            if (!isOn) {
-                if (!charge) return false;
-                // Jugador se fue pero trampa sigue cargando si ya estaba en estado 'charging'.
-                // No reseteamos ni borramos — continúa hasta activarse completamente.
-                return false;
-            }
             if (!charge) {
+                if (!isOn) return false; // nunca la pisó, nada que hacer
                 charges.set(key, { phase: 'charging', since: now });
                 return true;
             }
+            // El temporizador avanza SIEMPRE una vez que empezó a cargar, esté el
+            // jugador parado encima o no — así se activa igual aunque se haya ido.
             if (charge.phase === 'charging' && now - charge.since >= SPIKE_TRAP_DELAY) {
                 dealDamage();
                 charge.phase = 'cooldown';
@@ -8344,10 +8330,16 @@
                 return true;
             }
             if (charge.phase === 'cooldown' && now - charge.since >= SPIKE_TRAP_COOLDOWN) {
-                // Sigue parado encima después de que los picos se escondieron: vuelve a
-                // cargar de cero — quedarse mucho tiempo repite el daño, a propósito.
-                charge.phase = 'charging';
-                charge.since = now;
+                if (isOn) {
+                    // Sigue parado encima después de que los picos se escondieron: vuelve
+                    // a cargar de cero — quedarse mucho tiempo repite el daño, a propósito.
+                    charge.phase = 'charging';
+                    charge.since = now;
+                } else {
+                    // Nadie está encima y ya terminó el cooldown: la trampa se guarda del
+                    // todo (vuelve a 'flat'), lista para la próxima vez que alguien pase.
+                    charges.delete(key);
+                }
                 return true;
             }
             return false;
@@ -8585,6 +8577,7 @@
         }
 
         function pickupItem(itemConf, rect) {
+            if (mapEditorActive) return; // no se "recoge" mientras se edita el mapa
             if (itemsPickedUp[itemConf.id]) return; // por si dos overlaps del mismo frame
             itemsPickedUp[itemConf.id] = true;
             rect.destroy();
