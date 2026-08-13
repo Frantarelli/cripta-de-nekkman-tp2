@@ -4540,7 +4540,13 @@
                 // de Nivel 3 (isFinalDoor, requires ['C']), no esta sala.
                 doors: [
                     {
-                        id: 'left', x: 288, y: 432, w: 64, h: 220,
+                        // Puerta y trigger en la MISMA posición a propósito (antes la
+                        // puerta estaba en x:288 y el trigger en x:32, con un corredor
+                        // en el medio que terminó tapiado de bloques — ver commit
+                        // be6ce8c. Ahora cruzar la puerta visualmente ES pisar el punto
+                        // que dispara la transición, sin depender de que el pasillo
+                        // detrás quede despejado.
+                        id: 'left', x: 32, y: 432, w: 64, h: 220,
                         triggerX: 32, triggerY: 432, triggerW: 64, triggerH: 220,
                         requires: ['A'], targetRoom: 'nivel2', bannerText: 'Entrando al nivel 2'
                     }
