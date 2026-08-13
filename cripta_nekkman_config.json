@@ -34315,18 +34315,18 @@
         "id": "B",
         "x": 976,
         "y": 1552,
-        "question": "¿Qué gesto despierta a la fuente?",
+        "question": "Tengo ciudades, pero no casas. Tengo montañas, pero no árboles. Tengo agua, pero no peces. ¿Qué soy?",
         "options": [
           {
-            "text": "Verter agua sobre el borde",
+            "text": "Un mapa",
+            "isCorrect": true
+          },
+          {
+            "text": "Un espejismo",
             "isCorrect": false
           },
           {
-            "text": "Tocar el centro con la palma abierta",
-            "isCorrect": false
-          },
-          {
-            "text": "Susurrarle una palabra antigua",
+            "text": "El planeta Marte",
             "isCorrect": false
           }
         ]
@@ -57243,7 +57243,7 @@
         "options": [
           {
             "text": "anillo",
-            "isCorrect": false
+            "isCorrect": true
           },
           {
             "text": "Pozo",
