@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La Cripta de Nekkman — Postmortem</title>
+<style>
+  :root {
+    --bg: #f7f3ec;
+    --text: #2a2420;
+    --muted: #6b6058;
+    --accent: #8a3324;
+    --rule: #d8cdbc;
+    --quote-bg: #efe6d8;
+    --card-bg: #ffffff;
+    --max-w: 720px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1b1815;
+      --text: #ece5da;
+      --muted: #a89d8f;
+      --accent: #e08a6f;
+      --rule: #3a332c;
+      --quote-bg: #262019;
+      --card-bg: #221e19;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+    line-height: 1.7;
+    font-size: 19px;
+  }
+  .wrap { max-width: var(--max-w); margin: 0 auto; padding: 56px 20px 100px; }
+  header.hero { max-width: var(--max-w); margin: 0 auto; padding: 64px 20px 24px; text-align: center; }
+  header.hero .kicker {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: .12em; text-transform: uppercase; font-size: 12px;
+    color: var(--accent); font-weight: 700;
+  }
+  h1 { font-size: 32px; line-height: 1.28; margin: 14px 0 8px; }
+  .subtitle { color: var(--muted); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 15px; }
+  .meta {
+    display: flex; gap: 18px; justify-content: center; flex-wrap: wrap;
+    margin-top: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em;
+  }
+  .meta span strong { color: var(--text); display: block; font-size: 14px; text-transform: none; letter-spacing: 0; margin-top: 2px; font-family: Georgia, serif; }
+  h2 { font-size: 25px; margin: 54px 0 18px; padding-bottom: 10px; border-bottom: 2px solid var(--rule); }
+  h3.timecard {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 15px;
+    letter-spacing: .08em; color: var(--accent); text-transform: uppercase; margin: 40px 0 12px;
+  }
+  p { margin: 0 0 20px; }
+  hr.sep { border: none; text-align: center; margin: 48px 0; height: 1em; }
+  hr.sep::before { content: "· · ·"; color: var(--muted); letter-spacing: .5em; font-size: 14px; }
+  blockquote {
+    margin: 28px 0; padding: 18px 24px; background: var(--quote-bg);
+    border-left: 4px solid var(--accent); border-radius: 2px; font-style: italic;
+  }
+  blockquote p { margin: 0 0 8px; }
+  blockquote cite {
+    display: block; font-style: normal; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 13px; color: var(--muted);
+  }
+  figure { margin: 32px 0; text-align: center; }
+  figure.pair { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; align-items: flex-end; }
+  figure.pair img { flex: 1 1 260px; max-width: 320px; }
+  figure img { max-width: 100%; height: auto; border-radius: 6px; box-shadow: 0 4px 18px rgba(0,0,0,.18); background: var(--card-bg); }
+  figcaption {
+    margin-top: 10px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 13px; color: var(--muted); line-height: 1.5; max-width: 520px; margin-left: auto; margin-right: auto;
+  }
+  code { background: var(--quote-bg); padding: 1px 6px; border-radius: 4px; font-size: .88em; font-family: "SF Mono", Consolas, monospace; }
+  .callout {
+    margin: 28px 0; padding: 18px 22px; border: 1px solid var(--rule); border-radius: 8px;
+    background: var(--card-bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 16px;
+  }
+  .callout strong { color: var(--accent); }
+  footer.colophon {
+    max-width: var(--max-w); margin: 0 auto; padding: 0 20px 70px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13px; color: var(--muted);
+    border-top: 1px solid var(--rule); padding-top: 24px;
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="kicker">Postmortem · Diseño de Videojuegos</div>
+  <h1>La Cripta de Nekkman</h1>
+  <div class="subtitle">Qué aprendí construyendo un dungeon-crawler en seis semanas, con IA como compañera de desarrollo</div>
+  <div class="meta">
+    <span>Duración<strong>6 semanas</strong></span>
+    <span>Rol<strong>Diseño + desarrollo solo</strong></span>
+    <span>Stack<strong>Phaser 3, JS, Python</strong></span>
+    <span>Contexto<strong>TP2, Image Campus</strong></span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h3 class="timecard">00:32, 3 de agosto</h3>
+  <p>Llevo toda la tarde en el Editor de Mapa que había construido para el juego: acomodo antorchas, ajusto trampas, decido dónde aparece cada enemigo. Cierro conforme. Abro de nuevo para seguir.</p>
+  <p>Y no está. Una tarde entera de trabajo, desaparecida.</p>
+
+  <blockquote>
+    <p>"Lo voy a tener que hacer todo de vuelta porque sos un bólido y me lo borraste... Necesito que esto se guarde."</p>
+    <cite>— yo, 3 de agosto de 2026, 00:32</cite>
+  </blockquote>
+
+  <p>Ese susto terminó siendo el punto de partida de este postmortem. No porque perder trabajo sea algo lindo de contar, sino porque fue el momento en el que más aprendí de todo el proyecto: sobre guardado de datos, sobre confiar ciegamente en un flujo que nunca había puesto a prueba, y sobre cómo reaccionar cuando algo se rompe en medio de un desarrollo con fecha de entrega.</p>
+
+  <hr class="sep">
+
+  <h2>El proyecto</h2>
+  <p>"La Cripta de Nekkman" es un dungeon-crawler top-down que construí como TP2 de Diseño de Videojuegos en Image Campus: tres salas, tres tipos de enemigo con IA propia, sistema de hechizos, trampas, un editor de mapa y un editor de parámetros hechos a medida, y una capa narrativa sobre un nigromante y su pacto con un dios oscuro. Lo desarrollé en seis semanas, trabajando con Claude Code como compañero de desarrollo —lo que en la jerga se llama "vibecoding"— y aplicando en el camino la teoría de diseño de niveles y balanceo que estaba viendo en paralelo en la cursada.</p>
+  <p>El concepto nació el 14 de julio como un plataformero simple. A las pocas horas ya había cambiado a topdown web, y esa fue la única decisión de arquitectura que se sostuvo sin moverse durante todo el proyecto. La preproducción fue intensa: en un solo día armé y descarté tres versiones de formulario de diseño hasta llegar a un pipeline que funcionaba de punta a punta —un formulario, un JSON de respuestas, un script en Python que generaba automáticamente el documento de diseño (GDD) y el primer beat chart—. Fue la pieza de la que más orgulloso quedé de toda la etapa de preproducción: automatizar la parte más tediosa del proceso para poder enfocarme en las decisiones de diseño en sí.</p>
+
+  <hr class="sep">
+
+  <h2>De un rectángulo verde a un personaje real</h2>
+  <p>El código arrancó el 20 de julio, sobre un GDD ya escrito. El jugador nació siendo, literalmente, un rectángulo verde —apodado "Yamel" en los comentarios del código, un nombre que le iba a durar casi dos semanas sin que nadie afuera lo supiera.</p>
+
+  <figure>
+    <img src="imagenes/seleccion/01_yamel_canvas.png" alt="Primer prototipo jugable, un rectángulo verde" style="max-width:480px">
+    <figcaption>El primer prototipo jugable. El código ya lo llamaba "Yamel".</figcaption>
+  </figure>
+
+  <p>Los primeros días fueron los de mayor densidad de mecánicas: combate direccional, un sistema de trampas, y la decisión que más impacto tuvo en todo el desarrollo posterior —crear un panel de "Editor de Parámetros" para poder ajustar variables del juego en caliente, sin recompilar nada. Esa herramienta, pensada en un momento para resolver un problema puntual de balance, terminó siendo el corazón de todo el proyecto: cada ajuste de vida, daño, velocidad, luz o mapa terminó pasando por ahí.</p>
+
+  <figure class="pair">
+    <img src="imagenes/seleccion/15_esqueleto_dibujado_mano_1.png" alt="Frame de la caminata del esqueleto, dibujado a mano">
+    <img src="imagenes/seleccion/16_esqueleto_dibujado_mano_3.png" alt="Otro frame de la caminata del esqueleto, dibujado a mano">
+  </figure>
+  <p style="text-align:center;margin-top:-20px"><figcaption style="margin:0 auto">El primer sprite real del juego: la caminata del esqueleto, dibujada a mano — la única pieza de arte 100% propia de todo el proyecto.</figcaption></p>
+
+  <p style="margin-top:32px">El salto visual más grande llegó recién sobre el final, la madrugada del 3 al 4 de agosto: reemplacé el rectángulo verde por un personaje real (pack "Adventurer", 16 spritesheets, 128 frames de animación entre caminar, correr y dos ataques que alternan siempre) y le agregué un shader tipo CRT y un HUD con sprites de verdad.</p>
+
+  <figure class="pair">
+    <img src="imagenes/seleccion/01_yamel_canvas.png" alt="El rectángulo verde original">
+    <img src="imagenes/seleccion/17_adventurer_run_down.png" alt="El personaje final corriendo">
+  </figure>
+  <p style="text-align:center;margin-top:-20px"><figcaption style="margin:0 auto">Antes y después: de un rectángulo verde a un personaje animado en las cuatro direcciones.</figcaption></p>
+
+  <figure class="pair" style="margin-top:32px">
+    <img src="imagenes/seleccion/13_cinematica_slide1.jpeg" alt="Primera lámina de la cinemática de intro">
+    <img src="imagenes/seleccion/14_cinematica_slide2.jpeg" alt="Segunda lámina de la cinemática de intro">
+  </figure>
+  <p style="text-align:center;margin-top:-20px"><figcaption style="margin:0 auto">La cinemática de intro que terminé escribiendo casi al final: el origen del nigromante Nekkman y el nombre definitivo del protagonista, Klegar.</figcaption></p>
+
+  <hr class="sep">
+
+  <h2>Los problemas que más me enseñaron</h2>
+  <p>Lo más valioso de este proyecto no fueron las mecánicas que salieron bien a la primera, sino los problemas que tuve que diagnosticar y resolver de verdad. Tres, en particular, me dejaron aprendizajes que pienso llevarme a cualquier proyecto futuro.</p>
+
+  <div class="callout"><strong>1. Un bug sin causa clara, y aprender a cerrarlo igual.</strong> Durante días tuve un bug de texturas —el piso se llenaba de cuadraditos negros— que sobrevivió a varios intentos de arreglo.</div>
+
+  <figure class="pair">
+    <img src="imagenes/seleccion/04_piso_bug_primer_reporte.png" alt="Primer reporte del bug de cuadraditos negros">
+    <img src="imagenes/seleccion/05_cuadraditos_negros_furioso.png" alt="El bug persistiendo, con reclamo directo">
+  </figure>
+  <p style="text-align:center;margin-top:-20px"><figcaption style="margin:0 auto">El bug de los "cuadraditos negros", capturado la misma noche en la que se puso más tensa la conversación con mi asistente de desarrollo.</figcaption></p>
+
+  <p style="margin-top:32px">Se descartaron seis hipótesis distintas —sprite mal recortado, alfa rota, un bug de datos verificado celda por celda— hasta llegar a la conclusión de que probablemente era caché del navegador. Lo que me llevo de ahí no es la causa (nunca la tuve del todo clara), sino el proceso: aprendí a investigar de forma sistemática, descartando hipótesis una por una en vez de probar arreglos al azar, y a aceptar que a veces hay que cerrar un bug con la mejor explicación disponible y seguir adelante.</p>
+
+  <div class="callout"><strong>2. Un problema de performance escondido en una decisión invisible.</strong> El juego andaba perfecto en el entorno de desarrollo y se colgaba apenas lo abría en un navegador común. La causa: el motor del juego (Phaser) se estaba cargando desde un servidor externo, sin minificar, 5,4 megabytes de golpe. Pasarlo a un archivo local lo resolvió en minutos, pero el aprendizaje real fue notar cuánto puede importar una decisión de infraestructura que parece un detalle menor —de dónde cargás una dependencia— en la experiencia final del usuario.</div>
+
+  <div class="callout">
+    <strong>3. Perder trabajo, dos veces, por dos razones distintas — y construir un sistema de guardado de verdad.</strong>
+    La noche del 3 de agosto perdí una tarde entera de edición porque no tenía ningún sistema de persistencia confiable: mis cambios vivían solo en el navegador, sin backup real. Construí un servidor local que guardaba cada cambio a disco. Pensé que estaba resuelto. Al día siguiente volvió a pasar, esta vez por una causa distinta: el guardado esperaba 400 milisegundos antes de escribir a disco (una técnica normal para no saturar el disco con cada micro-cambio, llamada <em>debounce</em>), pero los navegadores frenan esos temporizadores cuando la pestaña pasa a segundo plano — y yo cambiaba de pestaña todo el tiempo para hablar con mi asistente de IA mientras trabajaba.
+  </div>
+
+  <p>La prueba de que había pasado de verdad quedó grabada en los propios archivos de configuración: la versión de backup antes del arreglo tenía 109 elementos guardados; la versión actual tiene 247. El arreglo final fue directo — que el editor escriba a disco de inmediato en cada acción, sin esperar nada, y que las configuraciones que sí necesitan ese margen se fuercen a guardar igual si detectan que la pestaña se está por ocultar con algo pendiente.</p>
+
+  <figure class="pair">
+    <img src="imagenes/seleccion/08_referencia_corazon_hud.png" alt="Imagen de referencia del corazón de vida">
+    <img src="imagenes/seleccion/20_hud_barra_vida_final.png" alt="Barra de vida final del HUD">
+  </figure>
+  <p style="text-align:center;margin-top:-20px"><figcaption style="margin:0 auto">Mientras resolvía el guardado, seguía puliendo detalles: acá, la referencia real (izquierda) y el resultado final del corazón de vida en el HUD (derecha).</figcaption></p>
+
+  <p style="margin-top:32px">De los tres problemas, este es el que más me cambió la forma de pensar el desarrollo: aprendí que "que se guarde" nunca es un detalle técnico menor, es una decisión de diseño con peso real, y que hay que ponerla a prueba activamente en vez de asumir que funciona porque compiló.</p>
+
+  <hr class="sep">
+
+  <h2>Cuando la teoría se volvió números</h2>
+  <p>En paralelo al desarrollo del juego, cursaba una clase sobre balanceo de niveles y curvas de dificultad. Trabajé esa teoría en una sesión completamente separada durante tres semanas, sin tocar el juego real todavía — y recién casi al final del proyecto conecté ambas cosas.</p>
+
+  <figure>
+    <img src="imagenes/seleccion/10_formula_minmax_diapositiva.webp" alt="Diapositiva de clase con la fórmula de Normalización Min-Max" style="max-width:460px">
+    <figcaption>La fórmula de Normalización Min-Max que terminé aplicando a los enemigos reales del juego, semanas después de verla en clase.</figcaption>
+  </figure>
+
+  <p>La aplicación fue literal: normalicé cada característica de cada enemigo (vida, daño, velocidad, armadura, rango) a una escala de 1 a 10, la pesé según su impacto real en el juego, y calculé una "constante de dificultad" por enemigo, por trampa y por hechizo. El resultado más honesto de todo el proyecto salió de ahí: la sala de entrada, que se suponía la más fácil, calculó una dificultad más alta que el nivel pensado como clímax final —que en los hechos nunca llegué a terminar de construir.</p>
+
+  <figure>
+    <img src="imagenes/seleccion/12_curvas_dificultad_final.webp" alt="Gráfico con las tres curvas de dificultad reales del juego" style="max-width:540px">
+    <figcaption>El cálculo real de dificultad del juego, con los tres sistemas —enemigos, hechizos, trampas— graficados juntos.</figcaption>
+  </figure>
+
+  <p>No escondo ese resultado: prefiero mostrarlo, porque es exactamente el tipo de brecha que un buen proceso de diseño tiene que poder detectar y nombrar, con o sin playtesting de por medio. En este caso lo detecté por cálculo. Lo que me faltó —y lo sé— es el paso final: nunca comparé ese número contra la sensación real de jugarlo, porque nunca hice un playtest de verdad, ni siquiera informal.</p>
+
+  <hr class="sep">
+
+  <h2>Qué me llevo</h2>
+  <p>Lo primero que aprendí, mirando el proyecto entero de una vez, es que el control de versiones y la documentación no son un espejo automático del proceso real: cuando hice mi primer commit de git, el juego ya tenía casi todos sus sistemas centrales funcionando. Semanas de trabajo real habían quedado invisibles para cualquiera que solo mirara el historial. Documentar el proceso a medida que avanza, no al final, es algo que me voy a llevar a cualquier proyecto que venga después.</p>
+
+  <p>Lo segundo es más técnico: aprendí, con dos incidentes de por medio, que la persistencia de datos merece la misma seriedad que cualquier otra decisión de arquitectura, no un parche de último momento.</p>
+
+  <p>Lo tercero es sobre cómo se traduce la teoría a la práctica. La conexión más sólida de todo el proyecto entre lo que estudié y lo que construí fue el sistema de iluminación: niebla de guerra, antorchas y puntos de interés con su propia luz, aplicando casi de forma literal el concepto de "guía implícita" —el jugador entiende hacia dónde ir sin que nadie se lo explique con texto—. Es la parte del trabajo de la que estoy más orgulloso a nivel diseño.</p>
+
+  <p>Y lo último, quizás lo más importante para cualquiera que evalúe este trabajo: sé exactamente qué me quedó pendiente. Un nivel sin terminar. Un playtest que nunca hice. Datos de balanceo calculados con rigor pero nunca subidos al repositorio ni comparados contra la experiencia real de jugar. Prefiero mostrar eso con la misma claridad con la que muestro lo que sí funcionó — creo que ahí es donde más se nota si uno entendió el proceso de verdad, más allá del resultado final.</p>
+
+  <hr class="sep">
+
+  <h2>Actualización — la semana final</h2>
+
+  <p>En la última semana antes de la entrega terminé de construir el Nivel 3 —el que en este mismo documento describo más arriba como "nunca llegué a terminar de construir"—, rediseñé la IA de los enemigos para que dejaran de perseguir en línea recta sin pensar (flanqueo, kiting del mago, memoria de última posición vista), y cacé el bug más difícil de todo el proyecto: una puerta que se veía perfectamente destrabada pero no llevaba a ningún lado, porque el corredor detrás estaba tapiado por 73 bloques invisibles que nunca habían sido iluminados. Encontrarlo requirió teleportar al personaje celda por celda en un navegador de prueba — el mismo tipo de bug silencioso, otra vez, que "se ve bien en pantalla" pero no lo está por dentro.</p>
+
+  <p>Lo que no cambió, ni en esta última semana, es la parte que más me falta: el playtesting formal y los CSV de balanceo sin subir al repositorio siguen pendientes. Y jugando la versión casi terminada, un día antes de entregar, encontré varios detalles de jugabilidad más para ajustar —timing de trampas, hitboxes de enemigos— que anoté pero no llegué a tocar por tiempo. Queda como aprendizaje, no como parche de último momento.</p>
+
+  <p>Si tengo que resumir en una idea lo que me llevo de todo el proyecto: hacer un juego no se hace solo con instinto. Antes de esto diseñaba en base a lo que sentía que estaba bien, un conocimiento naturalizado de jugar otros juegos, sin poder explicar del todo por qué. Ahora sé que hay una fórmula, un método real, y aprender a usarlo —sobre todo el balanceo de niveles como norte para entender qué está balanceado y qué no— es lo más valioso que me llevo de la cursada. Haber podido construir toda la experiencia en modo "vibecoding" fue, de principio a fin, un desafío interesante y divertido.</p>
+
+</div>
+
+<footer class="colophon">
+  Postmortem escrito a partir de mis propios registros de desarrollo — historial de conversación, commits de código y archivos de configuración del juego — durante el curso de Diseño de Videojuegos en Image Campus.
+</footer>
+
+</body>
+</html>

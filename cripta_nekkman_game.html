@@ -1805,6 +1805,7 @@
         <div class="main-menu-buttons" id="main-menu-buttons">
             <button id="btn-start-game">Iniciar Partida</button>
             <button id="btn-open-settings" class="menu-btn-secondary">Configuración</button>
+            <button id="btn-open-bitacora" class="menu-btn-secondary">📖 Bitácora</button>
             <button id="btn-exit-game" class="menu-btn-secondary">Salir</button>
         </div>
         <!-- Indicador de carga: se muestra DEBAJO de los botones y NUNCA los tapa ni
@@ -1842,6 +1843,20 @@
             <input type="range" id="ctrl-brightness" min="50" max="150" step="1" value="100">
         </div>
         <button id="btn-close-settings" class="menu-btn-secondary">Volver</button>
+    </div>
+
+    <!-- Bitácora de desarrollo: 2 versiones (reducida = portfolio resumido, extendida
+         = devlog completo), ambas viven en bitacora/*.html junto al juego y se abren
+         en pestaña nueva (no reemplazan al juego, no interrumpen una partida en curso
+         si se abre desde el menú de pausa en el futuro). -->
+    <div id="bitacora-overlay" class="main-menu-overlay hidden">
+        <h1>📖 Bitácora de Desarrollo</h1>
+        <p>El registro completo de cómo se hizo La Cripta de Nekkman, semana a semana.</p>
+        <div class="main-menu-buttons">
+            <a id="btn-bitacora-reducida" href="bitacora/bitacora_reducida.html" target="_blank" rel="noopener" class="menu-btn-secondary" style="text-decoration:none;text-align:center;">Versión Resumida (Portfolio)</a>
+            <a id="btn-bitacora-extendida" href="bitacora/bitacora_extendida.html" target="_blank" rel="noopener" class="menu-btn-secondary" style="text-decoration:none;text-align:center;">Versión Extendida (Devlog Completo)</a>
+        </div>
+        <button id="btn-close-bitacora" class="menu-btn-secondary" style="margin-top:16px;">Volver</button>
     </div>
 
     <!-- Cinemática de intro (diapositivas con imagen de fondo + texto, antes de
@@ -3234,6 +3249,8 @@
             document.getElementById('btn-start-game').addEventListener('click', startIntroCinematic);
             document.getElementById('btn-open-settings').addEventListener('click', showSettings);
             document.getElementById('btn-close-settings').addEventListener('click', hideSettings);
+            document.getElementById('btn-open-bitacora').addEventListener('click', showBitacora);
+            document.getElementById('btn-close-bitacora').addEventListener('click', hideBitacora);
             document.getElementById('btn-exit-game').addEventListener('click', exitGame);
             document.getElementById('cinematic-skip-btn').addEventListener('click', endCinematic);
             document.getElementById('cinematic-prev-btn').addEventListener('click', goToPrevSlide);
@@ -3288,6 +3305,19 @@
             } else {
                 document.getElementById('main-menu-overlay').classList.remove('hidden');
             }
+        }
+
+        // Los links de bitacora-overlay abren en pestaña nueva (target="_blank"), así
+        // que no hace falta un flag de "abierta desde pausa" como en showSettings — el
+        // juego sigue exactamente donde estaba atrás, solo se vuelve con "Volver".
+        function showBitacora() {
+            document.getElementById('main-menu-overlay').classList.add('hidden');
+            document.getElementById('bitacora-overlay').classList.remove('hidden');
+        }
+
+        function hideBitacora() {
+            document.getElementById('bitacora-overlay').classList.add('hidden');
+            document.getElementById('main-menu-overlay').classList.remove('hidden');
         }
 
         // La mayoría de los navegadores no dejan cerrar por script una pestaña que el

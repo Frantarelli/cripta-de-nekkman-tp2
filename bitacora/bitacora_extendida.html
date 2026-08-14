@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La Cripta de Nekkman — Devlog</title>
+<style>
+  :root {
+    --bg: #f7f3ec;
+    --text: #2a2420;
+    --muted: #6b6058;
+    --accent: #8a3324;
+    --rule: #d8cdbc;
+    --quote-bg: #efe6d8;
+    --card-bg: #ffffff;
+    --max-w: 720px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1b1815;
+      --text: #ece5da;
+      --muted: #a89d8f;
+      --accent: #e08a6f;
+      --rule: #3a332c;
+      --quote-bg: #262019;
+      --card-bg: #221e19;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+    line-height: 1.7;
+    font-size: 19px;
+  }
+  .wrap {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 56px 20px 100px;
+  }
+  header.hero {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 64px 20px 24px;
+    text-align: center;
+  }
+  header.hero .kicker {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  h1 {
+    font-size: 34px;
+    line-height: 1.25;
+    margin: 14px 0 8px;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 15px;
+  }
+  h2 {
+    font-size: 26px;
+    margin: 56px 0 18px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--rule);
+  }
+  h2 .chnum {
+    display: block;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 12px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  h3.timecard {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 15px;
+    letter-spacing: .08em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin: 40px 0 12px;
+  }
+  p { margin: 0 0 20px; }
+  hr.sep {
+    border: none;
+    text-align: center;
+    margin: 48px 0;
+    height: 1em;
+  }
+  hr.sep::before {
+    content: "· · ·";
+    color: var(--muted);
+    letter-spacing: .5em;
+    font-size: 14px;
+  }
+  blockquote {
+    margin: 28px 0;
+    padding: 18px 24px;
+    background: var(--quote-bg);
+    border-left: 4px solid var(--accent);
+    border-radius: 2px;
+    font-style: italic;
+  }
+  blockquote p { margin: 0 0 8px; }
+  blockquote cite {
+    display: block;
+    font-style: normal;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: .02em;
+  }
+  figure {
+    margin: 32px 0;
+    text-align: center;
+  }
+  figure.pair {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  figure.pair img { flex: 1 1 260px; max-width: 320px; }
+  figure img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    box-shadow: 0 4px 18px rgba(0,0,0,.18);
+    background: var(--card-bg);
+  }
+  figcaption {
+    margin-top: 10px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+    max-width: 520px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  code {
+    background: var(--quote-bg);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: .88em;
+    font-family: "SF Mono", Consolas, monospace;
+  }
+  footer.colophon {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 0 20px 70px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    border-top: 1px solid var(--rule);
+    padding-top: 24px;
+  }
+  strong.beat { font-weight: 700; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="kicker">Devlog — TP2, Diseño de Videojuegos</div>
+  <h1>La Cripta de Nekkman</h1>
+  <div class="subtitle">Seis semanas, un editor de mapa y una noche en la que casi lo pierdo todo</div>
+</header>
+
+<div class="wrap">
+
+  <h3 class="timecard">00:32</h3>
+  <p>Son las 00:32 del 3 de agosto. Llevo toda la tarde metido en el Editor de Mapa, sala por sala: coloco antorchas, muevo trampas de pinches un píxel para acá, un píxel para allá, ajusto dónde aparece cada esqueleto. Es ese tipo de tarde en la que perdés la noción del tiempo porque cada cambio se ve bien en pantalla y querés hacer uno más. Cierro la sesión conforme. Abro de nuevo para seguir.</p>
+  <p>Y no está. Nada de lo que hice está.</p>
+  <p>No estoy exagerando cuando digo que se me heló la sangre. Una tarde entera de trabajo, la que se suponía que iba a dejar la Sala 1 lista, desaparecida como si nunca hubiera pasado.</p>
+
+  <blockquote>
+    <p>"Bueno, lo voy a tener que hacer todo de vuelta porque sos un bólido y me lo borraste... Necesito que esto se guarde."</p>
+    <cite>— Franco, 3 de agosto de 2026, 00:32–00:45</cite>
+  </blockquote>
+
+  <p>Ese mensaje lo escribí en caliente, sin filtro, y hoy que lo releo me representa bastante bien: no soy de reportar bugs con calma, los reporto como quien reporta que se le quemó la comida. Pero ese momento puntual no fue solo bronca. Fue el quiebre que terminó obligando a construir, en las semanas siguientes, un sistema de guardado de verdad. Y todavía no tenía idea de que el mismo problema me iba a volver a morder veinticuatro horas después, con una causa completamente distinta y bastante más difícil de ver.</p>
+  <p>Para entender cómo llegué a esa noche con tanto en juego tengo que ir bastante más atrás. Hasta antes de que "La Cripta de Nekkman" existiera. Hasta antes, incluso, de saber que iba a hacer un juego.</p>
+
+  <hr class="sep">
+
+  <h2><span class="chnum">Capítulo 1</span>La carpeta que se lo iba a comer todo</h2>
+  <p>Todo esto arranca el 24 de junio, casi un mes antes de escribir la primera línea del juego. Ese día decidí algo que en su momento parecía puramente administrativo: le pedí a Claude que E:/Curso fuera la carpeta donde iba a guardar absolutamente todo lo de la materia de Diseño de Videojuegos en Image Campus.</p>
+
+  <blockquote>
+    <p>"guarda todo esto, vas a ser la carpeta donde guarde todo lo referente a mi curso de Diseño de videojuegos... ese es el Goal de este chat."</p>
+    <cite>— Franco, 24 de junio de 2026, 22:28</cite>
+  </blockquote>
+
+  <p>No sabía todavía que esa carpeta iba a terminar siendo la base de conocimiento de la que iba a tirar semanas después para justificar cada decisión de diseño del juego. En las semanas siguientes proceso tres libros completos de referencia —<em>Level Up!</em> de Scott Rogers, <em>The Art of Game Design</em>, <em>In Pursuit of Better Levels</em>— a Markdown, con 738 imágenes catalogadas una por una. Transcribo las clases 1, 2, 4, 5, 7, 8 y 9. Reviso 65 links citados en clase, uno por uno, para saber cuáles seguían vivos y cuáles ya no.</p>
+
+  <p>En paralelo corre el TP1: el rediseño con framework MDA de un juego de cartas de un compañero, "Indies Wars", que convierto en "Keeping Trending" con temática de influencers y redes sociales. Hay una sesión maratónica el 5 de julio discutiendo mecánicas de "Boostear", "Shadowban" y "Raid" carta por carta, y la entrega formal el 10 de julio.</p>
+
+  <p>El 17 de julio llega la clase que, sin que yo lo sepa todavía, va a terminar siendo la columna vertebral matemática de todo el proyecto: la clase de balanceo de niveles del profesor Eduardo "Ero" Ortega. Curva de Wundt, neurotransmisores, cohortes de skill. La trabajo en una sesión de apuntes completamente separada de la del juego —tenía, literalmente, dos ventanas de Claude Code abiertas en paralelo, una para la clase y otra para lo que fuera a construir después— y no la voy a tocar en serio hasta dos semanas más tarde.</p>
+
+  <figure>
+    <img src="imagenes/seleccion/09_curva_sawtooth_manuscrita.png" alt="Curva de dificultad en diente de sierra, anotada a mano el 17 de julio" style="max-width:480px">
+    <figcaption>La curva de dificultad en diente de sierra, tal como la anoté esa misma noche de clase — la base teórica que iba a usar recién semanas después.</figcaption>
+  </figure>
+
+  <p>El 31 de julio hasta lo dejo anotado, casi como una nota para mí mismo del futuro:</p>
+
+  <blockquote>
+    <p>"todavía no tocamos la Cripta con esto, pero lo vamos a usar más adelante."</p>
+    <cite>— Franco, 31 de julio de 2026, 19:44</cite>
+  </blockquote>
+
+  <p>Guardaba la teoría para usarla después. No sabía cuándo. Resultó que "después" fue casi al final de todo.</p>
+
+  <hr class="sep">
+
+  <h2><span class="chnum">Capítulo 2</span>Un plataformero que terminó siendo otra cosa</h2>
+  <p>El 14 de julio a las 18:48 escribo el prompt que, mirado en retrospectiva, es el que arranca todo lo demás.</p>
+
+  <blockquote>
+    <p>"Estaba pensando en armar un juego plataformero, tengo poco tiempo para desarrollarlo e iba a hacerlo vibecode... un jugador que le gusten las experiencias rápidas y plataformeras... la experiencia total, de 3 niveles, tiene que durar un aproximado de 15m de juego... puede haber una historia, de hecho quiero que la haya."</p>
+    <cite>— Franco, 14 de julio de 2026, 18:48</cite>
+  </blockquote>
+
+  <p>Un plataformero. Así lo pensé al principio. Menos de dos horas después, a las 20:33, cambio de idea sobre la arquitectura técnica, y esa decisión sí se sostiene sin moverse un milímetro durante todo el proyecto:</p>
+
+  <blockquote>
+    <p>"va a ser un topdown, que se pueda correr en la web."</p>
+    <cite>— Franco, 14 de julio de 2026, 20:33</cite>
+  </blockquote>
+
+  <p>Ese mismo día subo la Clase 5, la de Documentación y Preproducción, y empiezo a armar —con ayuda de Claude— un cuestionario de preguntas "infalibles" basado en los frameworks que había visto en clase, para no llegar a la preproducción del TP2 improvisando. Todavía no tenía ni el nombre del juego. Solo tenía la certeza de que iba a ser topdown, que iba a correr en un navegador, y que quería que tuviera historia.</p>
+
+  <hr class="sep">
+
+  <h2><span class="chnum">Capítulo 3</span>Quince horas, cuatro formularios y un blueprint</h2>
+  <p>Si tuviera que elegir un solo día de todo el repositorio para mostrarle a alguien cómo pienso cuando estoy bajo presión, sería el 18 de julio. En menos de quince horas —de las 00:00 a las 14:44— nacieron y murieron tres versiones completas de formulario de diseño hasta que llegué a un pipeline que funcionaba de punta a punta.</p>
+
+  <p>Arranqué a la medianoche con un formulario propio, escrito de memoria, mezclando conceptos de varias clases. A las 12:10 del mediodía subí el PDF real del <em>Preproduction Blueprint</em> de Alex Galuzin —el libro que terminaría siendo la estructura formal de todo el GDD— y me di cuenta de que lo que había armado a la madrugada estaba desalineado con el método real. Lo tiré. Armé dos plantillas manuales más, con placeholders, que tampoco llené nunca a mano. A las 13:48 armé un formulario HTML de doce pasos (los once del Blueprint más un paso extra para el Beat Chart), y a las 14:44 —catorce horas después de haber arrancado— por fin tenía la versión que iba a usar de verdad.</p>
+
+  <p>A las 16:11 descargué el JSON con todas mis respuestas. Un minuto después, un script en Python lo convirtió automáticamente en el GDD final y en el primer Beat Chart. Ese pipeline —formulario, JSON, script, documento— es la pieza de la que más orgulloso estoy de toda la preproducción, aunque tuvo una rama que no funcionó: dos scripts paralelos para generar versiones en Word con más estilo tenían un bug de nombres de clave (buscaban <code>narrativa_what</code> cuando el JSON real decía <code>storyWhat</code>) y terminaron produciendo un documento con la Narrativa y los Niveles completamente vacíos. Nunca lo corregí. Quedó ahí, como una rama muerta del árbol.</p>
+
+  <hr class="sep">
+
+  <h2><span class="chnum">Capítulo 4</span>La rana que nunca existió</h2>
+  <p>El código real arranca el 20 de julio. Ya tenía un GDD escrito y un frame de Figma con la idea visual, y a las 20:16 le pido a Claude que lo vuelva jugable:</p>
+
+  <blockquote>
+    <p>"la rana es el personaje principal, el esqueleto es el enemigo que me quiere hacer daño y los bloques grises más oscuros son pozos que si toco me quemo."</p>
+    <cite>— Franco, 20 de julio de 2026, 20:16</cite>
+  </blockquote>
+
+  <p>La rana nunca llegó a implementarse como tal. El jugador arrancó siendo un rectángulo verde liso, que en los comentarios del código quedó apodado "Yamel" —nombre que lo iba a acompañar, sin que nadie afuera lo supiera, durante casi dos semanas. Tres minutos después de ese primer prompt ya estaba pidiendo algo que se iba a repetir en casi todas las sesiones siguientes:</p>
+
+  <blockquote>
+    <p>"no puedo jugarlo, corrélo en un servidor para poder caminar."</p>
+    <cite>— Franco, 20 de julio de 2026, 20:19</cite>
+  </blockquote>
+
+  <figure>
+    <img src="imagenes/seleccion/01_yamel_canvas.png" alt="Primer prototipo jugable: rectángulo verde sobre fondo liso, con el texto Yam visible" style="max-width:520px">
+    <figcaption>El primer prototipo jugable: un rectángulo verde moviéndose entre bloques grises. El código, en sus comentarios, ya lo llamaba "Yamel".</figcaption>
+  </figure>
+
+  <p>El 21 de julio es, de todo el proyecto, el día de mayor densidad de mecánicas nuevas. En una sola sesión aparecen el combate direccional, la corrección de las reglas de daño —"no debería recibir daño a menos que la criatura me ataque", uno de esos ajustes que parecen obvios recién cuando los estás jugando y no antes—, el sistema de trampas, y a las 12:15 nace la pestaña "Controles/Editor". Esa pestaña, sin que yo lo planeara así, se convirtió en la herramienta más importante de todo el desarrollo: el Editor de Parámetros. Meses después, prácticamente cada ajuste de balance, cada luz, cada mapa, iba a pasar por ahí.</p>
+
+  <p>A las 14:17 defino los tres tipos de enemigo —esqueleto normal, tanque, mago—, cada uno con su propia IA y sus propias estadísticas.</p>
+
+  <figure>
+    <img src="imagenes/seleccion/02_tanque_referencia.png" alt="Referencia visual del enemigo Tanque" style="max-width:400px">
+    <figcaption>La referencia visual del enemigo Tanque, descargada ese mismo período — tardaría semanas en dejar de ser un rectángulo de color dentro del juego.</figcaption>
+  </figure>
+
+  <p>A las 19:05 subo el primer sprite real del juego: la caminata del Esqueleto Normal, dibujada a mano por mí en cinco PNG sueltos. Es, hasta el día de hoy, la única pieza de arte cien por ciento propia de todo el proyecto.</p>
+
+  <figure class="pair">
+    <img src="imagenes/seleccion/15_esqueleto_dibujado_mano_1.png" alt="Primer frame de la caminata del esqueleto, dibujado a mano">
+    <img src="imagenes/seleccion/16_esqueleto_dibujado_mano_3.png" alt="Tercer frame de la caminata del esqueleto, dibujado a mano">
+  </figure>
+  <p style="text-align:center;margin-top:-20px"><figcaption style="margin:0 auto">Dos de los cinco frames de la caminata dibujada a mano — el único arte 100% propio de todo el proyecto.</figcaption></p>
+
+  <figure style="margin-top:32px">
+    <img src="imagenes/seleccion/03_gameplay_esqueletos.png" alt="Screenshot de gameplay real con tres esqueletos en una habitación" style="max-width:520px">
+    <figcaption>Los esqueletos ya patrullaban las salas, aunque todavía no reaccionaban bien al ver al jugador (26 de julio).</figcaption>
+  </figure>
+
+  <p>Los días siguientes no fueron ni de cerca tan prolijos como suena resumido así. El 25 de julio empiezo a exigir rendimiento en serio:</p>
+
+  <blockquote>
+    <p>"Necesito que vuele este juego. Es un juego muy simple, tiene que andar muy rápido y muy bien."</p>
+    <cite>— Franco, 25 de julio de 2026, 20:33</cite>
+  </blockquote>
+
+  <p>No pedía fps de más porque sí: en un topdown así, si el juego no responde al instante se nota en cada movimiento. Y el 26 de julio llega el primer quiebre de tono documentado de todo el proyecto. Había un bug de texturas —el piso, en ciertas condiciones, se llenaba de cuadraditos negros— que ya le había pedido resolver más de una vez, sin éxito.</p>
+
+  <figure>
+    <img src="imagenes/seleccion/04_piso_bug_primer_reporte.png" alt="Primer reporte del bug de cuadraditos negros en el piso" style="max-width:520px">
+    <figcaption>El primer reporte de los "cuadraditos negros" en el piso, esa misma noche del 26 de julio, 23:17.</figcaption>
+  </figure>
+
+  <p>Diecinueve minutos después, ya sin paciencia:</p>
+
+  <blockquote>
+    <p>"¿Volvieron a quedar en el suelo de los cuadraditos negros? Flaco, te pedí por favor que me lo saques. ¿Qué carajo estás haciendo?"</p>
+    <cite>— Franco, 26 de julio de 2026, 20:36 (repetido casi textual a las 23:30 y 23:40)</cite>
+  </blockquote>
+
+  <figure>
+    <img src="imagenes/seleccion/05_cuadraditos_negros_furioso.png" alt="Screenshot de gameplay con cuadraditos negros aún visibles en el piso" style="max-width:520px">
+    <figcaption>La captura que acompañó ese reclamo — el bug seguía ahí, tan visible como la primera vez.</figcaption>
+  </figure>
+
+  <p>El bug de los cuadraditos negros nunca tuvo una causa definitiva. Se investigaron y descartaron seis hipótesis distintas —sprite mal recortado, alfa rota, un bug real de datos verificado celda por celda— hasta llegar a la conclusión de que probablemente era caché del navegador. No es la respuesta más satisfactoria del mundo, pero es la honesta: a veces un bug se cierra sin un culpable claro.</p>
+
+  <figure>
+    <img src="imagenes/seleccion/06_cuadraditos_negros_dia_despues.png" alt="El bug persistiendo un día después" style="max-width:440px">
+    <figcaption>Un día después, el 27 de julio, el bug seguía ahí — recién se resolvería casi de casualidad, como parte de otro arreglo.</figcaption>
+  </figure>
+
+  <p>Ese mismo 27 de julio tuve el susto más subestimado de todo el proyecto, y en su momento no lo até del todo. A las 19:50, en mayúsculas, reporto que el juego, apenas lo abro en Chrome fuera del preview de Claude Code, se queda cargando eternamente:</p>
+
+  <blockquote>
+    <p>"NECESITO QUE ANDE IGUAL DE FLUIDO EN UN NAVEGADOR DE LO QUE ANDA EN LA VISTA PREVIA DE ACA."</p>
+    <cite>— Franco, 27 de julio de 2026, 19:50</cite>
+  </blockquote>
+
+  <p>Seis minutos después aparece en el proyecto una carpeta nueva: <code>vendor/</code>. Resulta que Phaser, el motor del juego, se estaba cargando desde un CDN externo sin minificar —5,4 megabytes de golpe, bloqueando la carga—. Pasarlo a un archivo local lo resolvió. En ese momento no le di demasiada importancia al hallazgo, pero mirando el repositorio completo después, es el fix técnico más determinante que nadie había conectado como causa y efecto hasta ahora: sin ese cambio, el juego directamente no cargaba fuera del entorno de desarrollo.</p>
+
+  <p>Esa misma sesión del 27 de julio también integra el primer tileset completo de mazmorra, con niebla de guerra, pathfinding A* y el Editor de Mapa ya funcionando. En una sola noche pasé de un juego con formas de color a algo que ya se parecía, aunque fuera un poco, a un dungeon-crawler de verdad.</p>
+
+  <hr class="sep">
+
+  <h2><span class="chnum">Capítulo 5</span>Escribir lo que era de verdad, no lo que había soñado</h2>
+  <p>El 28 de julio actualicé el GDD a una versión que decidí llamar V2, y esa decisión fue, creo, la más honesta que tomé en toda la documentación del proyecto. En vez de retocar el documento original para que sonara mejor, escribí exactamente lo que existía: el Nivel 1 marcado como "IMPLEMENTADO Y JUGABLE", con una Bitácora de Testing que incluye seis bugs reales de motor —un margen de pathfinding que sellaba pasillos enteros, una línea de visión que se bloqueaba contra la propia pared del enemigo, una condición de carrera en la niebla de guerra— y sus soluciones.</p>
+
+  <p>También metí una autocrítica que no tenía por qué escribir, pero me pareció importante dejarla asentada: tenía 32 enemigos en un nivel que yo mismo había declarado como "Introducción" (2 de 10 en dificultad), lo cual contradice de lleno la curva sawtooth —esa forma de diente de sierra, tensión y alivio, tensión y alivio— que habíamos visto en la clase de balanceo. El Beat Chart V2 reescribe los primeros cuatro beats con datos reales del Nivel 1 ya construido, y deja los ocho restantes —Niveles 2 y 3— exactamente como estaban en la visión de diseño original. En ese momento, el 28 de julio, esa descripción era exacta. Todavía no sabía cuánto se iba a cumplir, ni cuánto no.</p>
+
+  <hr class="sep">
+
+  <h2><span class="chnum">Capítulo 6</span>Online, y con luz propia</h2>
+  <p>El 30 de julio a las 22:34 tomé la decisión de sacar el juego de mi computadora y ponerlo en algún lugar donde cualquiera pudiera jugarlo.</p>
+
+  <blockquote>
+    <p>"quiero que me ayudes a montar esto de la forma más sencilla y gratis para que ande online."</p>
+    <cite>— Franco, 30 de julio de 2026, 22:34</cite>
+  </blockquote>
+
+  <p>Media hora después hice el primer commit git de todo el proyecto. Para ese momento, sin que yo lo hubiera medido en su momento, el HTML del juego ya tenía 7.742 líneas de código, y prácticamente todos los sistemas centrales ya existían: pathfinding, los tres tipos de enemigo, hechizos, ambos editores, niebla de guerra, persistencia básica, cinemática de intro, tres salas diferenciadas. Es un dato que me sorprendió cuando lo vi reconstruido después: el primer commit no era un esqueleto de proyecto, era casi un juego terminado. Todo ese trabajo había pasado invisible para git, semanas enteras de conversación sin quedar registradas en ningún lado.</p>
+
+  <p>El 2 de agosto llega el deploy real a GitHub Pages y, el mismo día, el salto de calidad visual más grande hasta ese momento: un sistema de iluminación dinámica de verdad —antorchas, la luz propia del jugador, la niebla de guerra separada de la iluminación—. A las 12:37 descargo un pack completo de dungeon en pixel art y, antes de aplicarlo a lo loco, le pido a Claude que lo estudiemos imagen por imagen. No quería otro parche visual improvisado.</p>
+
+  <figure>
+    <img src="imagenes/seleccion/07_trampa_pinches_densidad.png" alt="Diagrama de densidad de la trampa de pinches" style="max-width:440px">
+    <figcaption>Así se planificó, esos mismos días, la densidad visual de la Trampa de Pinches — de más simple a más intensa.</figcaption>
+  </figure>
+
+  <p>Ese mismo día también probé algo que no funcionó: migrar toda la grilla del juego de 32 a 16 píxeles para que calzara mejor con el tileset nuevo. Cincuenta minutos después lo revertí por completo. Ni siquiera quedó rastro en git — un cambio y su arrepentimiento, invisibles para la historia oficial, visibles solo para quien estuvo ahí escribiéndolo.</p>
+
+  <hr class="sep">
+
+  <h2><span class="chnum">Capítulo 7</span>La noche en que el juego se olvidó de sí mismo</h2>
+  <p>Y acá volvemos a donde arrancó esta historia, pero con más contexto del que tenía esa madrugada. Lo que en el momento sentí como "se me borró todo" resultó ser, cuando el proyecto se reconstruyó en retrospectiva, dos incidentes distintos con causas técnicas distintas, superpuestos en menos de dos días.</p>
+
+  <p><strong class="beat">El primero</strong> pasó a las 00:32 del 3 de agosto, el que ya conté. En ese momento <code>game_server.py</code> —el script que hoy guarda cada cambio del Editor de Mapa directamente en disco— ni siquiera existía todavía. Nació veintiún minutos después, a las 00:53, como respuesta directa a ese susto. Hasta ese momento la única forma de que algo sobreviviera más allá de una pestaña del navegador era descargar el JSON a mano o usar un permiso de archivo que Chrome podía revocar en cualquier momento. Trabajé, sin darme cuenta, sobre el archivo equivocado.</p>
+
+  <p><strong class="beat">El segundo</strong> episodio fue más sutil y, en cierto sentido, más inquietante, porque ya tenía el servidor funcionando y aun así volvió a pasar. El 3 de agosto a las 13:12 coloco un enemigo nuevo en el mapa y pregunto si quedó guardado. No había quedado. Esta vez la causa era técnica y verificable: el guardado a disco esperaba 400 milisegundos antes de escribir —eso que en desarrollo se llama debounce, para no saturar el disco con cada micro-cambio— y los navegadores, quietamente, frenan esos temporizadores cuando la pestaña pasa a segundo plano. Cada vez que cambiaba de pestaña para hablar con Claude justo después de editar el mapa, dejaba ese guardado colgado, sin completarse nunca.</p>
+
+  <p>La prueba de que esto había pasado de verdad quedó grabada, literalmente, en los archivos: el backup del config antes del arreglo tiene 109 entidades con timestamp. El config actual tiene 247, incluyendo un bloque entero de edición nocturna que en el backup directamente no existe. Da un poco de vértigo verlo así, después: la evidencia de una noche de trabajo perdida, conservada en un número.</p>
+
+  <p>El arreglo, que quedó en el commit <code>f32da3d</code> de la madrugada del 4 de agosto, fue directo: colocar, borrar o mover algo en el Editor de Mapa ahora escribe a disco de inmediato, sin esperar nada. Los sliders de configuración, que sí necesitan ese margen de espera para no saturar el disco con cada arrastre, se fuerzan a guardar de todas formas si detectan que la pestaña se está por ocultar con un guardado pendiente.</p>
+
+  <p>El mismo 3 de agosto, en medio de todo este lío de guardado, también reemplacé la vieja "Pared con Vida" —un rectángulo de color con puntos de vida— por un sistema real de rompibles: barriles, cajas, jarrones, cada uno con su explosión y su sonido al romperse, y reskineé la sierra y la antorcha con arte nuevo. La vida seguía, aunque el archivo se estuviera portando mal.</p>
+
+  <hr class="sep">
+
+  <h2><span class="chnum">Capítulo 8</span>Un rectángulo verde se llamaba Yamel</h2>
+  <p>A las 23:38 del 3 de agosto, todavía en la misma sesión maratónica de esa fecha, hice el pedido que iba a cambiar más que ningún otro la cara del juego: aplicar un pack de personaje llamado "Adventurer" que acababa de descargar. Diez minutos después ya tenía dieciséis spritesheets generados —768 por 80 píxeles cada uno, ocho frames por acción, cuatro acciones (quieto, correr, dos ataques distintos que alternan siempre) en cuatro direcciones. Ciento veintiocho frames en total.</p>
+
+  <figure class="pair">
+    <img src="imagenes/seleccion/17_adventurer_run_down.png" alt="Spritesheet del personaje Adventurer corriendo hacia abajo">
+    <img src="imagenes/seleccion/18_adventurer_attack1_down.png" alt="Spritesheet del personaje Adventurer atacando hacia abajo">
+  </figure>
+  <p style="text-align:center;margin-top:-20px"><figcaption style="margin:0 auto">Dos de los 16 spritesheets generados esa noche: correr y atacar, ambos hacia abajo.</figcaption></p>
+
+  <p style="margin-top:32px">Lo que siguió, entre las 23:54 y la 00:52, fue una hora larga de ajustes finos: tres pasadas de escala visual, y una redefinición del hitbox de física a 1×2 celdas —32 por 64 píxeles— completamente desacoplado del tamaño visual del sprite, que terminó siendo bastante más grande (134 por 173). Ese desacople generó, sobre la marcha, un bug real y hasta un poco cómico: la trampa de pinches empezó a dañarme "desde lejos", porque el chequeo de colisión seguía comparando contra el tamaño visual del personaje y no contra su hitbox real. Se arregló en el mismo commit, apenas se detectó.</p>
+
+  <p>Todo esto cerró en el commit <code>f32da3d</code>, a la 01:13 de la madrugada del 4 de agosto —el segundo commit más grande de todo el proyecto—, que además trajo el shader tipo CRT (esa aberración cromática y esas líneas de escaneo que le dan aspecto de tubo viejo a la pantalla) y un HUD con sprites de verdad, incluyendo un corazón de vida recortado, literalmente, de dos imágenes de referencia que sumaban exactamente el ancho final que necesitaba.</p>
+
+  <figure class="pair">
+    <img src="imagenes/seleccion/08_referencia_corazon_hud.png" alt="Imagen de referencia del corazón de vida">
+    <img src="imagenes/seleccion/20_hud_barra_vida_final.png" alt="Barra de vida final del HUD, en pixel art">
+  </figure>
+  <p style="text-align:center;margin-top:-20px"><figcaption style="margin:0 auto">La referencia exacta (izquierda) y el resultado final ya integrado al HUD del juego (derecha).</figcaption></p>
+
+  <figure class="pair" style="margin-top:32px">
+    <img src="imagenes/seleccion/01_yamel_canvas.png" alt="El rectángulo verde original, Yamel">
+    <img src="imagenes/seleccion/17_adventurer_run_down.png" alt="El personaje Adventurer terminado corriendo">
+  </figure>
+  <p style="text-align:center;margin-top:-20px"><figcaption style="margin:0 auto">El antes y el después, uno al lado del otro: de un rectángulo verde apodado "Yamel" a un personaje real.</figcaption></p>
+
+  <p style="margin-top:32px">El rectángulo verde que había sido el jugador desde el primer día de código dejó de existir esa madrugada. En su lugar quedó, por primera vez, un personaje real.</p>
+
+  <hr class="sep">
+
+  <h2><span class="chnum">Capítulo 9</span>Klegar tiene nombre</h2>
+  <p>El 4 de agosto es el día de mayor cantidad de commits de todo el proyecto —diez de los quince totales— y el que finalmente le dio al juego una identidad que no era solo mecánica.</p>
+
+  <p>A la 01:17 de la madrugada nace el sistema de checkpoints: un objeto invisible, que solo se ve dentro del Editor, y que define en qué punto exacto reaparece el jugador si muere. Es una mecánica chica en líneas de código, pero es la que le da al juego ese ritmo de "morir, reintentar, seguir" típico del género.</p>
+
+  <p>A las 11:57 de la mañana subo dos imágenes y escribo, de una sola vez, el texto completo de la introducción narrativa: el origen del nigromante Nekkman, su pacto con el dios Talos, el ejército de no muertos que levantó. Ese texto reemplaza el placeholder de diálogo que había estado ahí, sin cambiar, desde el primer commit del proyecto.</p>
+
+  <figure class="pair">
+    <img src="imagenes/seleccion/13_cinematica_slide1.jpeg" alt="Primera lámina de la cinemática de intro">
+    <img src="imagenes/seleccion/14_cinematica_slide2.jpeg" alt="Segunda lámina de la cinemática de intro">
+  </figure>
+  <p style="text-align:center;margin-top:-20px"><figcaption style="margin:0 auto">Las dos láminas de la cinemática de intro: el origen del nigromante Nekkman, y el protagonista frente a la entrada de la cripta.</figcaption></p>
+
+  <p style="margin-top:32px">Y entre las 12:08 y las 13:18 pasa algo pequeño que en el fondo no lo es tanto: el protagonista recibe finalmente un nombre propio. Klegar. El "Yamel" que había vivido escondido en los comentarios del código durante casi dos semanas, invisible para cualquiera que solo jugara el juego, deja de existir también en el texto.</p>
+
+  <p>El resto del día lo dedico a terminar de coser detalles: reskin animado de las fuentes de los acertijos (el último asset gráfico que entró al proyecto),</p>
+
+  <figure>
+    <img src="imagenes/seleccion/19_fuente_animada.png" alt="Fuente animada de los acertijos" style="max-width:220px">
+    <figcaption>La fuente de los acertijos, el último asset visual que se sumó al proyecto.</figcaption>
+  </figure>
+
+  <p>audio espacial —los sonidos que tienen una fuente física en el mundo se atenúan según la distancia—, un contador de botín máximo por nivel, feedback visual cuando le pegás a algo rompible sin llegar a romperlo. A las 18:52, ya en una sesión nueva, hago el último ajuste conocido del proyecto: reposiciono al jugador en la Sala 1, limpio texto sobrante del HUD y agrego un botón de mute general. Ese último cambio, el del mute, nunca llegó a subirse a git. Hoy vive solo en mi computadora.</p>
+
+  <hr class="sep">
+
+  <h2><span class="chnum">Capítulo 10</span>Los números que estuve guardando durante tres semanas</h2>
+  <p>A las 19:12 del 4 de agosto pasa algo que llevaba semanas esperando sin decirlo en voz alta: le pido a Claude que liste todas las variables reales del juego —enemigos, hechizos, trampas— para poder construir, por fin, la curva de dificultad que venía trabajando en paralelo desde la clase de Ero, tres semanas antes. Es el prompt que conecta, después de todo ese tiempo trabajándose por separado sin cruzarse nunca, la teoría de clase con el juego de verdad.</p>
+
+  <figure>
+    <img src="imagenes/seleccion/10_formula_minmax_diapositiva.webp" alt="Diapositiva de clase con la fórmula de Normalización Min-Max" style="max-width:480px">
+    <figcaption>La diapositiva real de la fórmula de Normalización Min-Max — la misma que terminé aplicando, semanas después, a los enemigos reales del juego.</figcaption>
+  </figure>
+
+  <p>El polinomio ponderado se aplica así: cada característica de cada enemigo —vida, daño, velocidad, armadura, rango— se normaliza a una escala de 1 a 10 con la fórmula de Min-Max que habíamos visto en clase (<code>Y = a + [(X-Xmin)(b-a)]/(Xmax-Xmin)</code>), después se multiplica por un peso propio de cada característica, y la suma da la "constante de dificultad" de ese enemigo. El Esqueleto Tanque salió el más "duro" del bestiario (47,76 puntos). El Mago, pese a tener el rango de ataque más largo de todos, salió el más bajo (20,50), porque su vida y su daño son bajísimos.</p>
+
+  <figure>
+    <img src="imagenes/seleccion/11_tabla_referencia_companero.png" alt="Tabla de referencia de un compañero de curso" style="max-width:480px">
+    <figcaption>Una tabla de referencia de un compañero de curso, que usé para calibrar mi propio sistema de balanceo.</figcaption>
+  </figure>
+
+  <p>El 6 de agosto, ya en la sesión de apuntes de clase —separada, otra vez, de la del juego— termino de cerrar el ejercicio: subo el CSV de constantes de los enemigos reales y pregunto cómo construir un polinomio de dificultad <em>general</em> del juego completo, sumando los tres polinomios parciales (enemigos, trampas, hechizos) y normalizando el resultado final a una escala de 1 a 10. Es, cronológicamente, el último prompt registrado de todo el proyecto que este relevamiento pudo encontrar.</p>
+
+  <p>Los cuatro CSV que salieron de ese proceso —enemigos, trampas, hechizos, curva por nivel— aplican la fórmula con números reales, verificados dato por dato contra el config del juego. Y ahí aparece el hallazgo más honesto de todo el proyecto, el que más me costó anotar y el que más vale la pena contar: la Sala 1, la sala de entrada, la que se supone que tiene que ser la más fácil, calculó una dificultad neta de 3.217,75. El Nivel 3 —el que en el GDD iba a ser el clímax final del juego— calculó apenas 74,11. La curva que había prometido en el diseño era ascendente: fácil, media, difícil. La curva que salió de los números reales es exactamente la inversa. La sala de entrada resultó ser, matemáticamente, la más peligrosa de las tres, y el clímax final resultó casi vacío.</p>
+
+  <figure>
+    <img src="imagenes/seleccion/12_curvas_dificultad_final.webp" alt="Gráfico con las tres curvas de dificultad reales del juego" style="max-width:560px">
+    <figcaption>El polinomio de dificultad real del juego, con los tres sistemas —enemigos, hechizos, trampas— graficados juntos. La comparación contra una curva objetivo, en cambio, nunca llegó a completarse.</figcaption>
+  </figure>
+
+  <p>No es un error del cálculo. Es una consecuencia directa de que el Nivel 3 nunca se terminó de construir —cero bloques de pared, tres enemigos nada más, ninguna trampa—. El propio CSV lo dice en su columna de notas, sin adornos: <em>"Sala prácticamente vacía... Probablemente sin terminar."</em> Y hay una honestidad más chica escondida ahí también: la columna de "Dificultad Objetivo" —el número que se obtiene jugando de verdad y sintiendo qué tan difícil es cada nivel, el paso final del método que Ero nos había enseñado como el corazón de todo el ejercicio— quedó completamente vacía en las tres filas. Calculé la dificultad matemática con rigor. Nunca llegué a compararla contra la sensación real de jugarlo. Todavía no sé bien qué hacer con eso.</p>
+
+  <p>Y hay algo más que tampoco resolví: esos cuatro CSV, la pieza más rigurosa académicamente de todo el proyecto, nunca llegaron a subirse al repositorio de GitHub. Viven solo en mi computadora, igual que el botón de mute.</p>
+
+  <hr class="sep">
+
+  <h2>Capítulo 11 — La semana en la que el Nivel 3 dejó de estar vacío</h2>
+
+  <p>Todo lo del capítulo anterior quedó escrito con una sala prácticamente vacía en el corazón del clímax del juego. Esta parte es sobre la semana en la que dejó de estarlo.</p>
+
+  <p>Arranca pidiendo algo que no tenía nada que ver todavía con construir el nivel: que los enemigos dejaran de sentirse marionetas.</p>
+
+  <blockquote>
+    <p>"En este pathfinding lo que quiero hacer es que los enemigos no vengan directamente hacia mí sin pensar mucho. [...] El mago, por ejemplo, nunca se acercaría o intentaría acercarse. Si está en rango, va a intentar siempre disparar en rango y va a intentar alejarse del jugador, pero quedarse en rango. [...] El tanque siempre va a ser el que va a querer acercarse al jugador."</p>
+    <cite>— Franco, sesión del 09/08</cite>
+  </blockquote>
+
+  <p>Antes de tocar una línea de código se investigó qué técnica de IA convenía —A* con costo dinámico, steering behaviors, influence maps— y apareció una buena noticia: el juego ya tenía un A* propio armado de sesiones anteriores, no hizo falta sumar ninguna librería externa. Los esqueletos normales aprendieron a flanquear cuando se agrupan demasiado frente al jugador. El mago aprendió a hacer <em>kiting</em>: mantener distancia, retroceder si lo acorralan, disparar solo en el rango ideal. Días después, en la misma línea:</p>
+
+  <blockquote>
+    <p>"Los enemigos magos, bajo cualquier concepto, tienen que evitar las trampas de sierra. No quieren jamás caminar por las trampas de sierra los enemigos magos [...] necesito que tengan una especie de memoria a la cual vayan al último punto que me vieron."</p>
+    <cite>— Franco, sesión del 12/08</cite>
+  </blockquote>
+
+  <p>Los magos aprendieron a esquivar sierras. Todos los enemigos aprendieron a recordar dónde vieron al jugador por última vez, en vez de quedarse plantados si se escondía detrás de una caja.</p>
+
+  <p>En paralelo se rehizo buena parte del Editor de Mapa: overlay de hitboxes reales visible solo en modo edición, una variante de puerta horizontal chica totalmente editable, fuentes que por fin se pueden mover y seleccionar —con un panel para escribir la pregunta y las respuestas a mano, marcando cuál es la correcta—, mapas de hechizo que se pueden colocar y borrar libremente. La progresión también cambió de fondo: las tres puertas viejas de la Sala 1 —que dependían de combinaciones de A+B+C, un mecanismo de "volver a elegir nivel" que ya no tenía sentido— se redujeron a una sola por nivel. Nivel 1, después Nivel 2, después Nivel 3. Sin vuelta atrás.</p>
+
+  <p>Y con todo eso ya andando, llegó lo que este capítulo tiene de título: Franco se sentó a construir el Nivel 3 entero, sala por sala, mientras esta misma sesión seguía en curso del otro lado. Seis salas que arrancan con máxima presión desde la primera —magos y tanques ya esperando, sin rampa de introducción propia—, un corredor con tres checkpoints numerados, una sala en cruz con sierras verticales, el pergamino de Bola Mágica escondido, una formación nueva de tanque con un esqueleto "escolta" pegado, y un combate final que junta todo lo que el juego había ido enseñando por separado. La sala que un mes antes tenía cero bloques de pared y tres enemigos nada más terminó siendo, sala por sala, la más densa de las tres.</p>
+
+  <hr class="sep">
+
+  <h2>Capítulo 12 — La puerta que parecía abierta y no llevaba a ningún lado</h2>
+
+  <p>El bug más difícil de cazar de todo el proyecto no rompió nada visualmente. Todo lo contrario: se veía perfecto.</p>
+
+  <blockquote>
+    <p>"cuando cruzo esta puerta no pasa nada, no avanzo hasta el nivel 2"</p>
+    <cite>— Franco, sesión del 12/08, con una captura de la puerta ya en verde —destrabada, resuelta la fuente— y dos esqueletos encima peleando</cite>
+  </blockquote>
+
+  <p>La puerta estaba desbloqueada. El código de la transición, probado a mano llamando la función directo, funcionaba perfecto. La fuente había marcado bien la respuesta correcta. Nada de lo evidente estaba roto. Hizo falta abrir un navegador de prueba aparte y teleportar al personaje, celda por celda, para encontrar lo que realmente pasaba: <strong>73 bloques sólidos invisibles</strong>, nunca iluminados porque nunca habían sido alcanzables, tapiaban por completo el corredor entre la puerta y el punto exacto que dispara el cambio de nivel. La puerta se veía abierta. El camino detrás, literalmente, no existía.</p>
+
+  <p>Se sacaron los 73 bloques. Y para que el mismo tipo de bug no pudiera volver a pasar, se rediseñó la solución entera:</p>
+
+  <blockquote>
+    <p>"move la el bloque verde que representa la puerta al mismo lugar donde esta el trigger que te lleva al level 2"</p>
+    <cite>— Franco, sesión del 12/08</cite>
+  </blockquote>
+
+  <p>Ahora la puerta y el punto que dispara la transición son literalmente el mismo lugar. No hay corredor intermedio que se pueda volver a tapiar sin que se note.</p>
+
+  <p>En el medio de esa misma cacería salió otro bug con la misma forma exacta: cuando ninguna de las tres opciones de una fuente queda marcada como "correcta", el juego elige la respuesta válida al azar en cada partida, en vez de una fija. Le había pasado a la fuente del Nivel 1 y a la del Nivel 2 —ninguna de las dos tenía una opción tildada—, así que a veces la respuesta lógica valía y a veces no, sin ningún patrón visible desde afuera. Se corrigieron las dos y de paso se aprendió, otra vez, la misma lección de fondo que ya había aparecido con el guardado semanas atrás: lo que se ve bien en pantalla no siempre es lo que realmente está pasando por dentro.</p>
+
+  <p>Con el Nivel 3 ya construido, el GDD se consolidó en una única versión final que junta la preproducción original con el estado real del juego terminado, y el Beat Chart se completó con las 18 salas de los 3 niveles —el que en agosto tenía apenas una fila de "sala prácticamente vacía, probablemente sin terminar" ahora tiene una descripción sala por sala, con enemigos, trampas y dificultad de cada una.</p>
+
+  <hr class="sep">
+
+  <h2>Lo que queda, y lo que aprendí</h2>
+  <p>Si cierro los ojos y trato de ver el proyecto entero de una sola vez, lo que más me sorprende no es ninguna mecánica en particular. Es la cantidad de cosas que pasaron <em>antes</em> de que hubiera un solo commit de git: cuando hice el primer commit, el 30 de julio a la noche, el juego ya tenía casi todos sus sistemas centrales funcionando. Semanas de trabajo real habían quedado invisibles para cualquiera que solo mirara el historial de versiones. Eso me hizo entender algo que no tenía tan claro antes de empezar: la documentación y el control de versiones no son un espejo automático del proceso real. Hay que hacer el esfuerzo consciente de que lo sean, y yo no lo hice hasta bastante tarde.</p>
+
+  <p>También aprendí, un poco a las patadas, que "que se guarde" no es un detalle técnico menor sino una decisión de diseño con peso real. Perdí una tarde entera de trabajo una vez, y una noche completa de edición otra vez, por dos razones técnicas distintas, y ninguna de las dos tenía que ver con mala suerte: la primera vez, porque no existía ningún sistema de guardado confiable. La segunda, porque el sistema que sí existía tenía un supuesto silencioso —que la pestaña del navegador siempre iba a estar activa— que yo rompía todo el tiempo, cada vez que cambiaba de pestaña para seguir hablando con el asistente mientras trabajaba.</p>
+
+  <p>De la parte teórica de la cursada, lo que mejor se terminó traduciendo al juego, sin ninguna duda, fue el sistema de luces. La niebla de guerra, las antorchas y las fuentes de los acertijos con su luz violeta separada de todo lo demás son casi un calco directo de lo que vimos en la Clase 5 sobre guía implícita: el weenie de Scott Rogers como landmark que atrae desde lejos, la "mano invisible" de la luz de Zamfir indicando qué es importante sin decir una palabra. Es, de lejos, la conexión más sólida y más citable de todo el proyecto entre lo que se enseñó y lo que terminé construyendo.</p>
+
+  <p>Lo que no se tradujo tan bien —y prefiero decirlo con la misma honestidad con la que quedó escrito en los propios CSV del juego— es todo lo que tiene que ver con validar en la realidad lo que calculé en el papel. Nunca hice un playtest real con nadie, ni siquiera informal. Ni una sola persona además de mí jugó el juego y me dio un número de dificultad percibida para comparar contra mis cálculos. El moodboard de Miro que el propio GDD pedía como parte del proceso sigue siendo un link placeholder, sin completar. Y el Nivel 3 —el clímax narrativo del juego, el nivel donde se suponía que iba a estar la pelea final— hoy es, en los hechos, una sala casi vacía.</p>
+
+  <p>Para la entrega final del 14 de agosto me queda, básicamente, decidir qué de todo esto voy a terminar de verdad y qué voy a dejar documentado como una limitación honesta del proceso: terminar de poblar el Nivel 3, o al menos explicar con claridad por qué quedó así; subir de una vez los cuatro CSV de balanceo al repositorio, para que la pieza más rigurosa del proyecto deje de vivir solo en mi disco local; y si me queda tiempo, conseguir aunque sea a una persona que juegue el nivel completo y me diga, con sus propias palabras, si sintió lo que yo calculé que iba a sentir.</p>
+
+  <p>No es la historia prolija de un desarrollo perfecto. Es la historia real de seis semanas construyendo algo con las herramientas que tenía, perdiendo trabajo dos veces, discutiendo con un asistente a las tres de la mañana por un bug de texturas que nunca terminó de resolverse del todo, y encontrando, casi al final, que los números que calculé con tanto cuidado me estaban diciendo algo incómodo sobre mi propio juego que todavía no terminé de escuchar del todo.</p>
+
+  <hr class="sep">
+
+  <h2>Posdata — 13 de agosto, la víspera de la entrega</h2>
+
+  <p>Lo que decía el cierre de arriba ya no es del todo cierto, y prefiero dejarlo escrito con la misma honestidad. El Nivel 3 dejó de ser una sala casi vacía: hoy tiene sus seis salas construidas, tan densas como las de los otros dos niveles. La IA de los enemigos dejó de ser una fila de marionetas caminando en línea recta. El GDD quedó consolidado en una versión final única.</p>
+
+  <p>Lo que sigue sin resolverse es casi lo mismo que ya admitía el cierre original: los cuatro CSV de balanceo siguen viviendo solo en mi computadora, sin subir al repositorio. El playtesting formal —el de verdad, con alguien más que yo jugando y dándome un número de dificultad percibida— todavía no se corrió. Y el link de Miro del moodboard sigue siendo, a esta altura, la última casilla que me falta tildar a mano.</p>
+
+  <p>Y hoy, jugando la versión casi terminada un día antes de entregar, me fui dando cuenta de varias cosas de jugabilidad que se podrían mejorar todavía más: el timing de algunas trampas, hitboxes de enemigos que no terminan de sentirse justas en el cuerpo a cuerpo. Las anoto, pero no las toco. Estoy con el tiempo en contra, y ya aprendí en este proyecto que perseguir el último ajuste la noche antes de entregar es exactamente el tipo de decisión que después se paga cara. Queda como aprendizaje para la próxima, no como parche de último momento sobre esta.</p>
+
+  <hr class="sep">
+
+  <h2>Capítulo 13 — Lo que me llevo</h2>
+
+  <p>Si tengo que resumir en una sola idea lo que aprendí en estas seis semanas, es esta: hacer un juego no se hace solo con instinto. Antes de esto, diseñaba en base a lo que yo <em>sentía</em> que estaba bien, un conocimiento naturalizado de haber jugado un montón de otros juegos, sin poder explicar bien por qué. Ahora sé que existe una fórmula, un método real, y que aprender a usarlo fue lo más importante que me llevo de todo el proceso.</p>
+
+  <p>El balanceo de niveles fue, en ese sentido, mi norte. No tener que confiar solo en la sensación de "esto se siente difícil" sino poder entender, con números, qué cosas de un nivel están balanceadas y cuáles no, me pareció tremendamente útil — probablemente la herramienta más valiosa de toda la cursada. Pero también fue ahí donde más lejos quedé de cerrar el círculo: confié en ese balanceo calculado en el papel más de lo que debería haber confiado, y me faltó todo el playtesting en vivo que tendría que haber hecho para contrastarlo contra la realidad. Estiré mal el tiempo —mucho desarrollo, poco playtesting— y eso le hizo falta a la experiencia final, sin dudas.</p>
+
+  <p>Dicho eso, me llevo también algo bueno y concreto: haber podido construir toda esta experiencia en modo "vibecoding" fue un desafío interesante y divertido de principio a fin. Y por encima de cualquier mecánica puntual, lo que más me importa de todo esto es haber aprendido el proceso completo —todos los pasos que hay que tener en cuenta para diseñar un nivel <em>antes</em> de escribir siquiera una línea de código. Eso es lo que más me llevo, y lo que se queda conmigo mucho después de que esta entrega termine.</p>
+
+</div>
+
+<footer class="colophon">
+  Este blog fue reconstruido a partir del track record verificado del proyecto (<code>E:\Curso\TRACK_RECORD_JUEGO\</code>), con imágenes reales extraídas de las conversaciones de desarrollo y del propio repositorio del juego. Todas las fechas, cifras y citas textuales están cruzadas contra fuentes primarias — código, config, git y los mensajes originales.
+</footer>
+
+</body>
+</html>
