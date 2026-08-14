@@ -13,6 +13,7 @@
     --rule: #d8cdbc;
     --quote-bg: #efe6d8;
     --card-bg: #ffffff;
+    --highlight-bg: #f4e6d3;
     --max-w: 720px;
   }
   @media (prefers-color-scheme: dark) {
@@ -24,6 +25,7 @@
       --rule: #3a332c;
       --quote-bg: #262019;
       --card-bg: #221e19;
+      --highlight-bg: #2b2016;
     }
   }
   * { box-sizing: border-box; }
@@ -165,6 +167,24 @@
     padding-top: 24px;
   }
   strong.beat { font-weight: 700; }
+  .final-reflection {
+    margin: 40px 0;
+    padding: 36px 32px;
+    background: var(--highlight-bg);
+    border-radius: 14px;
+    border: 2px solid var(--accent);
+  }
+  .final-reflection h2 {
+    border: none; margin-top: 0; margin-bottom: 20px;
+    font-size: 26px; text-align: center;
+  }
+  .final-reflection p { font-size: 19px; }
+  .final-reflection p:last-child { margin-bottom: 0; }
+  .final-reflection .lead {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    text-align: center; color: var(--accent); text-transform: uppercase;
+    letter-spacing: .1em; font-size: 12.5px; font-weight: 700; margin-bottom: 18px;
+  }
 </style>
 </head>
 <body>
@@ -492,7 +512,7 @@
 
   <hr class="sep">
 
-  <h2>Lo que queda y lo que aprendí</h2>
+  <h2>Estado del proyecto al cierre</h2>
 
   <p>Mirando el proyecto entero de una vez, lo que más sorprende no es ninguna mecánica en particular. Es la cantidad de trabajo que pasó antes de que hubiera un solo commit de git: cuando hice el primer commit, el 30 de julio a la noche, el juego ya tenía casi todos sus sistemas centrales funcionando. Semanas de trabajo real habían quedado invisibles para cualquiera que solo mirara el historial de versiones. Eso me hizo entender algo que no tenía tan claro antes de empezar: la documentación y el control de versiones no son un espejo automático del proceso real. Hay que hacer el esfuerzo consciente de que lo sean, y no lo hice hasta bastante tarde.</p>
 
@@ -500,17 +520,13 @@
 
   <p>De la parte teórica de la cursada, lo que mejor se terminó traduciendo al juego fue el sistema de luces. La niebla de guerra, las antorchas y las fuentes de los acertijos con su luz separada de todo lo demás son un calco directo de lo visto en la Clase 5 sobre guía implícita: el weenie de Scott Rogers como landmark que atrae desde lejos, la idea de que la luz puede indicar qué es importante sin decir una palabra. Es la conexión más sólida de todo el proyecto entre lo enseñado y lo construido.</p>
 
-  <p>Lo que no se tradujo tan bien tiene que ver con validar en la realidad lo que se calculó en el papel. Nunca hice un playtest real con nadie, ni siquiera informal. El moodboard de Miro que el propio GDD pedía como parte del proceso siguió siendo un pendiente durante buena parte del desarrollo. Y hasta hace poco, el Nivel 3, el clímax narrativo del juego, era en los hechos una sala casi vacía.</p>
+  <p>En la última semana antes de la entrega el Nivel 3 pasó de ser una sala casi vacía a tener sus seis salas construidas, tan densas como las de los otros dos niveles, y la IA de los enemigos dejó de moverse en línea recta sin variación. El GDD quedó consolidado en una versión final única, con el Beat Chart completo de los 3 niveles.</p>
 
-  <h2>Actualización, 13 de agosto de 2026</h2>
+  <p>Lo que sigue pendiente al cierre: los cuatro CSV de balanceo sin subir al repositorio, el playtesting formal (con alguien más jugando y dando un número de dificultad percibida) sin correrse todavía, y el link de Miro del moodboard como última casilla sin completar. Jugando la versión casi terminada un día antes de la entrega también fui notando detalles de jugabilidad para mejorar (timing de algunas trampas, hitboxes de enemigos que no se sienten del todo ajustadas en el cuerpo a cuerpo) que anoté pero no llegué a tocar por tiempo. Queda como aprendizaje para la próxima etapa, no como cambio de último momento sobre esta entrega.</p>
 
-  <p>Lo que decía el cierre anterior ya no es del todo cierto. El Nivel 3 dejó de ser una sala casi vacía: tiene sus seis salas construidas, tan densas como las de los otros dos niveles. La IA de los enemigos dejó de moverse en línea recta sin variación. El GDD quedó consolidado en una versión final única.</p>
-
-  <p>Lo que sigue sin resolverse es casi lo mismo que ya admitía el cierre original: los cuatro CSV de balanceo siguen sin subir al repositorio. El playtesting formal, con alguien más jugando y dando un número de dificultad percibida, todavía no se corrió. El link de Miro del moodboard sigue siendo la última casilla pendiente.</p>
-
-  <p>Jugando la versión casi terminada un día antes de la entrega, fui notando varios detalles de jugabilidad que se podrían mejorar: el timing de algunas trampas, hitboxes de enemigos que no se sienten del todo ajustadas en el cuerpo a cuerpo. Los anoto pero no los toco. Con el tiempo en contra, perseguir el último ajuste la noche antes de entregar suele salir caro. Queda como aprendizaje para la próxima etapa, no como cambio de último momento sobre esta entrega.</p>
-
-  <h2>Reflexión final</h2>
+  <div class="final-reflection">
+    <div class="lead">Reflexión final</div>
+    <h2>Lo que me llevo de este proyecto</h2>
 
   <p>Si tengo que resumir en una idea lo que aprendí en estas seis semanas, es que hacer un juego no se hace solo con instinto. Antes de este proyecto diseñaba en base a lo que sentía que estaba bien, un conocimiento naturalizado de haber jugado muchos juegos, sin poder explicar del todo por qué. Ahora sé que existe un método concreto, y aprender a aplicarlo fue lo más importante de todo el proceso.</p>
 
@@ -518,9 +534,7 @@
 
   <p>Construir toda esta experiencia trabajando junto a un asistente de IA fue, de todas formas, un desafío interesante. Y por encima de cualquier mecánica puntual, lo que más me importa de todo el proceso es haber aprendido los pasos que hay que seguir para diseñar un nivel antes de escribir la primera línea de código. Eso es lo que más me llevo de esta materia.</p>
 
-  <hr class="sep">
-
-  <p><em>Este documento reconstruye el desarrollo de La Cripta de Nekkman a partir del historial de conversaciones, el repositorio de código y los archivos de configuración del proyecto. Fechas, cifras y citas están cruzadas contra estas fuentes primarias.</em></p>
+  </div>
 
 </div>
 
