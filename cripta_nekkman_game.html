@@ -999,10 +999,10 @@
                 <img class="health-fill" id="health-fill" src="assets/hud/health_bar.png" alt="">
             </div>
         </div>
-        <div id="loot-counter">💰 Botín capturado: <span id="loot-count">0</span> de <span id="loot-max">0</span></div>
+        <div id="loot-counter">💰 <span data-i18n="hud.lootCaptured">Botín capturado</span>: <span id="loot-count">0</span> <span data-i18n="hud.of">de</span> <span id="loot-max">0</span></div>
     </div>
-    <div id="hud-topleft">⎋ ESC · Pausa</div>
-    <div id="status">Usa WASD para moverte | ESPACIO para atacar</div>
+    <div id="hud-topleft">⎋ ESC · <span data-i18n="hud.pause">Pausa</span></div>
+    <div id="status" data-i18n="hud.controls">Usa WASD para moverte | ESPACIO para atacar</div>
 
     <!-- Barra de hechizos: click en un slot para seleccionar el hechizo y después
          click sobre un enemigo para aplicárselo (también con las teclas 1/2) -->
@@ -1029,8 +1029,8 @@
         </div>
     </div>
 
-    <button id="mute-toggle-btn" title="Mutear audio" aria-label="Mutear audio">🔊</button>
-    <button id="editor-toggle-btn">⚙️ Editor</button>
+    <button id="mute-toggle-btn" title="Mutear audio" aria-label="Mutear audio" data-i18n-title="hud.muteTitle">🔊</button>
+    <button id="editor-toggle-btn" data-i18n="editor.paramsBtn">⚙️ Editor</button>
 
     <div id="editor-panel">
             <h2>Editor de Parámetros</h2>
@@ -1607,7 +1607,7 @@
     <!-- Editor de Mapa: paleta para agregar/borrar/mover bloques y entidades del
          mapa a mano con el mouse (distinto del Editor de Parámetros de arriba, que
          solo ajusta números). Ver setupMapEditor(). -->
-    <button id="map-editor-toggle-btn">🗺️ Editor de Mapa</button>
+    <button id="map-editor-toggle-btn" data-i18n="editor.mapBtn">🗺️ Editor de Mapa</button>
 
     <div id="map-editor-panel">
         <button id="me-collapse-toggle" title="Ocultar/mostrar el panel — seguís en modo edición, solo se esconde el panel para ver el mapa completo">◀</button>
@@ -1801,11 +1801,12 @@
          esté cargando assets atrás). "Jugar" arranca la cinemática de intro. -->
     <div id="main-menu-overlay" class="main-menu-overlay">
         <h1>La Cripta de Nekkman</h1>
-        <p>Trabajo Práctico N.º 2</p>
+        <p data-i18n="menu.subtitle">Trabajo Práctico N.º 2</p>
         <div class="main-menu-buttons" id="main-menu-buttons">
-            <button id="btn-start-game">Iniciar Partida</button>
-            <button id="btn-open-settings" class="menu-btn-secondary">Configuración</button>
-            <button id="btn-exit-game" class="menu-btn-secondary">Salir</button>
+            <button id="btn-start-game" data-i18n="menu.start">Iniciar Partida</button>
+            <button id="btn-open-settings" class="menu-btn-secondary" data-i18n="menu.settings">Configuración</button>
+            <button id="btn-lang-toggle" class="menu-btn-secondary" data-i18n="menu.lang">🌐 English</button>
+            <button id="btn-exit-game" class="menu-btn-secondary" data-i18n="menu.exit">Salir</button>
         </div>
         <!-- Indicador de carga: se muestra DEBAJO de los botones y NUNCA los tapa ni
              los deshabilita. Antes reemplazaba a los botones hasta que el juego
@@ -1817,27 +1818,27 @@
              endCinematic). -->
         <div class="menu-loading" id="menu-loading">
             <div class="menu-spinner"></div>
-            <p id="menu-loading-text">Cargando recursos…</p>
+            <p id="menu-loading-text" data-i18n="menu.loading">Cargando recursos…</p>
         </div>
     </div>
 
     <!-- Configuración: volumen (3 canales independientes) (ver
          setupMainMenuAndCinematic para agregar más controles — mismo patrón). -->
     <div id="settings-overlay" class="main-menu-overlay hidden">
-        <h1>Configuración</h1>
+        <h1 data-i18n="settings.title">Configuración</h1>
         <div class="settings-row">
-            <label for="ctrl-volume-sfx">Efectos de sonido — <span id="val-volume-sfx">92</span>%</label>
+            <label for="ctrl-volume-sfx"><span data-i18n="settings.sfx">Efectos de sonido</span> — <span id="val-volume-sfx">92</span>%</label>
             <input type="range" id="ctrl-volume-sfx" min="0" max="100" step="1" value="92">
         </div>
         <div class="settings-row">
-            <label for="ctrl-volume-music">Música — <span id="val-volume-music">35</span>%</label>
+            <label for="ctrl-volume-music"><span data-i18n="settings.music">Música</span> — <span id="val-volume-music">35</span>%</label>
             <input type="range" id="ctrl-volume-music" min="0" max="100" step="1" value="35">
         </div>
         <div class="settings-row">
-            <label for="ctrl-volume-ambience">Sonido de ambientación — <span id="val-volume-ambience">35</span>%</label>
+            <label for="ctrl-volume-ambience"><span data-i18n="settings.ambience">Sonido de ambientación</span> — <span id="val-volume-ambience">35</span>%</label>
             <input type="range" id="ctrl-volume-ambience" min="0" max="100" step="1" value="35">
         </div>
-        <button id="btn-close-settings" class="menu-btn-secondary">Volver</button>
+        <button id="btn-close-settings" class="menu-btn-secondary" data-i18n="settings.back">Volver</button>
     </div>
 
     <!-- Cinemática de intro (diapositivas con imagen de fondo + texto, antes de
@@ -1845,7 +1846,7 @@
          lista de {image, text} — agregar/cambiar/sacar una diapositiva ahí solo, no
          hace falta tocar este markup. -->
     <div id="cinematic-overlay" class="cinematic-overlay hidden">
-        <button id="cinematic-skip-btn" class="cinematic-skip-btn">Skip ⏭</button>
+        <button id="cinematic-skip-btn" class="cinematic-skip-btn" data-i18n="cinematic.skip">Skip ⏭</button>
         <!-- Imagen de fondo de la diapositiva actual — swapeada por JS (ver
              showSlide), a pantalla completa detrás del cuadro de diálogo. -->
         <div id="cinematic-bg" class="cinematic-bg"></div>
@@ -1856,16 +1857,16 @@
             <div id="cinematic-speaker" class="cinematic-speaker hidden"></div>
             <p id="cinematic-dialogue-text"></p>
             <div class="cinematic-nav-row">
-                <button id="cinematic-prev-btn" class="cinematic-nav-btn">◀ Previous</button>
+                <button id="cinematic-prev-btn" class="cinematic-nav-btn" data-i18n="cinematic.prev">◀ Previous</button>
                 <div id="cinematic-slide-counter" class="cinematic-slide-counter">1 / 2</div>
-                <button id="cinematic-next-btn" class="cinematic-nav-btn">Next ▶</button>
+                <button id="cinematic-next-btn" class="cinematic-nav-btn" data-i18n="cinematic.next">Next ▶</button>
             </div>
             <!-- Solo visible si terminaste las diapositivas ANTES de que el mundo
                  termine de cargar: en vez de pasar a una pantalla vacía, la cinemática
                  se queda acá esperando (ver endCinematic). -->
             <div id="cinematic-waiting" class="menu-loading hidden">
                 <div class="menu-spinner"></div>
-                <p>Preparando la cripta…</p>
+                <p data-i18n="cinematic.waiting">Preparando la cripta…</p>
             </div>
         </div>
     </div>
@@ -1879,6 +1880,125 @@
     </div>
 
     <script>
+        // ---- i18n: diccionario es/en + t()/applyTranslations() ----
+        const TRANSLATIONS = {
+            es: {
+                'menu.subtitle': 'Trabajo Práctico N.º 2',
+                'menu.start': 'Iniciar Partida',
+                'menu.settings': 'Configuración',
+                'menu.exit': 'Salir',
+                'menu.loading': 'Cargando recursos…',
+                'menu.lang': '🌐 English',
+                'settings.title': 'Configuración',
+                'settings.sfx': 'Efectos de sonido',
+                'settings.music': 'Música',
+                'settings.ambience': 'Sonido de ambientación',
+                'settings.back': 'Volver',
+                'cinematic.skip': 'Skip ⏭',
+                'cinematic.prev': '◀ Previous',
+                'cinematic.next': 'Next ▶',
+                'cinematic.start': 'Comenzar ▶',
+                'cinematic.waiting': 'Preparando la cripta…',
+                'cinematic.slide0.text': 'Hace muchos años existía un mago nigromante llamado Nekkman. Este contactó con una deidad y se convirtió en su heraldo. Esta deidad lo utilizó para poder construir a un ejército de no muertos y atacar el mundo.',
+                'cinematic.slide1.text': 'Por eso, fui enviado a esta asquerosa cripta desde Paxtria, para buscar información del nigromante. Es importante acabar con la amenaza que azota al mundo pero... también está bueno tener algo de oro en los bolsillos.',
+                'hud.pause': 'Pausa',
+                'hud.controls': 'Usa WASD para moverte | ESPACIO para atacar | E para interactuar | ESC para pausar',
+                'hud.lootCaptured': 'Botín capturado',
+                'hud.of': 'de',
+                'hud.muteTitle': 'Mutear audio',
+                'editor.paramsBtn': '⚙️ Editor',
+                'editor.mapBtn': '🗺️ Editor de Mapa',
+                'pause.title': 'Juego Pausado',
+                'pause.resume': 'Reanudar',
+                'pause.settings': '⚙️ Configuración',
+                'pause.restart': 'Reiniciar Nivel',
+                'pause.lang': '🌐 English',
+                'gameover.title': 'GAME OVER',
+                'gameover.subtitle': 'Klegar ha caído en la cripta...',
+                'gameover.restartHint': 'Presiona R para reiniciar',
+                'gameover.statusText': 'Derrota. Presiona R para reiniciar.',
+                'win.title': '¡GANASTE!',
+                'win.subtitle': 'Has obtenido la información que estabas buscando. Enemigos derrotados: {enemies}. Botín recolectado: {loot}.',
+                'exit.cantClose': 'Tu navegador no deja cerrar la pestaña automáticamente. Podés cerrarla vos (Ctrl+W / Cmd+W).',
+                'hud.pressE': 'Presiona E'
+            },
+            en: {
+                'menu.subtitle': 'Practical Assignment No. 2',
+                'menu.start': 'Start Game',
+                'menu.settings': 'Settings',
+                'menu.exit': 'Exit',
+                'menu.loading': 'Loading resources…',
+                'menu.lang': '🌐 Español',
+                'settings.title': 'Settings',
+                'settings.sfx': 'Sound effects',
+                'settings.music': 'Music',
+                'settings.ambience': 'Ambience sound',
+                'settings.back': 'Back',
+                'cinematic.skip': 'Skip ⏭',
+                'cinematic.prev': '◀ Previous',
+                'cinematic.next': 'Next ▶',
+                'cinematic.start': 'Start ▶',
+                'cinematic.waiting': 'Preparing the crypt…',
+                'cinematic.slide0.text': 'Many years ago there was a necromancer wizard named Nekkman. He made contact with a deity and became its herald. This deity used him to build an army of undead and attack the world.',
+                'cinematic.slide1.text': 'That is why I was sent to this filthy crypt from Paxtria, to search for information about the necromancer. Putting an end to the threat plaguing the world matters but... it is also nice to have some gold in your pockets.',
+                'hud.pause': 'Pause',
+                'hud.controls': 'Use WASD to move | SPACE to attack | E to interact | ESC to pause',
+                'hud.lootCaptured': 'Loot captured',
+                'hud.of': 'of',
+                'hud.muteTitle': 'Mute audio',
+                'editor.paramsBtn': '⚙️ Editor',
+                'editor.mapBtn': '🗺️ Map Editor',
+                'pause.title': 'Game Paused',
+                'pause.resume': 'Resume',
+                'pause.settings': '⚙️ Settings',
+                'pause.restart': 'Restart Level',
+                'pause.lang': '🌐 Español',
+                'gameover.title': 'GAME OVER',
+                'gameover.subtitle': 'Klegar has fallen in the crypt...',
+                'gameover.restartHint': 'Press R to restart',
+                'gameover.statusText': 'Defeat. Press R to restart.',
+                'win.title': 'YOU WON!',
+                'win.subtitle': 'You obtained the information you were looking for. Enemies defeated: {enemies}. Loot collected: {loot}.',
+                'exit.cantClose': 'Your browser will not let this tab close automatically. You can close it yourself (Ctrl+W / Cmd+W).',
+                'hud.pressE': 'Press E'
+            }
+        };
+
+        const LANG_STORAGE_KEY = 'cripta_nekkman_lang';
+        let currentLang = localStorage.getItem(LANG_STORAGE_KEY) === 'en' ? 'en' : 'es';
+
+        function t(key) {
+            return (TRANSLATIONS[currentLang] && TRANSLATIONS[currentLang][key])
+                || TRANSLATIONS.es[key]
+                || key;
+        }
+
+        // Recorre todo el DOM marcado con data-i18n y aplica el texto del idioma
+        // actual — cubre botones/labels estáticos. Texto armado dinámicamente en JS
+        // (HUD, modales, cinemática) se resuelve aparte, llamando a t() donde se arma.
+        function applyTranslations() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                const value = t(key);
+                if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                    el.placeholder = value;
+                } else {
+                    el.textContent = value;
+                }
+            });
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                el.title = t(el.getAttribute('data-i18n-title'));
+                if (el.hasAttribute('aria-label')) el.setAttribute('aria-label', t(el.getAttribute('data-i18n-title')));
+            });
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'es' ? 'en' : 'es';
+            localStorage.setItem(LANG_STORAGE_KEY, currentLang);
+            applyTranslations();
+            if (typeof onLanguageChanged === 'function') onLanguageChanged();
+        }
+
         // Permite forzar el motor de dibujo desde la URL para poder COMPARARLOS en una
         // máquina puntual: ?renderer=canvas o ?renderer=webgl. Sin parámetro,
         // Phaser.AUTO elige (siempre WebGL si el navegador lo ofrece).
@@ -2040,6 +2160,7 @@
             setupMapEditor();
             setupSpellBar();
             setupMainMenuAndCinematic();
+            applyTranslations();
             applyEditorModeGate();
             // loadEditorSettings() YA NO se llama acá con un setTimeout(...,0). Ese
             // delay solo evitaba el ReferenceError por temporal dead zone (esperar a que
@@ -3226,6 +3347,7 @@
             document.getElementById('btn-open-settings').addEventListener('click', showSettings);
             document.getElementById('btn-close-settings').addEventListener('click', hideSettings);
             document.getElementById('btn-exit-game').addEventListener('click', exitGame);
+            document.getElementById('btn-lang-toggle').addEventListener('click', toggleLanguage);
             document.getElementById('cinematic-skip-btn').addEventListener('click', endCinematic);
             document.getElementById('cinematic-prev-btn').addEventListener('click', goToPrevSlide);
             document.getElementById('cinematic-next-btn').addEventListener('click', goToNextSlide);
@@ -3278,7 +3400,7 @@
         function exitGame() {
             window.close();
             setTimeout(() => {
-                alert('Tu navegador no deja cerrar la pestaña automáticamente. Podés cerrarla vos (Ctrl+W / Cmd+W).');
+                alert(t('exit.cantClose'));
             }, 150);
         }
 
@@ -3349,12 +3471,21 @@
             const speakerEl = document.getElementById('cinematic-speaker');
             speakerEl.textContent = slide.speaker || '';
             speakerEl.classList.toggle('hidden', !slide.speaker);
-            document.getElementById('cinematic-dialogue-text').textContent = slide.text;
+            document.getElementById('cinematic-dialogue-text').textContent = t(`cinematic.slide${cinematicSlideIndex}.text`);
             document.getElementById('cinematic-slide-counter').textContent =
                 (cinematicSlideIndex + 1) + ' / ' + INTRO_SLIDES.length;
             document.getElementById('cinematic-prev-btn').disabled = cinematicSlideIndex === 0;
             const isLast = cinematicSlideIndex === INTRO_SLIDES.length - 1;
-            document.getElementById('cinematic-next-btn').textContent = isLast ? 'Comenzar ▶' : 'Next ▶';
+            document.getElementById('cinematic-next-btn').textContent = isLast ? t('cinematic.start') : t('cinematic.next');
+        }
+
+        // Refresca todo el texto armado dinámicamente en JS (no cubierto por
+        // applyTranslations/data-i18n) apenas se cambia de idioma en caliente —
+        // diapositiva de cinemática actual y el recordatorio de controles del HUD.
+        function onLanguageChanged() {
+            if (cinematicActive) showSlide();
+            const statusEl = document.getElementById('status');
+            if (statusEl && !mapEditorActive) statusEl.textContent = t('hud.controls');
         }
 
         function goToPrevSlide() {
@@ -5864,7 +5995,7 @@
             fountainGlow.setTint(hexColorToInt(FOUNTAIN_LIGHT_COLOR));
             fountainGlow.setDepth(DEPTH_FOG + 1);
             fountainGlow.setBlendMode(Phaser.BlendModes.ADD);
-            interactPrompt = this.add.text(activeRoom.fountain.x, activeRoom.fountain.y - (fountainSize / 2 + 20), 'Presiona E', {
+            interactPrompt = this.add.text(activeRoom.fountain.x, activeRoom.fountain.y - (fountainSize / 2 + 20), t('hud.pressE'), {
                 fontSize: '14px',
                 fill: '#ffffff',
                 backgroundColor: '#000000',
@@ -6710,8 +6841,8 @@
                 player.body.setVelocity(0, 0);
                 freezeAllEnemies();
                 player.setTint(0xff0000);
-                showGameOverOverlay('GAME OVER', 'Klegar ha caído en la cripta...', '#ff5555');
-                dom.status.textContent = 'Derrota. Presiona R para reiniciar.';
+                showGameOverOverlay(t('gameover.title'), t('gameover.subtitle'), '#ff5555');
+                dom.status.textContent = t('gameover.statusText');
             }
 
             // Actualizar barra de vida del HUD (heart-bar). Referencias cacheadas
@@ -7128,7 +7259,7 @@
             player.body.setVelocity(0, 0);
             freezeAllEnemies();
             onGameWon();
-            showGameOverOverlay('¡GANASTE!', `Has obtenido la información que estabas buscando. Enemigos derrotados: ${enemiesDefeatedTotal}. Botín recolectado: ${lootCollected}.`, '#ffd700');
+            showGameOverOverlay(t('win.title'), t('win.subtitle').replace('{enemies}', enemiesDefeatedTotal).replace('{loot}', lootCollected), '#ffd700');
             // Un ratito para que se lea el cartel de victoria y recién ahí de vuelta al
             // menú principal (Iniciar Partida / Configuración / Salir). scene.time sigue
             // corriendo aunque gameOver ya haya congelado el update() de juego.
@@ -7160,7 +7291,7 @@
                 align: 'center'
             }).setOrigin(0.5).setDepth(101).setScrollFactor(0);
 
-            scene.add.text(512, 440, 'Presiona R para reiniciar', {
+            scene.add.text(512, 440, t('gameover.restartHint'), {
                 fontSize: '18px',
                 fill: '#ffffff',
                 align: 'center'
@@ -7525,15 +7656,15 @@
             fireballPreviewGraphics.clear();
 
             showModal(
-                'Juego Pausado',
+                t('pause.title'),
                 '',
                 [
                     {
-                        label: 'Reanudar',
+                        label: t('pause.resume'),
                         onClick: closePauseMenu
                     },
                     {
-                        label: '⚙️ Configuración',
+                        label: t('pause.settings'),
                         onClick: () => {
                             // activeModal se queda en 'pause' a propósito (el juego
                             // sigue congelado atrás) — hideSettings() lo usa para saber
@@ -7543,10 +7674,21 @@
                         }
                     },
                     {
-                        label: 'Reiniciar Nivel',
+                        label: t('pause.restart'),
                         onClick: () => {
                             activeModal = null;
                             scene.scene.restart();
+                        }
+                    },
+                    {
+                        // hideModal ya corrió (ver showModal) antes de este onClick, así
+                        // que reabrir el menú de acá arma uno nuevo con las labels ya en
+                        // el idioma nuevo — no hace falta que applyTranslations conozca
+                        // estos botones (se recrean desde cero cada vez que se abre).
+                        label: t('pause.lang'),
+                        onClick: () => {
+                            toggleLanguage();
+                            openPauseMenu();
                         }
                     }
                 ]
