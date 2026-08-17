@@ -200,6 +200,17 @@
             gap: 12px;
             width: 240px;
         }
+        .menu-author-link {
+            display: block;
+            margin-top: 18px;
+            text-align: center;
+            color: #9aa0a8;
+            font-size: 13px;
+            text-decoration: underline;
+        }
+        .menu-author-link:hover {
+            color: #ffffff;
+        }
         #btn-start-game, .menu-btn-secondary {
             padding: 14px 44px;
             font-size: 18px;
@@ -1808,6 +1819,7 @@
             <button id="btn-lang-toggle" class="menu-btn-secondary" data-i18n="menu.lang">🌐 English</button>
             <button id="btn-exit-game" class="menu-btn-secondary" data-i18n="menu.exit">Salir</button>
         </div>
+        <a id="link-author" href="https://francotarelli.com/work/game-built-out-loud-with-ai" target="_blank" rel="noopener" class="menu-author-link" data-i18n="menu.author">Conocé más sobre este proyecto</a>
         <!-- Indicador de carga: se muestra DEBAJO de los botones y NUNCA los tapa ni
              los deshabilita. Antes reemplazaba a los botones hasta que el juego
              terminara de cargar, pero eso podía dejar el menú muerto para siempre si el
@@ -1920,7 +1932,9 @@
                 'win.title': '¡GANASTE!',
                 'win.subtitle': 'Has obtenido la información que estabas buscando. Enemigos derrotados: {enemies}. Botín recolectado: {loot}.',
                 'exit.cantClose': 'Tu navegador no deja cerrar la pestaña automáticamente. Podés cerrarla vos (Ctrl+W / Cmd+W).',
-                'hud.pressE': 'Presiona E'
+                'hud.pressE': 'Presiona E',
+                'menu.author': 'Conocé más sobre este proyecto',
+                'pause.author': 'Conocé más sobre este proyecto'
             },
             en: {
                 'menu.subtitle': 'Practical Assignment No. 2',
@@ -1960,7 +1974,9 @@
                 'win.title': 'YOU WON!',
                 'win.subtitle': 'You obtained the information you were looking for. Enemies defeated: {enemies}. Loot collected: {loot}.',
                 'exit.cantClose': 'Your browser will not let this tab close automatically. You can close it yourself (Ctrl+W / Cmd+W).',
-                'hud.pressE': 'Press E'
+                'hud.pressE': 'Press E',
+                'menu.author': 'Learn more about this project',
+                'pause.author': 'Learn more about this project'
             }
         };
 
@@ -7689,6 +7705,13 @@
                         onClick: () => {
                             toggleLanguage();
                             openPauseMenu();
+                        }
+                    },
+                    {
+                        label: t('pause.author'),
+                        onClick: () => {
+                            window.open('https://francotarelli.com/work/game-built-out-loud-with-ai', '_blank', 'noopener');
+                            openPauseMenu(); // showModal ya cerró el modal; lo reabrimos para que la pausa siga activa
                         }
                     }
                 ]
